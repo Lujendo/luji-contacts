@@ -207,14 +207,20 @@ const Dashboard = () => {
   useEffect(() => {
     const refreshInterval = setInterval(async () => {
       try {
+        const token = localStorage.getItem('token');
+        if (!token) return; // Skip refresh if no token
+
         const [contactsResponse, groupsResponse] = await Promise.all([
           axios.get(`${import.meta.env.VITE_API_URL}/api/contacts`, {
+            headers: { Authorization: `Bearer ${token}` },
             params: {
               sort: sortConfig.key,
               direction: sortConfig.direction
             }
           }),
-          axios.get(`${import.meta.env.VITE_API_URL}/api/groups`)
+          axios.get(`${import.meta.env.VITE_API_URL}/api/groups`, {
+            headers: { Authorization: `Bearer ${token}` }
+          })
         ]);
 
         // Update only if data has changed
@@ -313,7 +319,9 @@ const handleSort = useCallback(async (key, direction) => {
     localStorage.setItem('contactsSortConfig', JSON.stringify(newConfig));
     setSortConfig(newConfig);
 
+    const token = localStorage.getItem('token');
     const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/contacts`, {
+      headers: { Authorization: `Bearer ${token}` },
       params: { sort: key, direction }
     });
 

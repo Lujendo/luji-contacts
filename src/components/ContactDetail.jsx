@@ -170,12 +170,14 @@ const ContactDetail = ({ contact, allGroups, onUpdateContact, onAddToGroup, onRe
         formData.append('profile_image', profileImage);
 
         try {
+          const token = localStorage.getItem('token');
           const imageResponse = await axios.put(
             `${import.meta.env.VITE_API_URL}/api/contacts/${editedContact.id}/profile-image`,
             formData,
             {
               headers: {
                 'Content-Type': 'multipart/form-data',
+                'Authorization': `Bearer ${token}`,
               },
             }
           );
@@ -189,6 +191,7 @@ const ContactDetail = ({ contact, allGroups, onUpdateContact, onAddToGroup, onRe
       }
 
       // Then update contact info
+      const token = localStorage.getItem('token');
       const response = await axios.put(
         `${import.meta.env.VITE_API_URL}/api/contacts/${editedContact.id}`,
         {
@@ -211,6 +214,11 @@ const ContactDetail = ({ contact, allGroups, onUpdateContact, onAddToGroup, onRe
           company: editedContact.company,
           job_title: editedContact.job_title,
           profile_image_url: profileImageUrl
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
         }
       );
 

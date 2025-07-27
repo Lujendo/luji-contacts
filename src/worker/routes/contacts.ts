@@ -232,7 +232,61 @@ export function createContactRoutes(db: DatabaseService, auth: AuthService, stor
     }
   });
 
-  // Upload profile image
+  // Upload profile image (alternative endpoint for frontend compatibility)
+  contacts.put('/:id/profile-image', async (c) => {
+    try {
+      const user = getAuthenticatedUser(c);
+      const contactId = parseInt(c.req.param('id'));
+
+      if (isNaN(contactId)) {
+        return c.json({ error: 'Invalid contact ID' }, 400);
+      }
+
+      // Check if contact exists and belongs to user
+      const existingContact = await db.getContactById(contactId, user.id);
+      if (!existingContact) {
+        return c.json({ error: 'Contact not found' }, 404);
+      }
+
+      const formData = await c.req.formData();
+      const file = formData.get('profile_image') as File;
+
+      if (!file) {
+        return c.json({ error: 'No image file provided' }, 400);
+      }
+
+      // Validate file
+      const validation = storage.validateFile(file, ALLOWED_IMAGE_TYPES, 5);
+      if (!validation.valid) {
+        return c.json({ error: validation.error }, 400);
+      }
+
+      // Delete old image if exists
+      if (existingContact.profile_image_url) {
+        await storage.deleteFile(existingContact.profile_image_url);
+      }
+
+      // Upload new image
+      const fileName = await storage.uploadProfileImage(file, user.id, contactId);
+
+      // Update contact with new image URL
+      const updatedContact = await db.updateContact(contactId, user.id, {
+        profile_image_url: fileName
+      });
+
+      return c.json({
+        message: 'Profile image uploaded successfully',
+        profile_image_url: fileName,
+        contact: updatedContact
+      });
+
+    } catch (error) {
+      console.error('Upload profile image error:', error);
+      return c.json({ error: 'Internal server error' }, 500);
+    }
+  });
+
+  // Upload profile image (original endpoint)
   contacts.post('/:id/image', async (c) => {
     try {
       const user = getAuthenticatedUser(c);
