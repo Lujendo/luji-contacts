@@ -112,7 +112,7 @@ useEffect(() => {
       const token = localStorage.getItem('token');
       if (!token) return;
 
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/user`, {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/users/profile`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -131,21 +131,25 @@ useEffect(() => {
     const initializeDashboard = async () => {
       try {
         setLoading(true);
-        const [contactsResponse, groupsResponse, emailHistoryResponse] = await Promise.all([
+        const token = localStorage.getItem('token');
+        const [contactsResponse, groupsResponse] = await Promise.all([
           axios.get(`${import.meta.env.VITE_API_URL}/api/contacts`, {
+            headers: { Authorization: `Bearer ${token}` },
             params: {
               sort: sortConfig.key,
               direction: sortConfig.direction
             }
           }),
-          axios.get(`${import.meta.env.VITE_API_URL}/api/groups`),
-          axios.get(`${import.meta.env.VITE_API_URL}/api/emails`)
+          axios.get(`${import.meta.env.VITE_API_URL}/api/groups`, {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+          // Note: Email functionality not implemented in backend yet
         ]);
 
         setContacts(contactsResponse.data);
         setFilteredContacts(contactsResponse.data);
         setGroups(groupsResponse.data);
-        setEmailHistory(emailHistoryResponse.data);
+        // setEmailHistory([]); // Email functionality not implemented yet
       } catch (error) {
         console.error('Error initializing dashboard:', error);
         setError('Failed to initialize dashboard');
@@ -460,16 +464,17 @@ const handleUpdateGroup = useCallback(async (groupId, updatedGroup) => {
 const handleSendEmail = useCallback(async (emailData) => {
   try {
     setEmailLoading(true);
-    if (emailData.groupIds.length > 0) {
-      await axios.post(`${import.meta.env.VITE_API_URL}/api/emails/groups`, emailData);
-    }
-    if (emailData.contactIds.length > 0) {
-      await axios.post(`${import.meta.env.VITE_API_URL}/api/emails/contacts`, emailData);
-    }
-    const emailHistoryResponse = await axios.get(`${import.meta.env.VITE_API_URL}/api/emails`);
-    setEmailHistory(emailHistoryResponse.data);
+    // TODO: Implement email functionality in backend
+    // if (emailData.groupIds.length > 0) {
+    //   await axios.post(`${import.meta.env.VITE_API_URL}/api/emails/groups`, emailData);
+    // }
+    // if (emailData.contactIds.length > 0) {
+    //   await axios.post(`${import.meta.env.VITE_API_URL}/api/emails/contacts`, emailData);
+    // }
+    // const emailHistoryResponse = await axios.get(`${import.meta.env.VITE_API_URL}/api/emails`);
+    // setEmailHistory(emailHistoryResponse.data);
     setShowEmailForm(false);
-    setError(null);
+    setError('Email functionality not yet implemented');
   } catch (error) {
     console.error('Error sending email:', error);
     setError('Failed to send email');
