@@ -181,9 +181,9 @@ const Dashboard = () => {
         ]);
 
         // Update state with fetched data
-        setContacts(contactsResponse.data);
-        setFilteredContacts(contactsResponse.data);
-        setGroups(groupsResponse.data);
+        setContacts(contactsResponse.data.contacts || []);
+        setFilteredContacts(contactsResponse.data.contacts || []);
+        setGroups(groupsResponse.data.groups || []);
         // setEmailHistory([]); // Email functionality not implemented yet
       } catch (error) {
         console.error('Error initializing dashboard:', error);
@@ -218,22 +218,25 @@ const Dashboard = () => {
         ]);
 
         // Update only if data has changed
-        if (JSON.stringify(contacts) !== JSON.stringify(contactsResponse.data)) {
-          setContacts(contactsResponse.data);
+        const newContacts = contactsResponse.data.contacts || [];
+        const newGroups = groupsResponse.data.groups || [];
+
+        if (JSON.stringify(contacts) !== JSON.stringify(newContacts)) {
+          setContacts(newContacts);
           setFilteredContacts(prev => {
             // Preserve search/filter state while updating data
             if (searchTerm || highlightedGroupId) {
               return prev.map(contact => {
-                const updatedContact = contactsResponse.data.find(c => c.id === contact.id);
+                const updatedContact = newContacts.find(c => c.id === contact.id);
                 return updatedContact || contact;
               });
             }
-            return contactsResponse.data;
+            return newContacts;
           });
         }
 
-        if (JSON.stringify(groups) !== JSON.stringify(groupsResponse.data)) {
-          setGroups(groupsResponse.data);
+        if (JSON.stringify(groups) !== JSON.stringify(newGroups)) {
+          setGroups(newGroups);
         }
       } catch (error) {
         console.error('Error refreshing data:', error);
@@ -314,7 +317,8 @@ const handleSort = useCallback(async (key, direction) => {
       params: { sort: key, direction }
     });
 
-    setContacts(response.data);
+    const newContacts = response.data.contacts || [];
+    setContacts(newContacts);
     setFilteredContacts(prev => {
       if (searchTerm || highlightedGroupId) {
         return prev.sort((a, b) => {
@@ -325,7 +329,7 @@ const handleSort = useCallback(async (key, direction) => {
             : bValue.localeCompare(aValue);
         });
       }
-      return response.data;
+      return newContacts;
     });
   } catch (error) {
     console.error('Error sorting contacts:', error);
@@ -403,7 +407,7 @@ const handleAddToGroup = useCallback(async (contactId, groupId) => {
     ]);
 
     setSelectedContact(contactResponse.data);
-    setGroups(groupsResponse.data);
+    setGroups(groupsResponse.data.groups || []);
     setError({ type: 'success', message: 'Contact added to group successfully' });
   } catch (error) {
     console.error('Error adding to group:', error);
@@ -429,7 +433,7 @@ const handleRemoveFromGroup = useCallback(async (contactId, groupId) => {
     ]);
 
     setSelectedContact(contactResponse.data);
-    setGroups(groupsResponse.data);
+    setGroups(groupsResponse.data.groups || []);
     setError({ type: 'success', message: 'Contact removed from group successfully' });
   } catch (error) {
     console.error('Error removing from group:', error);
@@ -535,8 +539,8 @@ const [isSubmitting, setIsSubmitting] = useState(false);
         `${import.meta.env.VITE_API_URL}/api/contacts`
       );
 
-      setContacts(contactsResponse.data);
-      setFilteredContacts(contactsResponse.data);
+      setContacts(contactsResponse.data.contacts || []);
+      setFilteredContacts(contactsResponse.data.contacts || []);
       setSelectedContact(response.data);
       setShowContactForm(false);
       setRightPanelVisible(true);

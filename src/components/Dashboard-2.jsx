@@ -146,9 +146,9 @@ useEffect(() => {
           // Note: Email functionality not implemented in backend yet
         ]);
 
-        setContacts(contactsResponse.data);
-        setFilteredContacts(contactsResponse.data);
-        setGroups(groupsResponse.data);
+        setContacts(contactsResponse.data.contacts || []);
+        setFilteredContacts(contactsResponse.data.contacts || []);
+        setGroups(groupsResponse.data.groups || []);
         // setEmailHistory([]); // Email functionality not implemented yet
       } catch (error) {
         console.error('Error initializing dashboard:', error);
