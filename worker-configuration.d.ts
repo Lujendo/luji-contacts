@@ -3,6 +3,9 @@
 // Runtime types generated with workerd@1.20250617.0 2025-04-01 nodejs_compat
 declare namespace Cloudflare {
 	interface Env {
+		STORAGE: R2Bucket;
+		DB: D1Database;
+		JWT_SECRET?: string;
 	}
 }
 interface Env extends Cloudflare.Env {}

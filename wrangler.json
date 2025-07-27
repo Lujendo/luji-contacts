@@ -11,5 +11,21 @@
   "assets": {
     "directory": "./dist/client",
     "not_found_handling": "single-page-application"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "luji-contacts-db",
+      "database_id": "f114c628-e1f5-4f9f-9369-5cb07c281430"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "bucket_name": "luji-contacts-storage",
+      "binding": "STORAGE"
+    }
+  ],
+  "vars": {
+    "JWT_SECRET": "your-super-secret-jwt-key-change-in-production"
   }
 }

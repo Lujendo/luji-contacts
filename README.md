@@ -1,32 +1,37 @@
-# React + Vite + Hono + Cloudflare Workers
+# Luji Contacts - Cloudflare Workers Contact Management System
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/cloudflare/templates/tree/main/vite-react-template)
+A modern, cloud-based contact management system built with **Vite + React + Hono + Cloudflare Workers**, featuring **D1 Database** and **R2 Storage**.
 
-This template provides a minimal setup for building a React application with TypeScript and Vite, designed to run on Cloudflare Workers. It features hot module replacement, ESLint integration, and the flexibility of Workers deployments.
+## 🚀 Live Application
 
-![React + TypeScript + Vite + Cloudflare Workers](https://imagedelivery.net/wSMYJvS3Xw-n339CbDyDIA/fc7b4b62-442b-4769-641b-ad4422d74300/public)
+**Production URL**: [https://luji-contacts.info-eac.workers.dev](https://luji-contacts.info-eac.workers.dev)
 
-<!-- dash-content-start -->
+## 📋 Migration Summary
 
-🚀 Supercharge your web development with this powerful stack:
+This application was successfully migrated from a traditional **Express.js + React** setup to a modern **Cloudflare Workers** environment:
 
-- [**React**](https://react.dev/) - A modern UI library for building interactive interfaces
-- [**Vite**](https://vite.dev/) - Lightning-fast build tooling and development server
-- [**Hono**](https://hono.dev/) - Ultralight, modern backend framework
-- [**Cloudflare Workers**](https://developers.cloudflare.com/workers/) - Edge computing platform for global deployment
+### Source Application (contacts1)
+- **Backend**: Express.js with Sequelize ORM
+- **Database**: MySQL/MariaDB
+- **Frontend**: React with Create React App
+- **File Storage**: Local file system with multer
+- **Authentication**: JWT with bcrypt
 
-### ✨ Key Features
+### Target Application (luji-contacts)
+- **Backend**: Hono framework on Cloudflare Workers
+- **Database**: Cloudflare D1 (SQLite-based)
+- **Frontend**: React with Vite
+- **File Storage**: Cloudflare R2
+- **Authentication**: JWT with bcryptjs
+- **Styling**: Tailwind CSS v3
 
-- 🔥 Hot Module Replacement (HMR) for rapid development
-- 📦 TypeScript support out of the box
-- 🛠️ ESLint configuration included
-- ⚡ Zero-config deployment to Cloudflare's global network
-- 🎯 API routes with Hono's elegant routing
-- 🔄 Full-stack development setup
+## 🏗️ Architecture
 
-Get started in minutes with local development or deploy directly via the Cloudflare dashboard. Perfect for building modern, performant web applications at the edge.
-
-<!-- dash-content-end -->
+### Backend (Cloudflare Workers + Hono)
+- **API Routes**: RESTful API with proper authentication
+- **Database**: Cloudflare D1 with custom SQL queries
+- **File Storage**: Cloudflare R2 for profile images and exports
+- **Authentication**: JWT-based with middleware protection
 
 ## Getting Started
 

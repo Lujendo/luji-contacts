@@ -1,6 +1,80 @@
 import { Hono } from "hono";
+import { cors } from 'hono/cors';
+import { DatabaseService } from './utils/database';
+import { AuthService } from './utils/auth';
+import { StorageService } from './utils/storage';
+import { createUserRoutes } from './routes/users';
+import { createContactRoutes } from './routes/contacts';
+import { createGroupRoutes } from './routes/groups';
+import { createImportExportRoutes } from './routes/import-export';
+
 const app = new Hono<{ Bindings: Env }>();
 
-app.get("/api/", (c) => c.json({ name: "Cloudflare" }));
+// CORS middleware
+app.use('*', cors({
+  origin: ['http://localhost:5173', 'https://luji-contacts.info-eac.workers.dev'],
+  allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+}));
+
+// Health check endpoint
+app.get("/api/health", (c) => c.json({
+  status: "ok",
+  timestamp: new Date().toISOString(),
+  service: "luji-contacts"
+}));
+
+// Initialize services and mount routes
+app.all('/api/*', async (c) => {
+  // Initialize services
+  const db = new DatabaseService(c.env.DB);
+  const auth = new AuthService(c.env.JWT_SECRET || 'default-secret-key');
+  const storage = new StorageService(c.env.STORAGE);
+
+  // Route to appropriate handler
+  const path = c.req.path;
+
+  if (path.startsWith('/api/users')) {
+    const userRoutes = createUserRoutes(db, auth);
+    const newReq = new Request(c.req.raw.url.replace('/api/users', ''), c.req.raw);
+    return userRoutes.fetch(newReq, c.env, c.executionCtx);
+  }
+
+  if (path.startsWith('/api/contacts')) {
+    const contactRoutes = createContactRoutes(db, auth, storage);
+    const newReq = new Request(c.req.raw.url.replace('/api/contacts', ''), c.req.raw);
+    return contactRoutes.fetch(newReq, c.env, c.executionCtx);
+  }
+
+  if (path.startsWith('/api/groups')) {
+    const groupRoutes = createGroupRoutes(db, auth);
+    const newReq = new Request(c.req.raw.url.replace('/api/groups', ''), c.req.raw);
+    return groupRoutes.fetch(newReq, c.env, c.executionCtx);
+  }
+
+  if (path.startsWith('/api/import-export')) {
+    const importExportRoutes = createImportExportRoutes(db, auth, storage);
+    const newReq = new Request(c.req.raw.url.replace('/api/import-export', ''), c.req.raw);
+    return importExportRoutes.fetch(newReq, c.env, c.executionCtx);
+  }
+
+  return c.json({ error: 'API endpoint not found' }, 404);
+});
+
+// 404 handler for API routes
+app.notFound((c) => {
+  if (c.req.path.startsWith('/api/')) {
+    return c.json({ error: 'API endpoint not found' }, 404);
+  }
+  // Let other routes (static files) be handled by the assets
+  return c.notFound();
+});
+
+// Error handler
+app.onError((err, c) => {
+  console.error('Application error:', err);
+  return c.json({ error: 'Internal server error' }, 500);
+});
 
 export default app;
