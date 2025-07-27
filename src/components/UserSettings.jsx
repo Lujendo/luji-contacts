@@ -106,7 +106,7 @@ const UserSettings = ({ onClose, initialTab = 'profile' }) => {
   const fetchSettings = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/user/preferences`);
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/user/preferences`);
       const { 
         username, email, role,
         theme, language, timezone,
@@ -181,7 +181,7 @@ const UserSettings = ({ onClose, initialTab = 'profile' }) => {
         billing_cycle: settings.subscription?.billing_cycle
       };
 
-      await axios.put(`${process.env.REACT_APP_API_URL}/api/user/preferences`, updateData);
+      await axios.put(`${import.meta.env.VITE_API_URL}/api/user/preferences`, updateData);
       setError('');
       onClose();
     } catch (error) {
@@ -195,7 +195,7 @@ const UserSettings = ({ onClose, initialTab = 'profile' }) => {
   const testEmailSettings = async () => {
     setTesting(true);
     try {
-      await axios.post(`${process.env.REACT_APP_API_URL}/api/user/test-email`);
+      await axios.post(`${import.meta.env.VITE_API_URL}/api/user/test-email`);
       alert('Test email sent successfully!');
       setError('');
     } catch (error) {
@@ -213,7 +213,7 @@ const handlePlanChange = async (newPlanId) => {
 
   setLoading(true);
   try {
-    const response = await axios.put(`${process.env.REACT_APP_API_URL}/api/user/preferences`, {
+    const response = await axios.put(`${import.meta.env.VITE_API_URL}/api/user/preferences`, {
       plan_id: newPlanId
     });
 

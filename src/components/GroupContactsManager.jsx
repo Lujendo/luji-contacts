@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Search, UserPlus, UserMinus, Loader, X, AlertTriangle } from 'lucide-react';
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL || 'https://tanz.ventrucci.online';
+const API_URL = import.meta.env.VITE_API_URL || 'https://luji-contacts.info-eac.workers.dev';
 
 const GroupContactsManager = ({
   group,

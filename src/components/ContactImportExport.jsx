@@ -405,7 +405,7 @@ const DashboardImportExport = ({ onImportComplete, onError }) => {
       }));
 
       const response = await axios.get(
-        `${process.env.REACT_APP_API_URL}/api/contacts/export/${format}`,
+        `${import.meta.env.VITE_API_URL}/api/contacts/export/${format}`,
         { responseType: 'blob' }
       );
 

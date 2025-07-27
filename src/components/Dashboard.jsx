@@ -144,7 +144,7 @@ const Dashboard = () => {
         const token = localStorage.getItem('token');
         if (!token) return;
 
-        const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/user`);
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/user`);
         setUser(response.data);
       } catch (error) {
         console.error('Error fetching user data:', error);
@@ -164,14 +164,14 @@ const Dashboard = () => {
 
         // Fetch all required data in parallel
         const [contactsResponse, groupsResponse, emailHistoryResponse] = await Promise.all([
-          axios.get(`${process.env.REACT_APP_API_URL}/api/contacts`, {
+          axios.get(`${import.meta.env.VITE_API_URL}/api/contacts`, {
             params: {
               sort: sortConfig.key,
               direction: sortConfig.direction
             }
           }),
-          axios.get(`${process.env.REACT_APP_API_URL}/api/groups`),
-          axios.get(`${process.env.REACT_APP_API_URL}/api/emails`)
+          axios.get(`${import.meta.env.VITE_API_URL}/api/groups`),
+          axios.get(`${import.meta.env.VITE_API_URL}/api/emails`)
         ]);
 
         // Update state with fetched data
@@ -202,13 +202,13 @@ const Dashboard = () => {
     const refreshInterval = setInterval(async () => {
       try {
         const [contactsResponse, groupsResponse] = await Promise.all([
-          axios.get(`${process.env.REACT_APP_API_URL}/api/contacts`, {
+          axios.get(`${import.meta.env.VITE_API_URL}/api/contacts`, {
             params: {
               sort: sortConfig.key,
               direction: sortConfig.direction
             }
           }),
-          axios.get(`${process.env.REACT_APP_API_URL}/api/groups`)
+          axios.get(`${import.meta.env.VITE_API_URL}/api/groups`)
         ]);
 
         // Update only if data has changed
@@ -241,7 +241,7 @@ const Dashboard = () => {
   // Logout handler
   const handleLogout = useCallback(async () => {
     try {
-      await axios.post(`${process.env.REACT_APP_API_URL}/api/logout`);
+      await axios.post(`${import.meta.env.VITE_API_URL}/api/logout`);
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
@@ -255,7 +255,7 @@ const Dashboard = () => {
   useEffect(() => {
     const keepAliveInterval = setInterval(async () => {
       try {
-        await axios.post(`${process.env.REACT_APP_API_URL}/api/keepalive`);
+        await axios.post(`${import.meta.env.VITE_API_URL}/api/keepalive`);
       } catch (error) {
         if (error.response?.status === 401) {
           handleLogout();
@@ -304,7 +304,7 @@ const handleSort = useCallback(async (key, direction) => {
     localStorage.setItem('contactsSortConfig', JSON.stringify(newConfig));
     setSortConfig(newConfig);
 
-    const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/contacts`, {
+    const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/contacts`, {
       params: { sort: key, direction }
     });
 
@@ -335,7 +335,7 @@ const handleGroupSelect = useCallback(async (groupId) => {
     setLoading(true);
     setError(null);
 
-    const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/groups/${groupId}`);
+    const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/groups/${groupId}`);
     setSelectedGroup(response.data);
     setShowGroupManager(true);
 
@@ -388,12 +388,12 @@ const handleAddToGroup = useCallback(async (contactId, groupId) => {
   try {
     setLoading(true);
     await axios.post(
-      `${process.env.REACT_APP_API_URL}/api/groups/${groupId}/contacts/${contactId}`
+      `${import.meta.env.VITE_API_URL}/api/groups/${groupId}/contacts/${contactId}`
     );
 
     const [contactResponse, groupsResponse] = await Promise.all([
-      axios.get(`${process.env.REACT_APP_API_URL}/api/contacts/${contactId}`),
-      axios.get(`${process.env.REACT_APP_API_URL}/api/groups`)
+      axios.get(`${import.meta.env.VITE_API_URL}/api/contacts/${contactId}`),
+      axios.get(`${import.meta.env.VITE_API_URL}/api/groups`)
     ]);
 
     setSelectedContact(contactResponse.data);
@@ -414,12 +414,12 @@ const handleRemoveFromGroup = useCallback(async (contactId, groupId) => {
   try {
     setLoading(true);
     await axios.delete(
-      `${process.env.REACT_APP_API_URL}/api/contacts/${contactId}/groups/${groupId}`
+      `${import.meta.env.VITE_API_URL}/api/contacts/${contactId}/groups/${groupId}`
     );
 
     const [contactResponse, groupsResponse] = await Promise.all([
-      axios.get(`${process.env.REACT_APP_API_URL}/api/contacts/${contactId}`),
-      axios.get(`${process.env.REACT_APP_API_URL}/api/groups`)
+      axios.get(`${import.meta.env.VITE_API_URL}/api/contacts/${contactId}`),
+      axios.get(`${import.meta.env.VITE_API_URL}/api/groups`)
     ]);
 
     setSelectedContact(contactResponse.data);
@@ -521,12 +521,12 @@ const [isSubmitting, setIsSubmitting] = useState(false);
       handleAddContact.isProcessing = true;
 
       const response = await axios.post(
-        `${process.env.REACT_APP_API_URL}/api/contacts`,
+        `${import.meta.env.VITE_API_URL}/api/contacts`,
         newContact
       );
 
       const contactsResponse = await axios.get(
-        `${process.env.REACT_APP_API_URL}/api/contacts`
+        `${import.meta.env.VITE_API_URL}/api/contacts`
       );
 
       setContacts(contactsResponse.data);
@@ -562,7 +562,7 @@ const handleUpdateContact = useCallback(async (updatedContact) => {
       formData.append('profile_image', profile_image);
 
       const imageResponse = await axios.put(
-        `${process.env.REACT_APP_API_URL}/api/contacts/${updatedContact.id}/profile-image`,
+        `${import.meta.env.VITE_API_URL}/api/contacts/${updatedContact.id}/profile-image`,
         formData,
         {
           headers: { 'Content-Type': 'multipart/form-data' }
@@ -572,7 +572,7 @@ const handleUpdateContact = useCallback(async (updatedContact) => {
     }
 
     await axios.put(
-      `${process.env.REACT_APP_API_URL}/api/contacts/${updatedContact.id}`,
+      `${import.meta.env.VITE_API_URL}/api/contacts/${updatedContact.id}`,
       {
         ...contactData,
         profile_image_url: profileImageUrl
@@ -580,8 +580,8 @@ const handleUpdateContact = useCallback(async (updatedContact) => {
     );
 
     const [contactsResponse, updatedContactResponse] = await Promise.all([
-      axios.get(`${process.env.REACT_APP_API_URL}/api/contacts`),
-      axios.get(`${process.env.REACT_APP_API_URL}/api/contacts/${updatedContact.id}`)
+      axios.get(`${import.meta.env.VITE_API_URL}/api/contacts`),
+      axios.get(`${import.meta.env.VITE_API_URL}/api/contacts/${updatedContact.id}`)
     ]);
 
     setContacts(contactsResponse.data);
@@ -611,9 +611,9 @@ const handleDeleteContact = useCallback(async (contactId) => {
 
   try {
     setLoading(true);
-    await axios.delete(`${process.env.REACT_APP_API_URL}/api/contacts/${contactId}`);
+    await axios.delete(`${import.meta.env.VITE_API_URL}/api/contacts/${contactId}`);
 
-    const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/contacts`);
+    const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/contacts`);
     setContacts(response.data);
     setFilteredContacts(response.data);
 
@@ -648,13 +648,13 @@ const handleSendEmail = useCallback(async (emailData) => {
 
     await Promise.all([
       emailData.groupIds.length > 0 &&
-        axios.post(`${process.env.REACT_APP_API_URL}/api/emails/groups`, emailData),
+        axios.post(`${import.meta.env.VITE_API_URL}/api/emails/groups`, emailData),
       emailData.contactIds.length > 0 &&
-        axios.post(`${process.env.REACT_APP_API_URL}/api/emails/contacts`, emailData)
+        axios.post(`${import.meta.env.VITE_API_URL}/api/emails/contacts`, emailData)
     ].filter(Boolean));
 
     const emailHistoryResponse = await axios.get(
-      `${process.env.REACT_APP_API_URL}/api/emails`
+      `${import.meta.env.VITE_API_URL}/api/emails`
     );
     setEmailHistory(emailHistoryResponse.data);
     setShowEmailForm(false);
@@ -693,14 +693,14 @@ const handleBulkGroupAssign = useCallback(async (groupId, contactIds) => {
     await Promise.all(
       contactIds.map(contactId =>
         axios.post(
-          `${process.env.REACT_APP_API_URL}/api/groups/${groupId}/contacts/${contactId}`
+          `${import.meta.env.VITE_API_URL}/api/groups/${groupId}/contacts/${contactId}`
         )
       )
     );
 
     const [contactsResponse, groupsResponse] = await Promise.all([
-      axios.get(`${process.env.REACT_APP_API_URL}/api/contacts`),
-      axios.get(`${process.env.REACT_APP_API_URL}/api/groups`)
+      axios.get(`${import.meta.env.VITE_API_URL}/api/contacts`),
+      axios.get(`${import.meta.env.VITE_API_URL}/api/groups`)
     ]);
 
     setContacts(contactsResponse.data);
@@ -733,14 +733,14 @@ const handleBulkGroupRemove = useCallback(async (groupId, contactIds) => {
     await Promise.all(
       contactIds.map(contactId =>
         axios.delete(
-          `${process.env.REACT_APP_API_URL}/api/contacts/${contactId}/groups/${groupId}`
+          `${import.meta.env.VITE_API_URL}/api/contacts/${contactId}/groups/${groupId}`
         )
       )
     );
 
     const [contactsResponse, groupsResponse] = await Promise.all([
-      axios.get(`${process.env.REACT_APP_API_URL}/api/contacts`),
-      axios.get(`${process.env.REACT_APP_API_URL}/api/groups`)
+      axios.get(`${import.meta.env.VITE_API_URL}/api/contacts`),
+      axios.get(`${import.meta.env.VITE_API_URL}/api/groups`)
     ]);
 
     setContacts(contactsResponse.data);
@@ -771,7 +771,7 @@ const handleImportComplete = useCallback(async () => {
     setImportExportLoading(true);
     setError(null);
 
-    const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/contacts`, {
+    const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/contacts`, {
       params: {
         sort: sortConfig.key,
         direction: sortConfig.direction
@@ -799,14 +799,14 @@ const handleBulkAddToGroup = useCallback(async (groupId, contactIds) => {
     await Promise.all(
       contactIds.map(contactId =>
         axios.post(
-          `${process.env.REACT_APP_API_URL}/api/groups/${groupId}/contacts/${contactId}`
+          `${import.meta.env.VITE_API_URL}/api/groups/${groupId}/contacts/${contactId}`
         )
       )
     );
 
     const [groupResponse, contactsResponse] = await Promise.all([
-      axios.get(`${process.env.REACT_APP_API_URL}/api/groups/${groupId}`),
-      axios.get(`${process.env.REACT_APP_API_URL}/api/contacts`)
+      axios.get(`${import.meta.env.VITE_API_URL}/api/groups/${groupId}`),
+      axios.get(`${import.meta.env.VITE_API_URL}/api/contacts`)
     ]);
 
     setSelectedGroup(groupResponse.data);
@@ -837,14 +837,14 @@ const handleBulkRemoveFromGroup = useCallback(async (groupId, contactIds) => {
     await Promise.all(
       contactIds.map(contactId =>
         axios.delete(
-          `${process.env.REACT_APP_API_URL}/api/contacts/${contactId}/groups/${groupId}`
+          `${import.meta.env.VITE_API_URL}/api/contacts/${contactId}/groups/${groupId}`
         )
       )
     );
 
     const [groupResponse, contactsResponse] = await Promise.all([
-      axios.get(`${process.env.REACT_APP_API_URL}/api/groups/${groupId}`),
-      axios.get(`${process.env.REACT_APP_API_URL}/api/contacts`)
+      axios.get(`${import.meta.env.VITE_API_URL}/api/groups/${groupId}`),
+      axios.get(`${import.meta.env.VITE_API_URL}/api/contacts`)
     ]);
 
     setSelectedGroup(groupResponse.data);
@@ -885,8 +885,8 @@ const handleDeleteGroup = useCallback(async (groupId) => {
 
   try {
     setGroupLoading(true);
-    await axios.delete(`${process.env.REACT_APP_API_URL}/api/groups/${groupId}`);
-    const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/groups`);
+    await axios.delete(`${import.meta.env.VITE_API_URL}/api/groups/${groupId}`);
+    const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/groups`);
     setGroups(response.data);
     setSelectedGroups(prev => prev.filter(id => id !== groupId));
     setError({ type: 'success', message: 'Group deleted successfully' });
@@ -901,8 +901,8 @@ const handleDeleteGroup = useCallback(async (groupId) => {
 const handleAddGroup = useCallback(async (newGroup) => {
   try {
     setGroupLoading(true);
-    await axios.post(`${process.env.REACT_APP_API_URL}/api/groups`, newGroup);
-    const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/groups`);
+    await axios.post(`${import.meta.env.VITE_API_URL}/api/groups`, newGroup);
+    const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/groups`);
     setGroups(response.data);
     setShowGroupForm(false);
     setError({ type: 'success', message: 'Group added successfully' });
@@ -917,8 +917,8 @@ const handleAddGroup = useCallback(async (newGroup) => {
 const handleUpdateGroup = useCallback(async (groupId, updatedGroup) => {
   try {
     setGroupLoading(true);
-    await axios.put(`${process.env.REACT_APP_API_URL}/api/groups/${groupId}`, updatedGroup);
-    const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/groups`);
+    await axios.put(`${import.meta.env.VITE_API_URL}/api/groups/${groupId}`, updatedGroup);
+    const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/groups`);
     setGroups(response.data);
     setShowGroupEditForm(false);
     setSelectedGroupForEdit(null);

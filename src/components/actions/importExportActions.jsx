@@ -6,7 +6,7 @@ export const importContacts = async (file, format) => {
 
   try {
     const response = await axios.post(
-      `${process.env.REACT_APP_API_URL}/api/contacts/import/${format}`,
+      `${import.meta.env.VITE_API_URL}/api/contacts/import/${format}`,
       formData,
       {
         headers: {
@@ -23,7 +23,7 @@ export const importContacts = async (file, format) => {
 export const exportContacts = async (format) => {
   try {
     const response = await axios.get(
-      `${process.env.REACT_APP_API_URL}/api/contacts/export/${format}`,
+      `${import.meta.env.VITE_API_URL}/api/contacts/export/${format}`,
       { responseType: 'blob' }
     );
     

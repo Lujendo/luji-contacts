@@ -112,7 +112,7 @@ useEffect(() => {
       const token = localStorage.getItem('token');
       if (!token) return;
 
-      const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/user`, {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/user`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -132,14 +132,14 @@ useEffect(() => {
       try {
         setLoading(true);
         const [contactsResponse, groupsResponse, emailHistoryResponse] = await Promise.all([
-          axios.get(`${process.env.REACT_APP_API_URL}/api/contacts`, {
+          axios.get(`${import.meta.env.VITE_API_URL}/api/contacts`, {
             params: {
               sort: sortConfig.key,
               direction: sortConfig.direction
             }
           }),
-          axios.get(`${process.env.REACT_APP_API_URL}/api/groups`),
-          axios.get(`${process.env.REACT_APP_API_URL}/api/emails`)
+          axios.get(`${import.meta.env.VITE_API_URL}/api/groups`),
+          axios.get(`${import.meta.env.VITE_API_URL}/api/emails`)
         ]);
 
         setContacts(contactsResponse.data);
@@ -161,7 +161,7 @@ useEffect(() => {
   const handleImportComplete = useCallback(async () => {
     try {
       setImportExportLoading(true);
-      const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/contacts`, {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/contacts`, {
         params: {
           sort: sortConfig.key,
           direction: sortConfig.direction
@@ -228,7 +228,7 @@ const handleGroupSelect = useCallback(async (groupId) => {
   try {
     setLoading(true);
     setError(null);
-    const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/groups/${groupId}`);
+    const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/groups/${groupId}`);
     console.log('Group data fetched:', response.data);
     setSelectedGroup(response.data);
     setShowGroupManager(true);
@@ -286,8 +286,8 @@ const handleHighlightGroupContacts = useCallback((groupId) => {
 
     try {
       setGroupLoading(true);
-      await axios.delete(`${process.env.REACT_APP_API_URL}/api/groups/${groupId}`);
-      const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/groups`);
+      await axios.delete(`${import.meta.env.VITE_API_URL}/api/groups/${groupId}`);
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/groups`);
       setGroups(response.data);
       setSelectedGroups(prev => prev.filter(id => id !== groupId));
       setError(null);
@@ -311,8 +311,8 @@ const handleHighlightGroupContacts = useCallback((groupId) => {
   const handleAddContact = useCallback(async (newContact) => {
     try {
       setLoading(true);
-      const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/contacts`, newContact);
-      const contactsResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/contacts`);
+      const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/contacts`, newContact);
+      const contactsResponse = await axios.get(`${import.meta.env.VITE_API_URL}/api/contacts`);
       setContacts(contactsResponse.data);
       setFilteredContacts(contactsResponse.data);
       setSelectedContact(response.data);
@@ -331,8 +331,8 @@ const handleHighlightGroupContacts = useCallback((groupId) => {
 
     try {
       setLoading(true);
-      await axios.delete(`${process.env.REACT_APP_API_URL}/api/contacts/${contactId}`);
-      const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/contacts`);
+      await axios.delete(`${import.meta.env.VITE_API_URL}/api/contacts/${contactId}`);
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/contacts`);
       setContacts(response.data);
       setFilteredContacts(response.data);
       if (selectedContact?.id === contactId) {
@@ -351,12 +351,12 @@ const handleHighlightGroupContacts = useCallback((groupId) => {
     try {
       setLoading(true);
       await axios.put(
-        `${process.env.REACT_APP_API_URL}/api/contacts/${updatedContact.id}`,
+        `${import.meta.env.VITE_API_URL}/api/contacts/${updatedContact.id}`,
         updatedContact
       );
       const [contactsResponse, updatedContactResponse] = await Promise.all([
-        axios.get(`${process.env.REACT_APP_API_URL}/api/contacts`),
-        axios.get(`${process.env.REACT_APP_API_URL}/api/contacts/${updatedContact.id}`)
+        axios.get(`${import.meta.env.VITE_API_URL}/api/contacts`),
+        axios.get(`${import.meta.env.VITE_API_URL}/api/contacts/${updatedContact.id}`)
       ]);
       setContacts(contactsResponse.data);
       setFilteredContacts(contactsResponse.data);
@@ -373,8 +373,8 @@ const handleHighlightGroupContacts = useCallback((groupId) => {
   const handleAddGroup = useCallback(async (newGroup) => {
     try {
       setGroupLoading(true);
-      await axios.post(`${process.env.REACT_APP_API_URL}/api/groups`, newGroup);
-      const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/groups`);
+      await axios.post(`${import.meta.env.VITE_API_URL}/api/groups`, newGroup);
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/groups`);
       setGroups(response.data);
       setShowGroupForm(false);
       setError(null);
@@ -390,10 +390,10 @@ const handleHighlightGroupContacts = useCallback((groupId) => {
   const handleAddToGroup = useCallback(async (contactId, groupId) => {
     try {
       setLoading(true);
-      await axios.post(`${process.env.REACT_APP_API_URL}/api/groups/${groupId}/contacts/${contactId}`);
+      await axios.post(`${import.meta.env.VITE_API_URL}/api/groups/${groupId}/contacts/${contactId}`);
       const [contactResponse, groupsResponse] = await Promise.all([
-        axios.get(`${process.env.REACT_APP_API_URL}/api/contacts/${contactId}`),
-        axios.get(`${process.env.REACT_APP_API_URL}/api/groups`)
+        axios.get(`${import.meta.env.VITE_API_URL}/api/contacts/${contactId}`),
+        axios.get(`${import.meta.env.VITE_API_URL}/api/groups`)
       ]);
       setSelectedContact(contactResponse.data);
       setGroups(groupsResponse.data);
@@ -409,10 +409,10 @@ const handleHighlightGroupContacts = useCallback((groupId) => {
   const handleRemoveFromGroup = useCallback(async (contactId, groupId) => {
     try {
       setLoading(true);
-      await axios.delete(`${process.env.REACT_APP_API_URL}/api/contacts/${contactId}/groups/${groupId}`);
+      await axios.delete(`${import.meta.env.VITE_API_URL}/api/contacts/${contactId}/groups/${groupId}`);
       const [contactResponse, groupsResponse] = await Promise.all([
-        axios.get(`${process.env.REACT_APP_API_URL}/api/contacts/${contactId}`),
-        axios.get(`${process.env.REACT_APP_API_URL}/api/groups`)
+        axios.get(`${import.meta.env.VITE_API_URL}/api/contacts/${contactId}`),
+        axios.get(`${import.meta.env.VITE_API_URL}/api/groups`)
       ]);
       setSelectedContact(contactResponse.data);
       setGroups(groupsResponse.data);
@@ -427,7 +427,7 @@ const handleHighlightGroupContacts = useCallback((groupId) => {
 
   const handleLogout = useCallback(async () => {
     try {
-      await axios.post(`${process.env.REACT_APP_API_URL}/api/logout`);
+      await axios.post(`${import.meta.env.VITE_API_URL}/api/logout`);
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
@@ -442,8 +442,8 @@ const handleHighlightGroupContacts = useCallback((groupId) => {
 const handleUpdateGroup = useCallback(async (groupId, updatedGroup) => {
   try {
     setGroupLoading(true);
-    await axios.put(`${process.env.REACT_APP_API_URL}/api/groups/${groupId}`, updatedGroup);
-    const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/groups`);
+    await axios.put(`${import.meta.env.VITE_API_URL}/api/groups/${groupId}`, updatedGroup);
+    const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/groups`);
     setGroups(response.data);
     setShowGroupEditForm(false);
     setSelectedGroupForEdit(null);
@@ -461,12 +461,12 @@ const handleSendEmail = useCallback(async (emailData) => {
   try {
     setEmailLoading(true);
     if (emailData.groupIds.length > 0) {
-      await axios.post(`${process.env.REACT_APP_API_URL}/api/emails/groups`, emailData);
+      await axios.post(`${import.meta.env.VITE_API_URL}/api/emails/groups`, emailData);
     }
     if (emailData.contactIds.length > 0) {
-      await axios.post(`${process.env.REACT_APP_API_URL}/api/emails/contacts`, emailData);
+      await axios.post(`${import.meta.env.VITE_API_URL}/api/emails/contacts`, emailData);
     }
-    const emailHistoryResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/emails`);
+    const emailHistoryResponse = await axios.get(`${import.meta.env.VITE_API_URL}/api/emails`);
     setEmailHistory(emailHistoryResponse.data);
     setShowEmailForm(false);
     setError(null);
@@ -484,12 +484,12 @@ const handleBulkGroupAssign = useCallback(async (groupId, contactIds) => {
     setLoading(true);
     await Promise.all(
       contactIds.map(contactId =>
-        axios.post(`${process.env.REACT_APP_API_URL}/api/groups/${groupId}/contacts/${contactId}`)
+        axios.post(`${import.meta.env.VITE_API_URL}/api/groups/${groupId}/contacts/${contactId}`)
       )
     );
     const [contactsResponse, groupsResponse] = await Promise.all([
-      axios.get(`${process.env.REACT_APP_API_URL}/api/contacts`),
-      axios.get(`${process.env.REACT_APP_API_URL}/api/groups`)
+      axios.get(`${import.meta.env.VITE_API_URL}/api/contacts`),
+      axios.get(`${import.meta.env.VITE_API_URL}/api/groups`)
     ]);
     setContacts(contactsResponse.data);
     setFilteredContacts(contactsResponse.data);
@@ -510,12 +510,12 @@ const handleBulkGroupRemove = useCallback(async (groupId, contactIds) => {
     setLoading(true);
     await Promise.all(
       contactIds.map(contactId =>
-        axios.delete(`${process.env.REACT_APP_API_URL}/api/contacts/${contactId}/groups/${groupId}`)
+        axios.delete(`${import.meta.env.VITE_API_URL}/api/contacts/${contactId}/groups/${groupId}`)
       )
     );
     const [contactsResponse, groupsResponse] = await Promise.all([
-      axios.get(`${process.env.REACT_APP_API_URL}/api/contacts`),
-      axios.get(`${process.env.REACT_APP_API_URL}/api/groups`)
+      axios.get(`${import.meta.env.VITE_API_URL}/api/contacts`),
+      axios.get(`${import.meta.env.VITE_API_URL}/api/groups`)
     ]);
     setContacts(contactsResponse.data);
     setFilteredContacts(contactsResponse.data);
@@ -537,12 +537,12 @@ const handleBulkAddToGroup = useCallback(async (groupId, contactIds) => {
     setLoading(true);
     await Promise.all(
       contactIds.map(contactId =>
-        axios.post(`${process.env.REACT_APP_API_URL}/api/groups/${groupId}/contacts/${contactId}`)
+        axios.post(`${import.meta.env.VITE_API_URL}/api/groups/${groupId}/contacts/${contactId}`)
       )
     );
     const [groupResponse, contactsResponse] = await Promise.all([
-      axios.get(`${process.env.REACT_APP_API_URL}/api/groups/${groupId}`),
-      axios.get(`${process.env.REACT_APP_API_URL}/api/contacts`)
+      axios.get(`${import.meta.env.VITE_API_URL}/api/groups/${groupId}`),
+      axios.get(`${import.meta.env.VITE_API_URL}/api/contacts`)
     ]);
     setSelectedGroup(groupResponse.data);
     setContacts(contactsResponse.data);
@@ -561,12 +561,12 @@ const handleBulkRemoveFromGroup = useCallback(async (groupId, contactIds) => {
     setLoading(true);
     await Promise.all(
       contactIds.map(contactId =>
-        axios.delete(`${process.env.REACT_APP_API_URL}/api/groups/${groupId}/contacts/${contactId}`)
+        axios.delete(`${import.meta.env.VITE_API_URL}/api/groups/${groupId}/contacts/${contactId}`)
       )
     );
     const [groupResponse, contactsResponse] = await Promise.all([
-      axios.get(`${process.env.REACT_APP_API_URL}/api/groups/${groupId}`),
-      axios.get(`${process.env.REACT_APP_API_URL}/api/contacts`)
+      axios.get(`${import.meta.env.VITE_API_URL}/api/groups/${groupId}`),
+      axios.get(`${import.meta.env.VITE_API_URL}/api/contacts`)
     ]);
     setSelectedGroup(groupResponse.data);
     setContacts(contactsResponse.data);
@@ -829,7 +829,7 @@ const handleBulkRemoveFromGroup = useCallback(async (groupId, contactIds) => {
       setShowGroupManager(false);
       setSelectedGroup(null);
       // Refresh groups
-      axios.get(`${process.env.REACT_APP_API_URL}/api/groups`)
+      axios.get(`${import.meta.env.VITE_API_URL}/api/groups`)
         .then(response => setGroups(response.data))
         .catch(error => {
           console.error('Error refreshing groups:', error);

@@ -171,7 +171,7 @@ const ContactDetail = ({ contact, allGroups, onUpdateContact, onAddToGroup, onRe
 
         try {
           const imageResponse = await axios.put(
-            `${process.env.REACT_APP_API_URL}/api/contacts/${editedContact.id}/profile-image`,
+            `${import.meta.env.VITE_API_URL}/api/contacts/${editedContact.id}/profile-image`,
             formData,
             {
               headers: {
@@ -190,7 +190,7 @@ const ContactDetail = ({ contact, allGroups, onUpdateContact, onAddToGroup, onRe
 
       // Then update contact info
       const response = await axios.put(
-        `${process.env.REACT_APP_API_URL}/api/contacts/${editedContact.id}`,
+        `${import.meta.env.VITE_API_URL}/api/contacts/${editedContact.id}`,
         {
           first_name: editedContact.first_name,
           last_name: editedContact.last_name,
