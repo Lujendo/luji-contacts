@@ -157,14 +157,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
       dispatch({ type: 'AUTH_START' });
-      
+
       const response = await api.post('/users/login', {
         email,
         password,
       });
 
       const { token, user } = response.data;
-      
+
       localStorage.setItem('token', token);
       dispatch({
         type: 'AUTH_SUCCESS',
