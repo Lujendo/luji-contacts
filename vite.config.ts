@@ -1,9 +1,9 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-// import { cloudflare } from "@cloudflare/vite-plugin";
+import { cloudflare } from "@cloudflare/vite-plugin";
 
 export default defineConfig({
-  plugins: [react()], // Temporarily disable cloudflare plugin
+  plugins: [react(), cloudflare()],
   build: {
     outDir: "dist/client",
     rollupOptions: {
