@@ -106,25 +106,25 @@ export function createContactRoutes(db: DatabaseService, auth: AuthService, stor
 
       const contactData: Omit<Contact, 'id' | 'created_at' | 'updated_at'> = {
         user_id: user.id,
-        first_name: body.first_name?.trim(),
-        last_name: body.last_name?.trim(),
-        email: body.email?.toLowerCase().trim(),
-        phone: body.phone?.trim(),
-        address_street: body.address_street?.trim(),
-        address_city: body.address_city?.trim(),
-        address_state: body.address_state?.trim(),
-        address_zip: body.address_zip?.trim(),
-        address_country: body.address_country?.trim(),
-        birthday: body.birthday,
-        website: body.website?.trim(),
-        facebook: body.facebook?.trim(),
-        twitter: body.twitter?.trim(),
-        linkedin: body.linkedin?.trim(),
-        instagram: body.instagram?.trim(),
-        company: body.company?.trim(),
-        job_title: body.job_title?.trim(),
-        notes: body.notes?.trim(),
-        profile_image_url: body.profile_image_url
+        first_name: body.first_name?.trim() || '',
+        last_name: body.last_name?.trim() || '',
+        email: body.email?.toLowerCase().trim() || '',
+        phone: body.phone?.trim() || '',
+        address_street: body.address_street?.trim() || '',
+        address_city: body.address_city?.trim() || '',
+        address_state: body.address_state?.trim() || '',
+        address_zip: body.address_zip?.trim() || '',
+        address_country: body.address_country?.trim() || '',
+        birthday: body.birthday || '',
+        website: body.website?.trim() || '',
+        facebook: body.facebook?.trim() || '',
+        twitter: body.twitter?.trim() || '',
+        linkedin: body.linkedin?.trim() || '',
+        instagram: body.instagram?.trim() || '',
+        company: body.company?.trim() || '',
+        job_title: body.job_title?.trim() || '',
+        notes: body.notes?.trim() || '',
+        profile_image_url: body.profile_image_url || ''
       };
 
       const contact = await db.createContact(contactData);
@@ -136,7 +136,11 @@ export function createContactRoutes(db: DatabaseService, auth: AuthService, stor
 
     } catch (error) {
       console.error('Create contact error:', error);
-      return c.json({ error: 'Internal server error' }, 500);
+      console.error('Request body:', body);
+      return c.json({
+        error: 'Internal server error',
+        details: error.message
+      }, 500);
     }
   });
 

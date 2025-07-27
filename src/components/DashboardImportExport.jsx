@@ -220,7 +220,17 @@ const DashboardImportExport = ({ onImportComplete, onError, onClose }) => {
               const cleanedContact = cleanContactData(contact);
               console.log('Sending contact data:', cleanedContact);
 
-              const response = await axios.post('/api/contacts', cleanedContact);
+              const token = localStorage.getItem('token');
+              const response = await axios.post(
+                `${import.meta.env.VITE_API_URL}/api/contacts`,
+                cleanedContact,
+                {
+                  headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                  }
+                }
+              );
               console.log('Contact import success:', response.data);
               return { success: true };
             } catch (error) {
