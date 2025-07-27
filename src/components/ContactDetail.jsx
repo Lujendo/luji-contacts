@@ -35,7 +35,8 @@ const ContactDetail = ({ contact, allGroups, onUpdateContact, onAddToGroup, onRe
   // State Management
   const [editMode, setEditMode] = useState(false);
   const [editedContact, setEditedContact] = useState(null);
-    const [error, setError] = useState('');
+  const [contactId, setContactId] = useState(null); // Store contact ID separately
+  const [error, setError] = useState('');
 
   useEffect(() => {
   if (error) {
@@ -85,9 +86,10 @@ const ContactDetail = ({ contact, allGroups, onUpdateContact, onAddToGroup, onRe
   useEffect(() => {
     if (contact) {
       console.log('ContactDetail received contact:', contact); // Debug log
+      setContactId(contact.id); // Store contact ID separately
       setEditedContact({
         ...contact,
-        Groups: contact.Groups || [],
+        Groups: contact.Groups || contact.groups || [],
         age: calculateAge(contact.birthday)
       });
       setProfileImage(contact.profile_image_url);
@@ -162,11 +164,14 @@ const ContactDetail = ({ contact, allGroups, onUpdateContact, onAddToGroup, onRe
     setLoading(true);
     setError('');
 
-    // Safety check: ensure editedContact exists and has an ID
+    // Safety check: ensure we have a contact ID
+    const currentContactId = editedContact?.id || contactId;
     console.log('handleSubmit called with editedContact:', editedContact); // Debug log
-    if (!editedContact || !editedContact.id) {
-      console.error('Contact data missing or invalid:', editedContact); // Debug log
-      setError('Contact data is not available. Please try again.');
+    console.log('Using contact ID:', currentContactId); // Debug log
+
+    if (!currentContactId) {
+      console.error('Contact ID missing:', { editedContact, contactId }); // Debug log
+      setError('Contact ID is not available. Please try again.');
       setLoading(false);
       return;
     }
@@ -182,7 +187,7 @@ const ContactDetail = ({ contact, allGroups, onUpdateContact, onAddToGroup, onRe
         try {
           const token = localStorage.getItem('token');
           const imageResponse = await axios.put(
-            `${import.meta.env.VITE_API_URL}/api/contacts/${editedContact.id}/profile-image`,
+            `${import.meta.env.VITE_API_URL}/api/contacts/${currentContactId}/profile-image`,
             formData,
             {
               headers: {
@@ -202,9 +207,9 @@ const ContactDetail = ({ contact, allGroups, onUpdateContact, onAddToGroup, onRe
 
       // Then update contact info
       const token = localStorage.getItem('token');
-      console.log('Updating contact with ID:', editedContact.id); // Debug log
+      console.log('Updating contact with ID:', currentContactId); // Debug log
       const response = await axios.put(
-        `${import.meta.env.VITE_API_URL}/api/contacts/${editedContact.id}`,
+        `${import.meta.env.VITE_API_URL}/api/contacts/${currentContactId}`,
         {
           first_name: editedContact.first_name,
           last_name: editedContact.last_name,

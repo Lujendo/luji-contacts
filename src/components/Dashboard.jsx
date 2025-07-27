@@ -398,6 +398,7 @@ const handleToggleContact = useCallback((contactId) => {
 }, []);
 
 const handleSelectContact = useCallback((contact) => {
+  console.log('Dashboard handleSelectContact called with:', contact); // Debug log
   setSelectedContact(contact);
 }, []);
 
