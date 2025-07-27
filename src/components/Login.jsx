@@ -13,7 +13,7 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/login`, { email, password });
+      const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/users/login`, { email, password });
       localStorage.setItem('token', response.data.token);
       navigate('/dashboard'); // Redirect to Dashboard after login
     } catch (error) {
