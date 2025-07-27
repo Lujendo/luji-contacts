@@ -173,8 +173,10 @@ const ContactTable = ({
                                                     onError={(e) => {
                                                         e.target.onError = null;
                                                         e.target.src = '';
-                                                        e.target.parentElement.className = 'flex-shrink-0 h-8 w-8 bg-indigo-100 rounded-full flex items-center justify-center';
-                                                        e.target.parentElement.innerHTML = `<svg width="16" height="16" class="text-indigo-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`;
+                                                        if (e.target.parentElement) {
+                                                            e.target.parentElement.className = 'flex-shrink-0 h-8 w-8 bg-indigo-100 rounded-full flex items-center justify-center';
+                                                            e.target.parentElement.innerHTML = `<svg width="16" height="16" class="text-indigo-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`;
+                                                        }
                                                     }}
                                                 />
                                             ) : (
