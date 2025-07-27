@@ -414,7 +414,7 @@ const handleAddToGroup = useCallback(async (contactId, groupId) => {
       axios.get(`${import.meta.env.VITE_API_URL}/api/groups`)
     ]);
 
-    setSelectedContact(contactResponse.data);
+    setSelectedContact(contactResponse.data.contact || contactResponse.data);
     setGroups(groupsResponse.data.groups || []);
     setError({ type: 'success', message: 'Contact added to group successfully' });
   } catch (error) {
@@ -440,7 +440,7 @@ const handleRemoveFromGroup = useCallback(async (contactId, groupId) => {
       axios.get(`${import.meta.env.VITE_API_URL}/api/groups`)
     ]);
 
-    setSelectedContact(contactResponse.data);
+    setSelectedContact(contactResponse.data.contact || contactResponse.data);
     setGroups(groupsResponse.data.groups || []);
     setError({ type: 'success', message: 'Contact removed from group successfully' });
   } catch (error) {
@@ -549,7 +549,7 @@ const [isSubmitting, setIsSubmitting] = useState(false);
 
       setContacts(contactsResponse.data.contacts || []);
       setFilteredContacts(contactsResponse.data.contacts || []);
-      setSelectedContact(response.data);
+      setSelectedContact(response.data.contact || response.data);
       setShowContactForm(false);
       setRightPanelVisible(true);
       setError({ type: 'success', message: 'Contact added successfully' });
@@ -606,12 +606,12 @@ const handleUpdateContact = useCallback(async (updatedContact) => {
     setFilteredContacts(prev => {
       if (searchTerm || highlightedGroupId) {
         return prev.map(contact =>
-          contact.id === updatedContact.id ? updatedContactResponse.data : contact
+          contact.id === updatedContact.id ? (updatedContactResponse.data.contact || updatedContactResponse.data) : contact
         );
       }
       return contactsResponse.data;
     });
-    setSelectedContact(updatedContactResponse.data);
+    setSelectedContact(updatedContactResponse.data.contact || updatedContactResponse.data);
     setError({ type: 'success', message: 'Contact updated successfully' });
   } catch (error) {
     console.error('Error updating contact:', error);

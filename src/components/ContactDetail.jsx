@@ -84,6 +84,7 @@ const ContactDetail = ({ contact, allGroups, onUpdateContact, onAddToGroup, onRe
   // Initialize Contact Data
   useEffect(() => {
     if (contact) {
+      console.log('ContactDetail received contact:', contact); // Debug log
       setEditedContact({
         ...contact,
         Groups: contact.Groups || [],
@@ -161,6 +162,15 @@ const ContactDetail = ({ contact, allGroups, onUpdateContact, onAddToGroup, onRe
     setLoading(true);
     setError('');
 
+    // Safety check: ensure editedContact exists and has an ID
+    console.log('handleSubmit called with editedContact:', editedContact); // Debug log
+    if (!editedContact || !editedContact.id) {
+      console.error('Contact data missing or invalid:', editedContact); // Debug log
+      setError('Contact data is not available. Please try again.');
+      setLoading(false);
+      return;
+    }
+
     try {
       // First handle profile image if there's a new one
       let profileImageUrl = editedContact.profile_image_url;
@@ -192,6 +202,7 @@ const ContactDetail = ({ contact, allGroups, onUpdateContact, onAddToGroup, onRe
 
       // Then update contact info
       const token = localStorage.getItem('token');
+      console.log('Updating contact with ID:', editedContact.id); // Debug log
       const response = await axios.put(
         `${import.meta.env.VITE_API_URL}/api/contacts/${editedContact.id}`,
         {
