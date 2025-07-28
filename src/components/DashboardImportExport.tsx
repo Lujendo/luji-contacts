@@ -293,11 +293,47 @@ const DashboardImportExport: React.FC<DashboardImportExportProps> = ({
           'address_country', 'notes'
         ];
 
+        // Field length limits - MUST match backend validation exactly
+        const fieldLimits = {
+          first_name: 100,
+          last_name: 100,
+          email: 100,
+          phone: 15, // Backend validation limit
+          company: 255,
+          job_title: 255,
+          address_street: 255,
+          address_city: 100,
+          address_state: 100,
+          address_zip: 20,
+          address_country: 100,
+          notes: 1000 // No specific limit in backend, but reasonable
+        };
+
         allowedFields.forEach(field => {
           if (row[field] !== undefined && row[field] !== null) {
-            const value = String(row[field]).trim();
+            let value = String(row[field]).trim();
             if (value) {
-              transformedRow[field] = value;
+              // Special handling for phone numbers - remove invisible Unicode characters
+              if (field === 'phone') {
+                // Remove invisible Unicode characters and normalize
+                value = value
+                  .replace(/[\u200B-\u200D\u2060\uFEFF\u202A-\u202E]/g, '') // Remove invisible chars
+                  .replace(/[^\d\s+()-]/g, '') // Keep only allowed phone characters
+                  .trim();
+
+                console.log(`Sanitized phone: "${row[field]}" -> "${value}"`);
+              }
+
+              // Apply field length limits
+              const limit = fieldLimits[field];
+              if (limit && value.length > limit) {
+                value = value.substring(0, limit);
+                console.warn(`Truncated ${field} field to ${limit} characters`);
+              }
+
+              if (value) { // Only set if still has content after sanitization
+                transformedRow[field] = value;
+              }
             }
           }
         });
@@ -334,17 +370,38 @@ const DashboardImportExport: React.FC<DashboardImportExportProps> = ({
       // Import contacts one by one (could be optimized with batch API)
       for (const contactData of transformedData) {
         try {
-          // Skip empty contacts
+          // Skip empty contacts - must have at least first_name, last_name, or email
           if (!contactData.first_name && !contactData.last_name && !contactData.email) {
+            console.log('Skipping empty contact:', JSON.stringify(contactData, null, 2));
             continue;
           }
+
+          // Additional validation - ensure email is valid if provided
+          if (contactData.email && contactData.email.trim()) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(contactData.email)) {
+              console.warn('Invalid email format, clearing email field:', contactData.email);
+              contactData.email = '';
+            }
+          }
+
+          // Debug logging
+          console.log('Attempting to import contact:', JSON.stringify(contactData, null, 2));
 
           await contactsApi.createContact(contactData);
           results.success++;
         } catch (error) {
           results.failed++;
+          console.error('Contact import error:', error);
+          console.error('Failed contact data:', JSON.stringify(contactData, null, 2));
+
+          let errorMessage = 'Unknown error';
+          if (error instanceof Error) {
+            errorMessage = error.message;
+          }
+
           results.errors.push(
-            `Failed to import contact: ${error instanceof Error ? error.message : 'Unknown error'}`
+            `Failed to import contact ${contactData.first_name} ${contactData.last_name}: ${errorMessage}`
           );
         }
       }

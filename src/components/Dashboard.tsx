@@ -13,7 +13,7 @@ import {
 
 // Component imports
 import FixedNavigation from './FixedNavigation';
-import ContactForm from './ContactForm';
+import ContactFormModal from './ContactFormModal';
 import ContactTable from './ContactTable';
 import GroupList from './GroupList';
 import GroupForm from './GroupForm';
@@ -432,18 +432,11 @@ const Dashboard: React.FC = () => {
 
       {/* Right Panel - Forms Only (No Contact Details) */}
       <ResizableRightPanel isVisible={
-        showContactForm || showGroupList ||
+        showGroupList ||
         showGroupForm || showGroupEditForm || showEmailForm ||
         showEmailHistory || showUserSettings ||
         showBulkGroupAssign || showBulkGroupRemove || showGroupContactsManager
       }>
-          {showContactForm && (
-            <ContactForm
-              onClose={() => setShowContactForm(false)}
-              onContactCreated={handleContactCreate}
-              groups={groups}
-            />
-          )}
 
           {showGroupList && (
             <GroupList
@@ -574,9 +567,28 @@ const Dashboard: React.FC = () => {
       <ImportModal
         isOpen={showImportModal}
         onClose={() => setShowImportModal(false)}
-        onContactsImported={(importedContacts) => {
-          setContacts(prev => [...prev, ...importedContacts]);
+        onContactsImported={async (importedContacts) => {
+          // Refresh the entire contact list from server to avoid duplication issues
+          try {
+            // Small delay to ensure all imports are processed
+            await new Promise(resolve => setTimeout(resolve, 500));
+            const refreshedContacts = await contactsApi.getContacts();
+            setContacts(refreshedContacts);
+            console.log(`Successfully refreshed contact list after importing ${importedContacts.length} contacts`);
+          } catch (error) {
+            console.error('Error refreshing contacts after import:', error);
+            // Fallback to the previous approach if refresh fails
+            setContacts(prev => [...prev, ...importedContacts]);
+          }
         }}
+      />
+
+      {/* Contact Form Modal */}
+      <ContactFormModal
+        isOpen={showContactForm}
+        onClose={() => setShowContactForm(false)}
+        onContactCreated={handleContactCreate}
+        groups={groups}
       />
     </div>
   );

@@ -3,3 +3,63 @@
 @tailwind utilities;
 
 /* Add any custom styles here */
+
+/* Fast tab content animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.1s ease-out forwards;
+}
+
+/* Enhanced scrollbar styling for tab content */
+.max-h-80::-webkit-scrollbar {
+  width: 6px;
+}
+
+.max-h-80::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.max-h-80::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+  transition: background 0.2s ease;
+}
+
+.max-h-80::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Smooth hover effects for interactive elements */
+.transition-all {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Enhanced focus states */
+.focus\:ring-indigo-500:focus {
+  --tw-ring-color: rgb(99 102 241 / 0.5);
+  box-shadow: 0 0 0 3px var(--tw-ring-color);
+}
+
+/* Fast input animations */
+input, textarea, select {
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+input:focus, textarea:focus, select:focus {
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+/* Fast button animations */
+button {
+  transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
+}
