@@ -1,7 +1,6 @@
 import React from 'react';
 import { Contact, Group } from '../types';
 import ContactDetail from './ContactDetail';
-import { X } from 'lucide-react';
 
 // Component props interface
 interface ContactDetailPanelProps {
@@ -29,7 +28,7 @@ const ContactDetailPanel: React.FC<ContactDetailPanelProps> = ({
       {isOpen && (
         <div
           className={`
-            fixed inset-0 bg-black transition-opacity duration-500 z-40
+            fixed inset-0 bg-black transition-opacity duration-700 z-40
             ${isOpen ? 'bg-opacity-50' : 'bg-opacity-0'}
           `}
           onClick={onClose}
@@ -39,7 +38,7 @@ const ContactDetailPanel: React.FC<ContactDetailPanelProps> = ({
       {/* Sliding panel */}
       <div
         className={`
-          fixed inset-y-0 right-0 w-[90vw] max-w-[1400px] bg-white shadow-2xl transform transition-all duration-500 ease-out z-50
+          fixed inset-y-0 right-0 w-[90vw] max-w-[1400px] bg-white shadow-2xl transform transition-all duration-700 ease-out z-50
           ${isOpen ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}
         `}
         style={{

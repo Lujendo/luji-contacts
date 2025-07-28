@@ -3,20 +3,17 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { contactsApi, groupsApi } from '../api';
-import { 
-  Contact, 
-  Group, 
-  SortConfig, 
-  FilterConfig, 
-  ViewMode,
+import {
+  Contact,
+  Group,
+  SortConfig,
   ContactEventHandler,
-  GroupEventHandler 
+  GroupEventHandler
 } from '../types';
 
 // Component imports
 import FixedNavigation from './FixedNavigation';
 import ContactForm from './ContactForm';
-import ContactDetail from './ContactDetail';
 import ContactTable from './ContactTable';
 import GroupList from './GroupList';
 import GroupForm from './GroupForm';
@@ -28,30 +25,17 @@ import UserSettings from './UserSettings';
 import BulkGroupAssign from './BulkGroupAssign';
 import BulkGroupRemove from './BulkGroupRemove';
 import GroupContactsManager from './GroupContactsManager';
-import ResizablePanel from './ResizablePanel';
 import ResizableRightPanel from './ResizableRightPanel';
 import ContactDetailPanel from './ContactDetailPanel';
-import ResizableMainPanel from './ResizableMainPanel';
 import GroupAssignModal from './GroupAssignModal';
 import GroupRemoveModal from './GroupRemoveModal';
 
 // Icon imports
 import {
-  UserCircle,
-  LogOut,
-  Plus,
-  Users,
-  Mail,
-  Loader,
   Search,
   X,
-  History,
-  Settings,
   ArrowUpDown,
-  UserMinus,
-  ChevronLeft,
-  ChevronRight,
-  Check
+  Loader
 } from 'lucide-react';
 
 // Dashboard state interfaces
@@ -119,7 +103,7 @@ const Dashboard: React.FC = () => {
   const [selectedContacts, setSelectedContacts] = useState<number[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [sortConfig, setSortConfig] = useState<SortConfig>({ field: 'first_name', direction: 'asc' });
-  const [viewMode, setViewMode] = useState<ViewMode>('list');
+
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -360,9 +344,9 @@ const Dashboard: React.FC = () => {
       />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex overflow-hidden ml-16">
-        {/* Left Panel - Contact List */}
-        <ResizableMainPanel>
+      <div className="flex-1 overflow-hidden ml-16">
+        {/* Main Contact List */}
+        <div className="h-full bg-white">
           <div className="h-full flex flex-col">
             {/* Search and Controls */}
             <div className="p-4 bg-white border-b border-gray-200">
@@ -432,26 +416,27 @@ const Dashboard: React.FC = () => {
               />
             </div>
           </div>
-        </ResizableMainPanel>
+        </div>
+      </div>
 
-        {/* Contact Detail Modal */}
-        {showContactDetail && selectedContact && (
-          <ContactDetailPanel
-            contact={selectedContact}
-            groups={groups}
-            onClose={() => setShowContactDetail(false)}
-            onContactUpdate={handleContactUpdate}
-            onContactDelete={handleContactDelete}
-          />
-        )}
+      {/* Contact Detail Modal */}
+      {showContactDetail && selectedContact && (
+        <ContactDetailPanel
+          contact={selectedContact}
+          groups={groups}
+          onClose={() => setShowContactDetail(false)}
+          onContactUpdate={handleContactUpdate}
+          onContactDelete={handleContactDelete}
+        />
+      )}
 
-        {/* Right Panel - Forms Only (No Contact Details) */}
-        <ResizableRightPanel isVisible={
-          showContactForm || showGroupList ||
-          showGroupForm || showGroupEditForm || showEmailForm ||
-          showEmailHistory || showImportExport || showUserSettings ||
-          showBulkGroupAssign || showBulkGroupRemove || showGroupContactsManager
-        }>
+      {/* Right Panel - Forms Only (No Contact Details) */}
+      <ResizableRightPanel isVisible={
+        showContactForm || showGroupList ||
+        showGroupForm || showGroupEditForm || showEmailForm ||
+        showEmailHistory || showImportExport || showUserSettings ||
+        showBulkGroupAssign || showBulkGroupRemove || showGroupContactsManager
+      }>
           {showContactForm && (
             <ContactForm
               onClose={() => setShowContactForm(false)}
@@ -560,7 +545,6 @@ const Dashboard: React.FC = () => {
             />
           )}
         </ResizableRightPanel>
-      </div>
 
       {/* Modals */}
       {showGroupAssignModal && (
