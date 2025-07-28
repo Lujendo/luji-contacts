@@ -145,7 +145,11 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
     }
 
     // URL validations
-    const urlFields: (keyof Contact)[] = ['website', 'linkedin', 'twitter', 'facebook', 'instagram'];
+    const urlFields: (keyof Contact)[] = [
+      'website', 'linkedin', 'twitter', 'facebook', 'instagram',
+      'youtube', 'tiktok', 'snapchat', 'discord', 'spotify',
+      'apple_music', 'github', 'behance', 'dribbble'
+    ];
     urlFields.forEach(field => {
       const value = editedContact[field];
       if (value && typeof value === 'string') {
@@ -241,6 +245,15 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
         twitter: editedContact.twitter,
         facebook: editedContact.facebook,
         instagram: editedContact.instagram,
+        youtube: editedContact.youtube,
+        tiktok: editedContact.tiktok,
+        snapchat: editedContact.snapchat,
+        discord: editedContact.discord,
+        spotify: editedContact.spotify,
+        apple_music: editedContact.apple_music,
+        github: editedContact.github,
+        behance: editedContact.behance,
+        dribbble: editedContact.dribbble,
         birthday: editedContact.birthday,
         address_street: editedContact.address_street,
         address_city: editedContact.address_city,
@@ -734,7 +747,10 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
             </div>
 
             {/* Social Media Quick Links */}
-            {(editedContact.linkedin || editedContact.twitter || editedContact.facebook || editedContact.instagram) && (
+            {(editedContact.linkedin || editedContact.twitter || editedContact.facebook || editedContact.instagram ||
+              editedContact.youtube || editedContact.tiktok || editedContact.snapchat || editedContact.discord ||
+              editedContact.spotify || editedContact.apple_music || editedContact.github || editedContact.behance ||
+              editedContact.dribbble) && (
               <div className="mb-8">
                 <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
                   <Share2 className="h-5 w-5 mr-2" />
@@ -783,6 +799,50 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
                     >
                       <Share2 className="h-4 w-4 mr-2" />
                       Instagram
+                    </a>
+                  )}
+                  {editedContact.youtube && (
+                    <a
+                      href={editedContact.youtube}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center px-4 py-2 border border-red-300 rounded-md text-sm font-medium text-red-700 bg-red-50 hover:bg-red-100 transition-colors"
+                    >
+                      <Share2 className="h-4 w-4 mr-2" />
+                      YouTube
+                    </a>
+                  )}
+                  {editedContact.github && (
+                    <a
+                      href={editedContact.github}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 transition-colors"
+                    >
+                      <Share2 className="h-4 w-4 mr-2" />
+                      GitHub
+                    </a>
+                  )}
+                  {editedContact.spotify && (
+                    <a
+                      href={editedContact.spotify}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center px-4 py-2 border border-green-300 rounded-md text-sm font-medium text-green-700 bg-green-50 hover:bg-green-100 transition-colors"
+                    >
+                      <Share2 className="h-4 w-4 mr-2" />
+                      Spotify
+                    </a>
+                  )}
+                  {editedContact.discord && (
+                    <a
+                      href={editedContact.discord}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center px-4 py-2 border border-indigo-300 rounded-md text-sm font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-colors"
+                    >
+                      <Share2 className="h-4 w-4 mr-2" />
+                      Discord
                     </a>
                   )}
                 </div>
@@ -1313,7 +1373,16 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
                         editedContact.linkedin,
                         editedContact.twitter,
                         editedContact.facebook,
-                        editedContact.instagram
+                        editedContact.instagram,
+                        editedContact.youtube,
+                        editedContact.tiktok,
+                        editedContact.snapchat,
+                        editedContact.discord,
+                        editedContact.spotify,
+                        editedContact.apple_music,
+                        editedContact.github,
+                        editedContact.behance,
+                        editedContact.dribbble
                       ].filter(Boolean).length}
                     </div>
                     <div className="text-sm text-purple-700">Contact Methods</div>
