@@ -27,7 +27,7 @@ import {
   Camera,
   Upload
 } from "lucide-react";
-import SocialMediaSection from "./SocialMediaSection.jsx";
+import SocialMediaSection from "./SocialMediaSection";
 
 // Component props interface
 interface ContactDetailProps {

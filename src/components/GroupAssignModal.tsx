@@ -4,17 +4,30 @@ import { Group } from '../types';
 // Component props interface
 interface GroupAssignModalProps {
   groups: Group[];
-  onAssign: (groupId: string) => void;
+  contactIds?: number[];
+  onAssign?: (groupId: string) => void;
   onClose: () => void;
+  onAssignmentComplete?: () => void;
 }
 
-const GroupAssignModal: React.FC<GroupAssignModalProps> = ({ groups, onAssign, onClose }) => {
+const GroupAssignModal: React.FC<GroupAssignModalProps> = ({
+  groups,
+  contactIds = [],
+  onAssign,
+  onClose,
+  onAssignmentComplete
+}) => {
   const [selectedGroup, setSelectedGroup] = useState<string>('');
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
     if (selectedGroup) {
-      onAssign(selectedGroup);
+      if (onAssign) {
+        onAssign(selectedGroup);
+      }
+      if (onAssignmentComplete) {
+        onAssignmentComplete();
+      }
     }
   };
 
@@ -22,6 +35,11 @@ const GroupAssignModal: React.FC<GroupAssignModalProps> = ({ groups, onAssign, o
     <div className="fixed inset-0 bg-black bg-opacity-50 overflow-y-auto h-full w-full flex justify-center items-center z-[60]">
       <div className="bg-white p-5 rounded-lg shadow-xl w-96">
         <h2 className="text-xl font-semibold mb-4">Assign to Group</h2>
+        {contactIds.length > 0 && (
+          <p className="text-sm text-gray-600 mb-4">
+            Assigning {contactIds.length} contact{contactIds.length !== 1 ? 's' : ''} to a group
+          </p>
+        )}
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label htmlFor="group" className="block text-sm font-medium text-gray-700">Select Group</label>

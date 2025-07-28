@@ -14,26 +14,26 @@ import {
 } from '../types';
 
 // Component imports
-import FixedNavigation from './FixedNavigation.jsx';
-import ContactForm from './ContactForm.jsx';
-import ContactDetail from './ContactDetail.jsx';
-import ContactTable from './ContactTable.jsx';
-import GroupList from './GroupList.jsx';
-import GroupForm from './GroupForm.jsx';
-import GroupEditForm from './GroupEditForm.jsx';
-import EmailForm from './EmailForm.jsx';
-import EmailHistory from './EmailHistory.jsx';
-import DashboardImportExport from './DashboardImportExport.jsx';
-import UserSettings from './UserSettings.jsx';
-import BulkGroupAssign from './BulkGroupAssign.jsx';
-import BulkGroupRemove from './BulkGroupRemove.jsx';
-import GroupContactsManager from './GroupContactsManager.jsx';
-import ResizablePanel from './ResizablePanel.jsx';
-import ResizableRightPanel from './ResizableRightPanel.jsx';
-import ContactDetailPanel from './ContactDetailPanel.jsx';
-import ResizableMainPanel from './ResizableMainPanel.jsx';
-import GroupAssignModal from './GroupAssignModal.jsx';
-import GroupRemoveModal from './GroupRemoveModal.jsx';
+import FixedNavigation from './FixedNavigation';
+import ContactForm from './ContactForm';
+import ContactDetail from './ContactDetail';
+import ContactTable from './ContactTable';
+import GroupList from './GroupList';
+import GroupForm from './GroupForm';
+import GroupEditForm from './GroupEditForm';
+import EmailForm from './EmailForm';
+import EmailHistory from './EmailHistory';
+import DashboardImportExport from './DashboardImportExport';
+import UserSettings from './UserSettings';
+import BulkGroupAssign from './BulkGroupAssign';
+import BulkGroupRemove from './BulkGroupRemove';
+import GroupContactsManager from './GroupContactsManager';
+import ResizablePanel from './ResizablePanel';
+import ResizableRightPanel from './ResizableRightPanel';
+import ContactDetailPanel from './ContactDetailPanel';
+import ResizableMainPanel from './ResizableMainPanel';
+import GroupAssignModal from './GroupAssignModal';
+import GroupRemoveModal from './GroupRemoveModal';
 
 // Icon imports
 import {
@@ -424,7 +424,7 @@ const Dashboard: React.FC = () => {
               <ContactTable
                 contacts={filteredContacts}
                 selectedContacts={selectedContacts}
-                onContactSelect={handleContactSelect}
+                onSelectContact={handleContactSelect}
                 onContactSelection={handleContactSelection}
                 onBulkSelection={handleBulkSelection}
                 sortConfig={sortConfig}
