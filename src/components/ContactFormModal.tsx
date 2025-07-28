@@ -1,4 +1,4 @@
-import React, { useState, useEffect, FormEvent, ChangeEvent } from 'react';
+import React, { useState, useEffect, FormEvent, ChangeEvent, useMemo } from 'react';
 import { contactsApi } from '../api';
 import { Contact, Group } from '../types';
 import Modal from './ui/Modal';
@@ -67,103 +67,7 @@ const ContactFormModal: React.FC<ContactFormModalProps> = ({
   const [selectedGroups, setSelectedGroups] = useState<number[]>([]);
   const [activeTab, setActiveTab] = useState('basic');
 
-  // Tab content components
-  const BasicInfoTab = () => (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label htmlFor="first_name" className="block text-sm font-medium text-gray-700 mb-1">
-            First Name
-          </label>
-          <input
-            type="text"
-            id="first_name"
-            name="first_name"
-            value={formData.first_name}
-            onChange={handleInputChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="Enter first name"
-          />
-        </div>
-        <div>
-          <label htmlFor="last_name" className="block text-sm font-medium text-gray-700 mb-1">
-            Last Name
-          </label>
-          <input
-            type="text"
-            id="last_name"
-            name="last_name"
-            value={formData.last_name}
-            onChange={handleInputChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="Enter last name"
-          />
-        </div>
-      </div>
-      <div>
-        <label htmlFor="birthday" className="block text-sm font-medium text-gray-700 mb-1">
-          Birthday
-        </label>
-        <input
-          type="date"
-          id="birthday"
-          name="birthday"
-          value={formData.birthday}
-          onChange={handleInputChange}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        />
-      </div>
-    </div>
-  );
 
-  const ContactTab = () => (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-            Email
-          </label>
-          <input
-            type="email"
-            id="email"
-            name="email"
-            value={formData.email}
-            onChange={handleInputChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="Enter email address"
-          />
-        </div>
-        <div>
-          <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-            Phone
-          </label>
-          <input
-            type="tel"
-            id="phone"
-            name="phone"
-            value={formData.phone}
-            onChange={handleInputChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="Enter phone number"
-          />
-        </div>
-      </div>
-      <div>
-        <label htmlFor="website" className="block text-sm font-medium text-gray-700 mb-1">
-          Website
-        </label>
-        <input
-          type="url"
-          id="website"
-          name="website"
-          value={formData.website}
-          onChange={handleInputChange}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          placeholder="https://example.com"
-        />
-      </div>
-    </div>
-  );
 
   const WorkTab = () => (
     <div className="space-y-4">
@@ -383,15 +287,7 @@ const ContactFormModal: React.FC<ContactFormModalProps> = ({
     </div>
   );
 
-  // Tab configuration
-  const tabs: TabItem[] = [
-    { id: 'basic', label: 'Basic Info', icon: <User size={16} />, content: <BasicInfoTab /> },
-    { id: 'contact', label: 'Contact', icon: <Mail size={16} />, content: <ContactTab /> },
-    { id: 'work', label: 'Work', icon: <Building2 size={16} />, content: <WorkTab /> },
-    { id: 'social', label: 'Social', icon: <Phone size={16} />, content: <SocialTab /> },
-    { id: 'address', label: 'Address', icon: <MapPin size={16} />, content: <AddressTab /> },
-    { id: 'notes', label: 'Notes', icon: <FileText size={16} />, content: <NotesTab /> }
-  ];
+
 
   // Handle tab change
   const handleTabChange = (tabId: string) => {
@@ -480,6 +376,114 @@ const ContactFormModal: React.FC<ContactFormModalProps> = ({
       setIsSubmitting(false);
     }
   };
+
+  // Memoized tab content to prevent input field recreation on every render
+  const basicInfoContent = useMemo(() => (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label htmlFor="first_name" className="block text-sm font-medium text-gray-700 mb-1">
+            First Name
+          </label>
+          <input
+            type="text"
+            id="first_name"
+            name="first_name"
+            value={formData.first_name}
+            onChange={handleInputChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="Enter first name"
+          />
+        </div>
+        <div>
+          <label htmlFor="last_name" className="block text-sm font-medium text-gray-700 mb-1">
+            Last Name
+          </label>
+          <input
+            type="text"
+            id="last_name"
+            name="last_name"
+            value={formData.last_name}
+            onChange={handleInputChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="Enter last name"
+          />
+        </div>
+      </div>
+      <div>
+        <label htmlFor="birthday" className="block text-sm font-medium text-gray-700 mb-1">
+          Birthday
+        </label>
+        <input
+          type="date"
+          id="birthday"
+          name="birthday"
+          value={formData.birthday}
+          onChange={handleInputChange}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        />
+      </div>
+    </div>
+  ), [formData.first_name, formData.last_name, formData.birthday, handleInputChange]);
+
+  const contactContent = useMemo(() => (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+            Email
+          </label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            value={formData.email}
+            onChange={handleInputChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="Enter email address"
+          />
+        </div>
+        <div>
+          <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+            Phone
+          </label>
+          <input
+            type="tel"
+            id="phone"
+            name="phone"
+            value={formData.phone}
+            onChange={handleInputChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="Enter phone number"
+          />
+        </div>
+      </div>
+      <div>
+        <label htmlFor="website" className="block text-sm font-medium text-gray-700 mb-1">
+          Website
+        </label>
+        <input
+          type="url"
+          id="website"
+          name="website"
+          value={formData.website}
+          onChange={handleInputChange}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          placeholder="https://example.com"
+        />
+      </div>
+    </div>
+  ), [formData.email, formData.phone, formData.website, handleInputChange]);
+
+  // Tab configuration with memoized content
+  const tabs: TabItem[] = [
+    { id: 'basic', label: 'Basic Info', icon: <User size={16} />, content: basicInfoContent },
+    { id: 'contact', label: 'Contact', icon: <Mail size={16} />, content: contactContent },
+    { id: 'work', label: 'Work', icon: <Building2 size={16} />, content: <WorkTab /> },
+    { id: 'social', label: 'Social', icon: <Phone size={16} />, content: <SocialTab /> },
+    { id: 'address', label: 'Address', icon: <MapPin size={16} />, content: <AddressTab /> },
+    { id: 'notes', label: 'Notes', icon: <FileText size={16} />, content: <NotesTab /> }
+  ];
 
   return (
     <Modal
