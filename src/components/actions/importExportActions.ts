@@ -1,6 +1,27 @@
 import axios from 'axios';
 
-export const importContacts = async (file, format) => {
+// Import result interface
+interface ImportResult {
+  success: boolean;
+  message: string;
+  imported?: number;
+  failed?: number;
+  errors?: string[];
+}
+
+// Export result interface
+interface ExportResult {
+  success: boolean;
+  message: string;
+}
+
+// Export format type
+type ExportFormat = 'csv' | 'xlsx' | 'json';
+
+// Import format type
+type ImportFormat = 'csv' | 'xlsx' | 'json';
+
+export const importContacts = async (file: File, format: ImportFormat): Promise<ImportResult> => {
   const formData = new FormData();
   formData.append('file', file);
 
@@ -16,11 +37,14 @@ export const importContacts = async (file, format) => {
     );
     return response.data;
   } catch (error) {
-    throw new Error(error.response?.data?.message || 'Import failed');
+    if (axios.isAxiosError(error)) {
+      throw new Error(error.response?.data?.message || 'Import failed');
+    }
+    throw new Error('Import failed');
   }
 };
 
-export const exportContacts = async (format) => {
+export const exportContacts = async (format: ExportFormat): Promise<ExportResult> => {
   try {
     const response = await axios.get(
       `${import.meta.env.VITE_API_URL}/api/contacts/export/${format}`,
@@ -41,6 +65,9 @@ export const exportContacts = async (format) => {
     
     return { success: true, message: `Export completed: ${filename}` };
   } catch (error) {
-    throw new Error(error.response?.data?.message || 'Export failed');
+    if (axios.isAxiosError(error)) {
+      throw new Error(error.response?.data?.message || 'Export failed');
+    }
+    throw new Error('Export failed');
   }
 };

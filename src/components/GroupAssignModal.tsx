@@ -1,9 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, FormEvent } from 'react';
+import { Group } from '../types';
 
-const GroupAssignModal = ({ groups, onAssign, onClose }) => {
-  const [selectedGroup, setSelectedGroup] = useState('');
+// Component props interface
+interface GroupAssignModalProps {
+  groups: Group[];
+  onAssign: (groupId: string) => void;
+  onClose: () => void;
+}
 
-  const handleSubmit = (e) => {
+const GroupAssignModal: React.FC<GroupAssignModalProps> = ({ groups, onAssign, onClose }) => {
+  const [selectedGroup, setSelectedGroup] = useState<string>('');
+
+  const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
     if (selectedGroup) {
       onAssign(selectedGroup);
@@ -25,7 +33,7 @@ const GroupAssignModal = ({ groups, onAssign, onClose }) => {
             >
               <option value="">Choose a group</option>
               {groups.map(group => (
-                <option key={group.id} value={group.id}>{group.name}</option>
+                <option key={group.id} value={group.id.toString()}>{group.name}</option>
               ))}
             </select>
           </div>
