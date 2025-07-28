@@ -59,6 +59,29 @@ app.all('/api/*', async (c) => {
     return importExportRoutes.fetch(newReq, c.env, c.executionCtx);
   }
 
+  if (path.startsWith('/api/files/')) {
+    try {
+      const filePath = path.replace('/api/files/', '');
+
+      const object = await storage.getFileMetadata(filePath);
+      if (!object) {
+        return c.json({ error: 'File not found' }, 404);
+      }
+
+      const blob = await storage.getFileBlob(filePath);
+
+      return new Response(blob, {
+        headers: {
+          'Content-Type': object.httpMetadata?.contentType || 'application/octet-stream',
+          'Cache-Control': 'public, max-age=31536000', // Cache for 1 year
+        },
+      });
+    } catch (error) {
+      console.error('File serving error:', error);
+      return c.json({ error: 'File not found' }, 404);
+    }
+  }
+
   return c.json({ error: 'API endpoint not found' }, 404);
 });
 

@@ -1,4 +1,14 @@
 // Database utilities for Cloudflare D1
+
+// Standardized API Response Interface
+export interface ApiResponse<T = any> {
+  data?: T;
+  message?: string;
+  error?: string;
+  total?: number;
+  success?: boolean;
+}
+
 export interface User {
   id: number;
   username?: string;
@@ -116,6 +126,32 @@ export class DatabaseService {
     return await this.db.prepare('SELECT * FROM users WHERE id = ?')
       .bind(id)
       .first<User>();
+  }
+
+  async updateUser(id: number, userData: Partial<User>): Promise<User | null> {
+    const allowedFields = ['username', 'email', 'role', 'contact_limit', 'is_email_enabled'];
+    const updates: string[] = [];
+    const values: any[] = [];
+
+    for (const [key, value] of Object.entries(userData)) {
+      if (allowedFields.includes(key) && value !== undefined) {
+        updates.push(`${key} = ?`);
+        values.push(value);
+      }
+    }
+
+    if (updates.length === 0) {
+      return await this.getUserById(id);
+    }
+
+    const setClause = updates.join(', ');
+    const result = await this.db.prepare(`
+      UPDATE users SET ${setClause}, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+      RETURNING *
+    `).bind(...values, id).first<User>();
+
+    return result || null;
   }
 
   // Contact operations

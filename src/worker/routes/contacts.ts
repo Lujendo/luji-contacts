@@ -1,6 +1,6 @@
 // Contact routes for CRUD operations
 import { Hono } from 'hono';
-import { DatabaseService, Contact } from '../utils/database';
+import { DatabaseService, Contact, ApiResponse } from '../utils/database';
 import { AuthService, getAuthenticatedUser, createAuthMiddleware } from '../utils/auth';
 import { StorageService, ALLOWED_IMAGE_TYPES } from '../utils/storage';
 
@@ -24,20 +24,26 @@ export function createContactRoutes(db: DatabaseService, auth: AuthService, stor
       );
 
       // Get groups for each contact (if needed)
+      const storage = new StorageService(c.env.STORAGE);
       const contactsWithGroups = await Promise.all(
         contactList.map(async (contact) => {
           const groups = await db.getGroupsByContactId(contact.id);
           return {
             ...contact,
-            groups: groups.map(g => ({ id: g.id, name: g.name }))
+            profile_image_url: contact.profile_image_url ? storage.getPublicUrl(contact.profile_image_url) : contact.profile_image_url,
+            Groups: groups.map(g => ({ id: g.id, name: g.name })), // Use uppercase Groups for frontend compatibility
+            groups: groups.map(g => ({ id: g.id, name: g.name }))  // Keep lowercase for backward compatibility
           };
         })
       );
 
-      return c.json({
-        contacts: contactsWithGroups,
-        total: contactsWithGroups.length
-      });
+      const response: ApiResponse = {
+        data: contactsWithGroups,
+        total: contactsWithGroups.length,
+        success: true
+      };
+
+      return c.json(response);
 
     } catch (error) {
       console.error('Get contacts error:', error);
@@ -62,13 +68,21 @@ export function createContactRoutes(db: DatabaseService, auth: AuthService, stor
 
       // Get groups for this contact
       const groups = await db.getGroupsByContactId(contact.id);
+      const storage = new StorageService(c.env.STORAGE);
 
-      return c.json({
-        contact: {
-          ...contact,
-          groups: groups.map(g => ({ id: g.id, name: g.name }))
-        }
-      });
+      const contactWithGroups = {
+        ...contact,
+        profile_image_url: contact.profile_image_url ? storage.getPublicUrl(contact.profile_image_url) : contact.profile_image_url,
+        Groups: groups.map(g => ({ id: g.id, name: g.name })), // Use uppercase Groups for frontend compatibility
+        groups: groups.map(g => ({ id: g.id, name: g.name }))  // Keep lowercase for backward compatibility
+      };
+
+      const response: ApiResponse = {
+        data: contactWithGroups,
+        success: true
+      };
+
+      return c.json(response);
 
     } catch (error) {
       console.error('Get contact error:', error);
@@ -129,17 +143,20 @@ export function createContactRoutes(db: DatabaseService, auth: AuthService, stor
 
       const contact = await db.createContact(contactData);
 
-      return c.json({
+      const response: ApiResponse = {
+        data: contact,
         message: 'Contact created successfully',
-        contact
-      }, 201);
+        success: true
+      };
+
+      return c.json(response, 201);
 
     } catch (error) {
       console.error('Create contact error:', error);
-      console.error('Request body:', body);
       return c.json({
         error: 'Internal server error',
-        details: error.message
+        details: error instanceof Error ? error.message : 'Unknown error',
+        success: false
       }, 500);
     }
   });
@@ -188,13 +205,26 @@ export function createContactRoutes(db: DatabaseService, auth: AuthService, stor
 
       const updatedContact = await db.updateContact(contactId, user.id, updateData);
       if (!updatedContact) {
-        return c.json({ error: 'Failed to update contact' }, 500);
+        return c.json({ error: 'Failed to update contact', success: false }, 500);
       }
 
-      return c.json({
+      // Get groups for the updated contact
+      const groups = await db.getGroupsByContactId(updatedContact.id);
+      const storage = new StorageService(c.env.STORAGE);
+      const contactWithGroups = {
+        ...updatedContact,
+        profile_image_url: updatedContact.profile_image_url ? storage.getPublicUrl(updatedContact.profile_image_url) : updatedContact.profile_image_url,
+        Groups: groups.map(g => ({ id: g.id, name: g.name })), // Use uppercase Groups for frontend compatibility
+        groups: groups.map(g => ({ id: g.id, name: g.name }))  // Keep lowercase for backward compatibility
+      };
+
+      const response: ApiResponse = {
+        data: contactWithGroups,
         message: 'Contact updated successfully',
-        contact: updatedContact
-      });
+        success: true
+      };
+
+      return c.json(response);
 
     } catch (error) {
       console.error('Update contact error:', error);
@@ -228,7 +258,12 @@ export function createContactRoutes(db: DatabaseService, auth: AuthService, stor
         return c.json({ error: 'Failed to delete contact' }, 500);
       }
 
-      return c.json({ message: 'Contact deleted successfully' });
+      const response: ApiResponse = {
+        message: 'Contact deleted successfully',
+        success: true
+      };
+
+      return c.json(response);
 
     } catch (error) {
       console.error('Delete contact error:', error);
@@ -278,11 +313,16 @@ export function createContactRoutes(db: DatabaseService, auth: AuthService, stor
         profile_image_url: fileName
       });
 
-      return c.json({
+      const response: ApiResponse = {
+        data: {
+          profile_image_url: storage.getPublicUrl(fileName),
+          contact: updatedContact
+        },
         message: 'Profile image uploaded successfully',
-        profile_image_url: fileName,
-        contact: updatedContact
-      });
+        success: true
+      };
+
+      return c.json(response);
 
     } catch (error) {
       console.error('Upload profile image error:', error);
@@ -332,10 +372,16 @@ export function createContactRoutes(db: DatabaseService, auth: AuthService, stor
         profile_image_url: fileName
       });
 
-      return c.json({
+      const response: ApiResponse = {
+        data: {
+          profile_image_url: storage.getPublicUrl(fileName),
+          contact: updatedContact
+        },
         message: 'Profile image uploaded successfully',
-        contact: updatedContact
-      });
+        success: true
+      };
+
+      return c.json(response);
 
     } catch (error) {
       console.error('Upload image error:', error);
@@ -376,11 +422,16 @@ export function createContactRoutes(db: DatabaseService, auth: AuthService, stor
         }
       }
 
-      return c.json({
+      const response: ApiResponse = {
+        data: {
+          deletedCount,
+          errors: errors.length > 0 ? errors : undefined
+        },
         message: `Successfully deleted ${deletedCount} contacts`,
-        deletedCount,
-        errors: errors.length > 0 ? errors : undefined
-      });
+        success: true
+      };
+
+      return c.json(response);
 
     } catch (error) {
       console.error('Bulk delete error:', error);

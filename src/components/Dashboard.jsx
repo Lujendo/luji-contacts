@@ -147,7 +147,7 @@ const Dashboard = () => {
         const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/users/profile`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        setUser(response.data);
+        setUser(response.data?.data || response.data?.user || response.data);
       } catch (error) {
         console.error('Error fetching user data:', error);
         setError('Failed to load user data');
@@ -181,9 +181,9 @@ const Dashboard = () => {
         ]);
 
         // Update state with fetched data
-        setContacts(contactsResponse.data.contacts || []);
-        setFilteredContacts(contactsResponse.data.contacts || []);
-        setGroups(groupsResponse.data.groups || []);
+        setContacts(contactsResponse.data?.data || contactsResponse.data?.contacts || contactsResponse.data || []);
+        setFilteredContacts(contactsResponse.data?.data || contactsResponse.data?.contacts || contactsResponse.data || []);
+        setGroups(groupsResponse.data?.data || groupsResponse.data?.groups || groupsResponse.data || []);
         // setEmailHistory([]); // Email functionality not implemented yet
       } catch (error) {
         console.error('Error initializing dashboard:', error);
@@ -415,8 +415,8 @@ const handleAddToGroup = useCallback(async (contactId, groupId) => {
       axios.get(`${import.meta.env.VITE_API_URL}/api/groups`)
     ]);
 
-    setSelectedContact(contactResponse.data.contact || contactResponse.data);
-    setGroups(groupsResponse.data.groups || []);
+    setSelectedContact(contactResponse.data?.data || contactResponse.data?.contact || contactResponse.data);
+    setGroups(groupsResponse.data?.data || groupsResponse.data?.groups || groupsResponse.data || []);
     setError({ type: 'success', message: 'Contact added to group successfully' });
   } catch (error) {
     console.error('Error adding to group:', error);
@@ -441,8 +441,8 @@ const handleRemoveFromGroup = useCallback(async (contactId, groupId) => {
       axios.get(`${import.meta.env.VITE_API_URL}/api/groups`)
     ]);
 
-    setSelectedContact(contactResponse.data.contact || contactResponse.data);
-    setGroups(groupsResponse.data.groups || []);
+    setSelectedContact(contactResponse.data?.data || contactResponse.data?.contact || contactResponse.data);
+    setGroups(groupsResponse.data?.data || groupsResponse.data?.groups || groupsResponse.data || []);
     setError({ type: 'success', message: 'Contact removed from group successfully' });
   } catch (error) {
     console.error('Error removing from group:', error);
@@ -548,9 +548,9 @@ const [isSubmitting, setIsSubmitting] = useState(false);
         `${import.meta.env.VITE_API_URL}/api/contacts`
       );
 
-      setContacts(contactsResponse.data.contacts || []);
-      setFilteredContacts(contactsResponse.data.contacts || []);
-      setSelectedContact(response.data.contact || response.data);
+      setContacts(contactsResponse.data?.data || contactsResponse.data?.contacts || contactsResponse.data || []);
+      setFilteredContacts(contactsResponse.data?.data || contactsResponse.data?.contacts || contactsResponse.data || []);
+      setSelectedContact(response.data?.data || response.data?.contact || response.data);
       setShowContactForm(false);
       setRightPanelVisible(true);
       setError({ type: 'success', message: 'Contact added successfully' });
@@ -607,12 +607,12 @@ const handleUpdateContact = useCallback(async (updatedContact) => {
     setFilteredContacts(prev => {
       if (searchTerm || highlightedGroupId) {
         return prev.map(contact =>
-          contact.id === updatedContact.id ? (updatedContactResponse.data.contact || updatedContactResponse.data) : contact
+          contact.id === updatedContact.id ? (updatedContactResponse.data?.data || updatedContactResponse.data?.contact || updatedContactResponse.data) : contact
         );
       }
       return contactsResponse.data;
     });
-    setSelectedContact(updatedContactResponse.data.contact || updatedContactResponse.data);
+    setSelectedContact(updatedContactResponse.data?.data || updatedContactResponse.data?.contact || updatedContactResponse.data);
     setError({ type: 'success', message: 'Contact updated successfully' });
   } catch (error) {
     console.error('Error updating contact:', error);
@@ -734,7 +734,7 @@ const handleBulkGroupAssign = useCallback(async (groupId, contactIds) => {
       }
       return contactsResponse.data;
     });
-    setGroups(groupsResponse.data);
+    setGroups(groupsResponse.data?.data || groupsResponse.data?.groups || groupsResponse.data || []);
     setSelectedContactIds([]);
     setShowBulkAssign(false);
     setError({ type: 'success', message: `${contactIds.length} contacts added to group successfully` });
@@ -774,7 +774,7 @@ const handleBulkGroupRemove = useCallback(async (groupId, contactIds) => {
       }
       return contactsResponse.data;
     });
-    setGroups(groupsResponse.data);
+    setGroups(groupsResponse.data?.data || groupsResponse.data?.groups || groupsResponse.data || []);
     setSelectedContactIds([]);
     setShowBulkRemove(false);
     setError({ type: 'success', message: `${contactIds.length} contacts removed from group successfully` });
@@ -908,7 +908,7 @@ const handleDeleteGroup = useCallback(async (groupId) => {
     setGroupLoading(true);
     await axios.delete(`${import.meta.env.VITE_API_URL}/api/groups/${groupId}`);
     const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/groups`);
-    setGroups(response.data);
+    setGroups(response.data?.data || response.data?.groups || response.data || []);
     setSelectedGroups(prev => prev.filter(id => id !== groupId));
     setError({ type: 'success', message: 'Group deleted successfully' });
   } catch (error) {
@@ -924,7 +924,7 @@ const handleAddGroup = useCallback(async (newGroup) => {
     setGroupLoading(true);
     await axios.post(`${import.meta.env.VITE_API_URL}/api/groups`, newGroup);
     const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/groups`);
-    setGroups(response.data);
+    setGroups(response.data?.data || response.data?.groups || response.data || []);
     setShowGroupForm(false);
     setError({ type: 'success', message: 'Group added successfully' });
   } catch (error) {
@@ -940,7 +940,7 @@ const handleUpdateGroup = useCallback(async (groupId, updatedGroup) => {
     setGroupLoading(true);
     await axios.put(`${import.meta.env.VITE_API_URL}/api/groups/${groupId}`, updatedGroup);
     const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/groups`);
-    setGroups(response.data);
+    setGroups(response.data?.data || response.data?.groups || response.data || []);
     setShowGroupEditForm(false);
     setSelectedGroupForEdit(null);
     setError({ type: 'success', message: 'Group updated successfully' });

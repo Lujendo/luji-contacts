@@ -19,10 +19,24 @@ const Register = () => {
         email,
         password
       });
+
       console.log('Registration successful', response.data);
-      navigate('/login'); // Redirect to login after successful registration
+
+      // Handle both old and new response formats - auto-login after registration
+      const token = response.data?.data?.token || response.data?.token;
+      const user = response.data?.data?.user || response.data?.user;
+
+      if (token) {
+        localStorage.setItem('token', token);
+        if (user) {
+          localStorage.setItem('user', JSON.stringify(user));
+        }
+        navigate('/dashboard'); // Redirect to dashboard after successful registration and auto-login
+      } else {
+        navigate('/login'); // Fallback to login if no token
+      }
     } catch (error) {
-      setError(error.response?.data?.message || 'An error occurred during registration');
+      setError(error.response?.data?.error || error.response?.data?.message || 'An error occurred during registration');
     }
   };
 

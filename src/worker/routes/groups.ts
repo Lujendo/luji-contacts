@@ -1,6 +1,6 @@
 // Group routes for contact organization
 import { Hono } from 'hono';
-import { DatabaseService, Group } from '../utils/database';
+import { DatabaseService, Group, ApiResponse } from '../utils/database';
 import { AuthService, getAuthenticatedUser, createAuthMiddleware } from '../utils/auth';
 
 export function createGroupRoutes(db: DatabaseService, auth: AuthService) {
@@ -26,10 +26,13 @@ export function createGroupRoutes(db: DatabaseService, auth: AuthService) {
         })
       );
 
-      return c.json({
-        groups: groupsWithCounts,
-        total: groupsWithCounts.length
-      });
+      const response: ApiResponse = {
+        data: groupsWithCounts,
+        total: groupsWithCounts.length,
+        success: true
+      };
+
+      return c.json(response);
 
     } catch (error) {
       console.error('Get groups error:', error);
@@ -55,13 +58,16 @@ export function createGroupRoutes(db: DatabaseService, auth: AuthService) {
       // Get contacts in this group
       const contacts = await db.getContactsByGroupId(group.id);
 
-      return c.json({
-        group: {
+      const response: ApiResponse = {
+        data: {
           ...group,
           contacts,
           contact_count: contacts.length
-        }
-      });
+        },
+        success: true
+      };
+
+      return c.json(response);
 
     } catch (error) {
       console.error('Get group error:', error);
@@ -87,10 +93,13 @@ export function createGroupRoutes(db: DatabaseService, auth: AuthService) {
 
       const group = await db.createGroup(groupData);
 
-      return c.json({
+      const response: ApiResponse = {
+        data: group,
         message: 'Group created successfully',
-        group
-      }, 201);
+        success: true
+      };
+
+      return c.json(response, 201);
 
     } catch (error) {
       console.error('Create group error:', error);
@@ -126,13 +135,16 @@ export function createGroupRoutes(db: DatabaseService, auth: AuthService) {
 
       const updatedGroup = await db.updateGroup(groupId, user.id, updateData);
       if (!updatedGroup) {
-        return c.json({ error: 'Failed to update group' }, 500);
+        return c.json({ error: 'Failed to update group', success: false }, 500);
       }
 
-      return c.json({
+      const response: ApiResponse = {
+        data: updatedGroup,
         message: 'Group updated successfully',
-        group: updatedGroup
-      });
+        success: true
+      };
+
+      return c.json(response);
 
     } catch (error) {
       console.error('Update group error:', error);
@@ -161,7 +173,12 @@ export function createGroupRoutes(db: DatabaseService, auth: AuthService) {
         return c.json({ error: 'Failed to delete group' }, 500);
       }
 
-      return c.json({ message: 'Group deleted successfully' });
+      const response: ApiResponse = {
+        message: 'Group deleted successfully',
+        success: true
+      };
+
+      return c.json(response);
 
     } catch (error) {
       console.error('Delete group error:', error);
@@ -287,11 +304,16 @@ export function createGroupRoutes(db: DatabaseService, auth: AuthService) {
         }
       }
 
-      return c.json({
+      const response: ApiResponse = {
+        data: {
+          addedCount,
+          errors: errors.length > 0 ? errors : undefined
+        },
         message: `Successfully added ${addedCount} contacts to group`,
-        addedCount,
-        errors: errors.length > 0 ? errors : undefined
-      });
+        success: true
+      };
+
+      return c.json(response);
 
     } catch (error) {
       console.error('Bulk add contacts to group error:', error);
@@ -337,11 +359,16 @@ export function createGroupRoutes(db: DatabaseService, auth: AuthService) {
         }
       }
 
-      return c.json({
+      const response: ApiResponse = {
+        data: {
+          removedCount,
+          errors: errors.length > 0 ? errors : undefined
+        },
         message: `Successfully removed ${removedCount} contacts from group`,
-        removedCount,
-        errors: errors.length > 0 ? errors : undefined
-      });
+        success: true
+      };
+
+      return c.json(response);
 
     } catch (error) {
       console.error('Bulk remove contacts from group error:', error);

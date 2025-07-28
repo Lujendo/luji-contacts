@@ -58,9 +58,15 @@ export class StorageService {
       throw new Error('File not found');
     }
 
-    // For Cloudflare R2, we need to generate a presigned URL
-    // This is a simplified version - in production, you'd use the R2 API to generate presigned URLs
-    return `https://your-r2-domain.com/${fileName}`;
+    // For Cloudflare R2, generate a public URL
+    // In production, you would configure a custom domain for your R2 bucket
+    // For now, we'll return the file path that can be served through the worker
+    return `/api/files/${fileName}`;
+  }
+
+  // Get public URL for profile images (served through worker)
+  getPublicUrl(fileName: string): string {
+    return `/api/files/${fileName}`;
   }
 
   // Get file content

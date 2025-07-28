@@ -1,6 +1,6 @@
 // User routes for authentication and user management
 import { Hono } from 'hono';
-import { DatabaseService } from '../utils/database';
+import { DatabaseService, ApiResponse, User } from '../utils/database';
 import { AuthService, validateRegistrationData, getAuthenticatedUser, createAuthMiddleware } from '../utils/auth';
 
 export function createUserRoutes(db: DatabaseService, auth: AuthService) {
@@ -41,18 +41,23 @@ export function createUserRoutes(db: DatabaseService, auth: AuthService) {
       // Generate token
       const token = auth.generateToken(user);
 
-      return c.json({
+      const response: ApiResponse = {
+        data: {
+          token,
+          user: {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            role: user.role,
+            contact_limit: user.contact_limit,
+            is_email_enabled: user.is_email_enabled
+          }
+        },
         message: 'User registered successfully',
-        token,
-        user: {
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          role: user.role,
-          contact_limit: user.contact_limit,
-          is_email_enabled: user.is_email_enabled
-        }
-      }, 201);
+        success: true
+      };
+
+      return c.json(response, 201);
 
     } catch (error) {
       console.error('Registration error:', error);
@@ -85,22 +90,84 @@ export function createUserRoutes(db: DatabaseService, auth: AuthService) {
       // Generate token
       const token = auth.generateToken(user);
 
-      return c.json({
+      const response: ApiResponse = {
+        data: {
+          token,
+          user: {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            role: user.role,
+            contact_limit: user.contact_limit,
+            is_email_enabled: user.is_email_enabled
+          }
+        },
         message: 'Login successful',
-        token,
-        user: {
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          role: user.role,
-          contact_limit: user.contact_limit,
-          is_email_enabled: user.is_email_enabled
-        }
-      });
+        success: true
+      };
+
+      return c.json(response);
 
     } catch (error) {
       console.error('Login error:', error);
       return c.json({ error: 'Internal server error' }, 500);
+    }
+  });
+
+  // Verify token endpoint
+  users.post('/verify-token', async (c) => {
+    try {
+      const body = await c.req.json();
+      const { token } = body;
+
+      if (!token) {
+        return c.json({ error: 'Token is required', success: false }, 400);
+      }
+
+      const payload = auth.verifyToken(token);
+
+      if (!payload) {
+        return c.json({
+          valid: false,
+          error: 'Invalid token',
+          success: false
+        }, 401);
+      }
+
+      const user = await db.getUserById(payload.id);
+
+      if (!user) {
+        return c.json({
+          valid: false,
+          error: 'User not found',
+          success: false
+        }, 401);
+      }
+
+      const response: ApiResponse = {
+        data: {
+          valid: true,
+          user: {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            role: user.role,
+            contact_limit: user.contact_limit,
+            is_email_enabled: user.is_email_enabled
+          }
+        },
+        success: true
+      };
+
+      return c.json(response);
+
+    } catch (error) {
+      console.error('Token verification error:', error);
+      return c.json({
+        valid: false,
+        error: 'Token verification failed',
+        success: false
+      }, 500);
     }
   });
 
@@ -109,8 +176,8 @@ export function createUserRoutes(db: DatabaseService, auth: AuthService) {
     try {
       const user = getAuthenticatedUser(c);
       
-      return c.json({
-        user: {
+      const response: ApiResponse = {
+        data: {
           id: user.id,
           username: user.username,
           email: user.email,
@@ -118,8 +185,11 @@ export function createUserRoutes(db: DatabaseService, auth: AuthService) {
           contact_limit: user.contact_limit,
           is_email_enabled: user.is_email_enabled,
           created_at: user.created_at
-        }
-      });
+        },
+        success: true
+      };
+
+      return c.json(response);
 
     } catch (error) {
       console.error('Profile error:', error);
@@ -151,19 +221,34 @@ export function createUserRoutes(db: DatabaseService, auth: AuthService) {
         }
       }
 
-      // Update user (this would require implementing updateUser in DatabaseService)
-      // For now, return success message
-      return c.json({
-        message: 'Profile updated successfully',
-        user: {
-          id: user.id,
-          username: username || user.username,
-          email: email || user.email,
-          role: user.role,
-          contact_limit: user.contact_limit,
-          is_email_enabled: user.is_email_enabled
+      // Update user using the new updateUser method
+      const updateData: Partial<any> = {};
+      if (username && username !== user.username) updateData.username = username;
+      if (email && email !== user.email) updateData.email = email;
+
+      let updatedUser: User = user;
+      if (Object.keys(updateData).length > 0) {
+        const updateResult = await db.updateUser(user.id, updateData);
+        if (!updateResult) {
+          return c.json({ error: 'Failed to update profile', success: false }, 500);
         }
-      });
+        updatedUser = updateResult;
+      }
+
+      const response: ApiResponse = {
+        data: {
+          id: updatedUser.id,
+          username: updatedUser.username,
+          email: updatedUser.email,
+          role: updatedUser.role,
+          contact_limit: updatedUser.contact_limit,
+          is_email_enabled: updatedUser.is_email_enabled
+        },
+        message: 'Profile updated successfully',
+        success: true
+      };
+
+      return c.json(response);
 
     } catch (error) {
       console.error('Profile update error:', error);

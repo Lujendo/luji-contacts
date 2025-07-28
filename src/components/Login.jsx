@@ -14,10 +14,22 @@ const Login = () => {
     e.preventDefault();
     try {
       const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/users/login`, { email, password });
-      localStorage.setItem('token', response.data.token);
-      navigate('/dashboard'); // Redirect to Dashboard after login
+
+      // Handle both old and new response formats
+      const token = response.data?.data?.token || response.data?.token;
+      const user = response.data?.data?.user || response.data?.user;
+
+      if (token) {
+        localStorage.setItem('token', token);
+        if (user) {
+          localStorage.setItem('user', JSON.stringify(user));
+        }
+        navigate('/dashboard'); // Redirect to Dashboard after login
+      } else {
+        setError('Login response missing token');
+      }
     } catch (error) {
-      setError(error.response?.data?.message || 'An error occurred during login');
+      setError(error.response?.data?.error || error.response?.data?.message || 'An error occurred during login');
     }
   };
 
