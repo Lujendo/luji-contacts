@@ -434,9 +434,20 @@ const Dashboard: React.FC = () => {
           </div>
         </ResizableMainPanel>
 
-        {/* Right Panel - Details/Forms */}
+        {/* Contact Detail Modal */}
+        {showContactDetail && selectedContact && (
+          <ContactDetailPanel
+            contact={selectedContact}
+            groups={groups}
+            onClose={() => setShowContactDetail(false)}
+            onContactUpdate={handleContactUpdate}
+            onContactDelete={handleContactDelete}
+          />
+        )}
+
+        {/* Right Panel - Forms Only (No Contact Details) */}
         <ResizableRightPanel isVisible={
-          showContactForm || showContactDetail || showGroupList ||
+          showContactForm || showGroupList ||
           showGroupForm || showGroupEditForm || showEmailForm ||
           showEmailHistory || showImportExport || showUserSettings ||
           showBulkGroupAssign || showBulkGroupRemove || showGroupContactsManager
@@ -446,16 +457,6 @@ const Dashboard: React.FC = () => {
               onClose={() => setShowContactForm(false)}
               onContactCreated={handleContactCreate}
               groups={groups}
-            />
-          )}
-
-          {showContactDetail && selectedContact && (
-            <ContactDetailPanel
-              contact={selectedContact}
-              groups={groups}
-              onClose={() => setShowContactDetail(false)}
-              onContactUpdate={handleContactUpdate}
-              onContactDelete={handleContactDelete}
             />
           )}
 
@@ -579,6 +580,10 @@ const Dashboard: React.FC = () => {
         <GroupRemoveModal
           contactIds={selectedContacts}
           groups={groups}
+          onRemove={async (groupId: number, contactIds?: number[]) => {
+            // Handle group removal logic here
+            console.log('Remove contacts from group:', groupId, contactIds);
+          }}
           onClose={() => setShowGroupRemoveModal(false)}
           onRemovalComplete={() => {
             contactsApi.getContacts().then(setContacts);

@@ -27,41 +27,33 @@ const ContactDetailPanel: React.FC<ContactDetailPanelProps> = ({
     <>
       {/* Backdrop */}
       {isOpen && (
-        <div 
-          className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity z-40"
+        <div
+          className={`
+            fixed inset-0 bg-black transition-opacity duration-500 z-40
+            ${isOpen ? 'bg-opacity-50' : 'bg-opacity-0'}
+          `}
           onClick={onClose}
         />
       )}
 
       {/* Sliding panel */}
-      <div 
+      <div
         className={`
-          fixed inset-y-0 right-0 w-[1200px] bg-white shadow-xl transform transition-transform duration-300 ease-in-out z-50
-          ${isOpen ? 'translate-x-0' : 'translate-x-full'}
+          fixed inset-y-0 right-0 w-[90vw] max-w-[1400px] bg-white shadow-2xl transform transition-all duration-500 ease-out z-50
+          ${isOpen ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}
         `}
+        style={{
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.05)'
+        }}
       >
-        {/* Panel header */}
-        <div className="h-16 flex items-center justify-between px-6 border-b border-gray-200">
-          <h2 className="text-lg font-medium text-gray-900">
-            Contact Details
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-full hover:bg-gray-100 transition-colors duration-200"
-            aria-label="Close contact details"
-          >
-            <X size={20} className="text-gray-500" />
-          </button>
-        </div>
-
-        {/* Panel content - Use the ContactDetail component */}
-        <div className="h-[calc(100vh-4rem)] overflow-hidden">
+        {/* Panel content */}
+        <div className="h-full overflow-hidden">
           <ContactDetail
             contact={contact}
             allGroups={groups}
-            onClose={onClose}
             onContactUpdate={onContactUpdate}
             onContactDelete={onContactDelete}
+            onClose={onClose}
           />
         </div>
       </div>

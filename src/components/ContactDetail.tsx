@@ -29,6 +29,9 @@ import {
 } from "lucide-react";
 import SocialMediaSection from "./SocialMediaSection";
 
+// Tab type definition
+type TabType = 'overview' | 'details' | 'address' | 'social' | 'notes' | 'groups';
+
 // Component props interface
 interface ContactDetailProps {
   contact: Contact;
@@ -53,9 +56,9 @@ interface ProfileImageState {
   isUploading: boolean;
 }
 
-const ContactDetail: React.FC<ContactDetailProps> = ({ 
-  contact, 
-  allGroups = [], 
+const ContactDetail: React.FC<ContactDetailProps> = ({
+  contact,
+  allGroups = [],
   onUpdateContact,
   onAddToGroup,
   onRemoveFromGroup,
@@ -70,21 +73,19 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
   const [error, setError] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [errors, setErrors] = useState<FormErrors>({});
+  const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [profileImage, setProfileImage] = useState<ProfileImageState>({
     file: null,
-    preview: contact?.profile_image_url || null,
+    preview: null,
     isUploading: false
   });
-
-  // Refs
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Error message auto-clear
+  // Clear error after timeout
   useEffect(() => {
     if (error) {
-      const timer = setTimeout(() => {
-        setError('');
-      }, 5000);
+      const timer = setTimeout(() => setError(''), 5000);
       return () => clearTimeout(timer);
     }
   }, [error]);
@@ -243,7 +244,7 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
         setProfileImage(prev => ({ ...prev, isUploading: false }));
       }
 
-      // Call appropriate callback
+      // Call the appropriate callback
       const callback = onContactUpdate || onUpdateContact;
       if (callback) {
         callback(updatedContact);
@@ -268,16 +269,17 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
       preview: contact?.profile_image_url || null,
       isUploading: false
     });
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
   };
 
   // Delete contact
   const handleDelete = async (): Promise<void> => {
-    if (!contact || !window.confirm('Are you sure you want to delete this contact?')) return;
+    if (!contact || !window.confirm('Are you sure you want to delete this contact?')) {
+      return;
+    }
 
     setIsLoading(true);
+    setError('');
+
     try {
       await contactsApi.deleteContact(contact.id);
       
@@ -298,7 +300,9 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
 
   // Trigger file input
   const triggerFileInput = (): void => {
-    fileInputRef.current?.click();
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
   };
 
   // Remove profile image
@@ -308,6 +312,7 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
       preview: null,
       isUploading: false
     });
+    
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -409,137 +414,127 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
         </div>
       )}
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6">
-        {/* Profile Image Section */}
-        <div className="flex items-center space-x-6 mb-8">
-          <div className="relative">
-            {profileImage.preview ? (
+      {/* Tab Navigation */}
+      <div className="border-b border-gray-200">
+        <nav className="flex space-x-8 px-6" aria-label="Tabs">
+          {[
+            { id: 'overview', name: 'Overview', icon: User },
+            { id: 'details', name: 'Details', icon: Info },
+            { id: 'address', name: 'Address', icon: MapPin },
+            { id: 'social', name: 'Social', icon: Share2 },
+            { id: 'notes', name: 'Notes', icon: FileText },
+            { id: 'groups', name: 'Groups', icon: Users }
+          ].map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as TabType)}
+                className={`
+                  flex items-center py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200
+                  ${activeTab === tab.id
+                    ? 'border-indigo-500 text-indigo-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }
+                `}
+              >
+                <Icon className="h-4 w-4 mr-2" />
+                {tab.name}
+              </button>
+            );
+          })}
+        </nav>
+      </div>
+
+      {/* Tab Content */}
+      <div className="flex-1 overflow-y-auto">
+        {activeTab === 'overview' && (
+          <div className="p-6">
+            {/* Profile Header */}
+            <div className="flex items-center space-x-6 mb-8">
               <div className="relative">
-                <img
-                  src={profileImage.preview}
-                  alt="Profile"
-                  className="w-24 h-24 rounded-full object-cover border-4 border-gray-200"
-                />
-                {profileImage.isUploading && (
-                  <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+                {profileImage.preview ? (
+                  <div className="relative">
+                    <img
+                      src={profileImage.preview}
+                      alt="Profile"
+                      className="w-32 h-32 rounded-full object-cover border-4 border-gray-200 shadow-lg"
+                    />
+                    {profileImage.isUploading && (
+                      <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+                      </div>
+                    )}
+                    {editMode && (
+                      <button
+                        type="button"
+                        onClick={removeProfileImage}
+                        disabled={profileImage.isUploading}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 disabled:cursor-not-allowed shadow-lg"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="w-32 h-32 rounded-full bg-gradient-to-br from-indigo-100 to-indigo-200 flex items-center justify-center border-4 border-gray-200 shadow-lg">
+                    <User className="h-16 w-16 text-indigo-400" />
                   </div>
                 )}
+              </div>
+
+              <div className="flex-1">
+                <div className="mb-4">
+                  <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                    {editedContact.first_name || editedContact.last_name
+                      ? `${editedContact.first_name || ''} ${editedContact.last_name || ''}`.trim()
+                      : 'Unnamed Contact'
+                    }
+                  </h1>
+                  {editedContact.job_title && (
+                    <p className="text-xl text-gray-600 mb-1">{editedContact.job_title}</p>
+                  )}
+                  {editedContact.company && (
+                    <p className="text-lg text-gray-500 flex items-center">
+                      <Building2 className="h-4 w-4 mr-2" />
+                      {editedContact.company}
+                    </p>
+                  )}
+                </div>
+
                 {editMode && (
-                  <button
-                    type="button"
-                    onClick={removeProfileImage}
-                    disabled={profileImage.isUploading}
-                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 disabled:cursor-not-allowed"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
+                  <div className="mb-4">
+                    <button
+                      type="button"
+                      onClick={triggerFileInput}
+                      disabled={profileImage.isUploading}
+                      className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <Camera className="h-4 w-4 mr-2" />
+                      {profileImage.preview ? 'Change Photo' : 'Add Photo'}
+                    </button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageSelect}
+                      className="hidden"
+                    />
+                  </div>
                 )}
               </div>
-            ) : (
-              <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center border-4 border-gray-200">
-                <User className="h-12 w-12 text-gray-400" />
-              </div>
-            )}
-          </div>
+            </div>
 
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold text-gray-900">
-              {editedContact.first_name || editedContact.last_name
-                ? `${editedContact.first_name || ''} ${editedContact.last_name || ''}`.trim()
-                : 'Unnamed Contact'
-              }
-            </h1>
-            {editedContact.job_title && (
-              <p className="text-lg text-gray-600 mt-1">{editedContact.job_title}</p>
-            )}
-            {editedContact.company && (
-              <p className="text-gray-500 mt-1">{editedContact.company}</p>
-            )}
-
-            {editMode && (
-              <div className="mt-4">
-                <button
-                  type="button"
-                  onClick={triggerFileInput}
-                  disabled={profileImage.isUploading}
-                  className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <Upload className="h-4 w-4 mr-2" />
-                  {profileImage.preview ? 'Change Photo' : 'Upload Photo'}
-                </button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageSelect}
-                  className="hidden"
-                />
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Contact Information */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Basic Information */}
-          <div>
-            <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-              <User className="h-5 w-5 mr-2" />
-              Basic Information
-            </h3>
-            <div className="space-y-4">
-              {/* First Name */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  First Name
-                </label>
-                {editMode ? (
-                  <input
-                    type="text"
-                    name="first_name"
-                    value={editedContact.first_name || ''}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                    placeholder="Enter first name"
-                  />
-                ) : (
-                  <p className="text-gray-900">{editedContact.first_name || 'Not provided'}</p>
-                )}
-                {errors.first_name && (
-                  <p className="mt-1 text-sm text-red-600">{errors.first_name}</p>
-                )}
-              </div>
-
-              {/* Last Name */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Last Name
-                </label>
-                {editMode ? (
-                  <input
-                    type="text"
-                    name="last_name"
-                    value={editedContact.last_name || ''}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                    placeholder="Enter last name"
-                  />
-                ) : (
-                  <p className="text-gray-900">{editedContact.last_name || 'Not provided'}</p>
-                )}
-                {errors.last_name && (
-                  <p className="mt-1 text-sm text-red-600">{errors.last_name}</p>
-                )}
-              </div>
-
+            {/* Quick Contact Info */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
               {/* Email */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
-                  <Mail className="h-4 w-4 mr-1" />
-                  Email
-                </label>
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-sm font-medium text-gray-700 flex items-center">
+                    <Mail className="h-4 w-4 mr-2 text-indigo-500" />
+                    Email
+                  </label>
+                </div>
                 {editMode ? (
                   <input
                     type="email"
@@ -550,12 +545,12 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
                     placeholder="Enter email address"
                   />
                 ) : (
-                  <div className="flex items-center">
-                    <p className="text-gray-900">{editedContact.email || 'Not provided'}</p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-gray-900 font-medium">{editedContact.email || 'Not provided'}</p>
                     {editedContact.email && (
                       <a
                         href={`mailto:${editedContact.email}`}
-                        className="ml-2 text-indigo-600 hover:text-indigo-800"
+                        className="text-indigo-600 hover:text-indigo-800 p-1 rounded-full hover:bg-indigo-50"
                       >
                         <Mail className="h-4 w-4" />
                       </a>
@@ -568,11 +563,13 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
               </div>
 
               {/* Phone */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
-                  <Phone className="h-4 w-4 mr-1" />
-                  Phone
-                </label>
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-sm font-medium text-gray-700 flex items-center">
+                    <Phone className="h-4 w-4 mr-2 text-indigo-500" />
+                    Phone
+                  </label>
+                </div>
                 {editMode ? (
                   <input
                     type="tel"
@@ -583,12 +580,12 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
                     placeholder="Enter phone number"
                   />
                 ) : (
-                  <div className="flex items-center">
-                    <p className="text-gray-900">{editedContact.phone || 'Not provided'}</p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-gray-900 font-medium">{editedContact.phone || 'Not provided'}</p>
                     {editedContact.phone && (
                       <a
                         href={`tel:${editedContact.phone}`}
-                        className="ml-2 text-indigo-600 hover:text-indigo-800"
+                        className="text-indigo-600 hover:text-indigo-800 p-1 rounded-full hover:bg-indigo-50"
                       >
                         <Phone className="h-4 w-4" />
                       </a>
@@ -601,18 +598,59 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
               </div>
             </div>
           </div>
+        )}
 
-          {/* Professional Information */}
-          <div>
-            <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-              <Briefcase className="h-5 w-5 mr-2" />
-              Professional Information
-            </h3>
-            <div className="space-y-4">
+        {activeTab === 'details' && (
+          <div className="p-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* First Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  First Name
+                </label>
+                {editMode ? (
+                  <input
+                    type="text"
+                    name="first_name"
+                    value={editedContact.first_name || ''}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="Enter first name"
+                  />
+                ) : (
+                  <p className="text-gray-900 py-2 px-3 bg-gray-50 rounded-md">{editedContact.first_name || 'Not provided'}</p>
+                )}
+                {errors.first_name && (
+                  <p className="mt-1 text-sm text-red-600">{errors.first_name}</p>
+                )}
+              </div>
+
+              {/* Last Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Last Name
+                </label>
+                {editMode ? (
+                  <input
+                    type="text"
+                    name="last_name"
+                    value={editedContact.last_name || ''}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="Enter last name"
+                  />
+                ) : (
+                  <p className="text-gray-900 py-2 px-3 bg-gray-50 rounded-md">{editedContact.last_name || 'Not provided'}</p>
+                )}
+                {errors.last_name && (
+                  <p className="mt-1 text-sm text-red-600">{errors.last_name}</p>
+                )}
+              </div>
+
               {/* Company */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
-                  <Building2 className="h-4 w-4 mr-1" />
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                  <Building2 className="h-4 w-4 mr-2" />
                   Company
                 </label>
                 {editMode ? (
@@ -625,13 +663,13 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
                     placeholder="Enter company name"
                   />
                 ) : (
-                  <p className="text-gray-900">{editedContact.company || 'Not provided'}</p>
+                  <p className="text-gray-900 py-2 px-3 bg-gray-50 rounded-md">{editedContact.company || 'Not provided'}</p>
                 )}
               </div>
 
               {/* Job Title */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Job Title
                 </label>
                 {editMode ? (
@@ -644,14 +682,14 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
                     placeholder="Enter job title"
                   />
                 ) : (
-                  <p className="text-gray-900">{editedContact.job_title || 'Not provided'}</p>
+                  <p className="text-gray-900 py-2 px-3 bg-gray-50 rounded-md">{editedContact.job_title || 'Not provided'}</p>
                 )}
               </div>
 
               {/* Website */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
-                  <Globe className="h-4 w-4 mr-1" />
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                  <Globe className="h-4 w-4 mr-2" />
                   Website
                 </label>
                 {editMode ? (
@@ -664,14 +702,14 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
                     placeholder="https://example.com"
                   />
                 ) : (
-                  <div className="flex items-center">
+                  <div className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-md">
                     <p className="text-gray-900">{editedContact.website || 'Not provided'}</p>
                     {editedContact.website && (
                       <a
                         href={editedContact.website}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="ml-2 text-indigo-600 hover:text-indigo-800"
+                        className="text-indigo-600 hover:text-indigo-800 p-1 rounded-full hover:bg-indigo-50"
                       >
                         <Link className="h-4 w-4" />
                       </a>
@@ -685,8 +723,8 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
 
               {/* Birthday */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
-                  <Calendar className="h-4 w-4 mr-1" />
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                  <Calendar className="h-4 w-4 mr-2" />
                   Birthday
                 </label>
                 {editMode ? (
@@ -698,7 +736,7 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                   />
                 ) : (
-                  <p className="text-gray-900">
+                  <p className="text-gray-900 py-2 px-3 bg-gray-50 rounded-md">
                     {editedContact.birthday
                       ? new Date(editedContact.birthday).toLocaleDateString()
                       : 'Not provided'
@@ -711,29 +749,13 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
               </div>
             </div>
           </div>
-        </div>
+        )}
 
-        {/* Social Media Section */}
-        <div className="mt-8">
-          <SocialMediaSection
-            contact={editedContact}
-            editMode={editMode}
-            onInputChange={handleInputChange}
-            errors={errors}
-          />
-        </div>
-
-        {/* Address Section */}
-        {(editMode || editedContact.address_street || editedContact.address_city ||
-          editedContact.address_state || editedContact.address_zip || editedContact.address_country) && (
-          <div className="mt-8">
-            <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-              <MapPin className="h-5 w-5 mr-2" />
-              Address
-            </h3>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {activeTab === 'address' && (
+          <div className="p-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="lg:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Street Address
                 </label>
                 {editMode ? (
@@ -746,12 +768,12 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
                     placeholder="Enter street address"
                   />
                 ) : (
-                  <p className="text-gray-900">{editedContact.address_street || 'Not provided'}</p>
+                  <p className="text-gray-900 py-2 px-3 bg-gray-50 rounded-md">{editedContact.address_street || 'Not provided'}</p>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   City
                 </label>
                 {editMode ? (
@@ -764,12 +786,12 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
                     placeholder="Enter city"
                   />
                 ) : (
-                  <p className="text-gray-900">{editedContact.address_city || 'Not provided'}</p>
+                  <p className="text-gray-900 py-2 px-3 bg-gray-50 rounded-md">{editedContact.address_city || 'Not provided'}</p>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   State/Province
                 </label>
                 {editMode ? (
@@ -782,12 +804,12 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
                     placeholder="Enter state or province"
                   />
                 ) : (
-                  <p className="text-gray-900">{editedContact.address_state || 'Not provided'}</p>
+                  <p className="text-gray-900 py-2 px-3 bg-gray-50 rounded-md">{editedContact.address_state || 'Not provided'}</p>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   ZIP/Postal Code
                 </label>
                 {editMode ? (
@@ -800,12 +822,12 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
                     placeholder="Enter ZIP or postal code"
                   />
                 ) : (
-                  <p className="text-gray-900">{editedContact.address_zip || 'Not provided'}</p>
+                  <p className="text-gray-900 py-2 px-3 bg-gray-50 rounded-md">{editedContact.address_zip || 'Not provided'}</p>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Country
                 </label>
                 {editMode ? (
@@ -818,56 +840,72 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
                     placeholder="Enter country"
                   />
                 ) : (
-                  <p className="text-gray-900">{editedContact.address_country || 'Not provided'}</p>
+                  <p className="text-gray-900 py-2 px-3 bg-gray-50 rounded-md">{editedContact.address_country || 'Not provided'}</p>
                 )}
               </div>
             </div>
           </div>
         )}
 
-        {/* Notes Section */}
-        {(editMode || editedContact.notes) && (
-          <div className="mt-8">
-            <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-              <FileText className="h-5 w-5 mr-2" />
-              Notes
-            </h3>
-            {editMode ? (
-              <textarea
-                name="notes"
-                rows={4}
-                value={editedContact.notes || ''}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                placeholder="Add any additional notes about this contact..."
-              />
-            ) : (
-              <div className="bg-gray-50 rounded-md p-4">
-                <p className="text-gray-900 whitespace-pre-wrap">
-                  {editedContact.notes || 'No notes available'}
-                </p>
-              </div>
-            )}
+        {activeTab === 'social' && (
+          <div className="p-6">
+            <SocialMediaSection
+              contact={editedContact}
+              editMode={editMode}
+              onInputChange={handleInputChange}
+              errors={errors}
+            />
           </div>
         )}
 
-        {/* Groups Section */}
-        {(editedContact.Groups && editedContact.Groups.length > 0) && (
-          <div className="mt-8">
-            <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-              <Users className="h-5 w-5 mr-2" />
-              Groups
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              {editedContact.Groups.map((group) => (
-                <span
-                  key={group.id}
-                  className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800"
-                >
-                  {group.name}
-                </span>
-              ))}
+        {activeTab === 'notes' && (
+          <div className="p-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Notes
+              </label>
+              {editMode ? (
+                <textarea
+                  name="notes"
+                  rows={8}
+                  value={editedContact.notes || ''}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  placeholder="Add any additional notes about this contact..."
+                />
+              ) : (
+                <div className="bg-gray-50 rounded-md p-4 min-h-[200px]">
+                  <p className="text-gray-900 whitespace-pre-wrap">
+                    {editedContact.notes || 'No notes available'}
+                  </p>
+                </div>
+              )}
             </div>
+          </div>
+        )}
+
+        {activeTab === 'groups' && (
+          <div className="p-6">
+            {editedContact.Groups && editedContact.Groups.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {editedContact.Groups.map((group) => (
+                  <div
+                    key={group.id}
+                    className="bg-gradient-to-r from-indigo-50 to-indigo-100 border border-indigo-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex items-center">
+                      <Users className="h-5 w-5 text-indigo-600 mr-2" />
+                      <span className="font-medium text-indigo-900">{group.name}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500">This contact is not assigned to any groups</p>
+              </div>
+            )}
           </div>
         )}
       </div>
