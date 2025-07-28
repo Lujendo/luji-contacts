@@ -134,8 +134,18 @@ export function createContactRoutes(db: DatabaseService, auth: AuthService, stor
         twitter: body.twitter?.trim() || '',
         linkedin: body.linkedin?.trim() || '',
         instagram: body.instagram?.trim() || '',
+        youtube: body.youtube?.trim() || '',
+        tiktok: body.tiktok?.trim() || '',
+        snapchat: body.snapchat?.trim() || '',
+        discord: body.discord?.trim() || '',
+        spotify: body.spotify?.trim() || '',
+        apple_music: body.apple_music?.trim() || '',
+        github: body.github?.trim() || '',
+        behance: body.behance?.trim() || '',
+        dribbble: body.dribbble?.trim() || '',
         company: body.company?.trim() || '',
         job_title: body.job_title?.trim() || '',
+        role: body.role?.trim() || '',
         notes: body.notes?.trim() || '',
         profile_image_url: body.profile_image_url || ''
       };
@@ -189,7 +199,8 @@ export function createContactRoutes(db: DatabaseService, auth: AuthService, stor
         'first_name', 'last_name', 'email', 'phone', 'address_street',
         'address_city', 'address_state', 'address_zip', 'address_country',
         'birthday', 'website', 'facebook', 'twitter', 'linkedin',
-        'instagram', 'company', 'job_title', 'notes', 'profile_image_url'
+        'instagram', 'youtube', 'tiktok', 'snapchat', 'discord', 'spotify',
+        'apple_music', 'github', 'behance', 'dribbble', 'company', 'job_title', 'role', 'notes', 'profile_image_url'
       ];
 
       for (const field of allowedFields) {

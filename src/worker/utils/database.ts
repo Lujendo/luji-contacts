@@ -113,8 +113,18 @@ export interface Contact {
   twitter?: string;
   linkedin?: string;
   instagram?: string;
+  youtube?: string;
+  tiktok?: string;
+  snapchat?: string;
+  discord?: string;
+  spotify?: string;
+  apple_music?: string;
+  github?: string;
+  behance?: string;
+  dribbble?: string;
   company?: string;
   job_title?: string;
+  role?: string;
   notes?: string;
   profile_image_url?: string;
   created_at?: string;
@@ -234,8 +244,9 @@ export class DatabaseService {
       INSERT INTO contacts (
         user_id, first_name, last_name, email, phone, address_street, address_city,
         address_state, address_zip, address_country, birthday, website, facebook,
-        twitter, linkedin, instagram, company, job_title, notes, profile_image_url
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        twitter, linkedin, instagram, youtube, tiktok, snapchat, discord, spotify,
+        apple_music, github, behance, dribbble, company, job_title, role, notes, profile_image_url
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       RETURNING *
     `).bind(
       contactData.user_id,
@@ -254,8 +265,18 @@ export class DatabaseService {
       contactData.twitter,
       contactData.linkedin,
       contactData.instagram,
+      contactData.youtube,
+      contactData.tiktok,
+      contactData.snapchat,
+      contactData.discord,
+      contactData.spotify,
+      contactData.apple_music,
+      contactData.github,
+      contactData.behance,
+      contactData.dribbble,
       contactData.company,
       contactData.job_title,
+      contactData.role,
       contactData.notes,
       contactData.profile_image_url
     ).first<Contact>();
@@ -272,16 +293,16 @@ export class DatabaseService {
 
     if (search) {
       query += ` AND (
-        first_name LIKE ? OR last_name LIKE ? OR email LIKE ? OR 
-        phone LIKE ? OR notes LIKE ? OR company LIKE ? OR 
-        job_title LIKE ? OR address_city LIKE ? OR address_country LIKE ?
+        first_name LIKE ? OR last_name LIKE ? OR email LIKE ? OR
+        phone LIKE ? OR notes LIKE ? OR company LIKE ? OR
+        job_title LIKE ? OR role LIKE ? OR address_city LIKE ? OR address_country LIKE ?
       )`;
       const searchParam = `%${search}%`;
-      params.push(searchParam, searchParam, searchParam, searchParam, searchParam, searchParam, searchParam, searchParam, searchParam);
+      params.push(searchParam, searchParam, searchParam, searchParam, searchParam, searchParam, searchParam, searchParam, searchParam, searchParam);
     }
 
     if (sort) {
-      const validSorts = ['first_name', 'last_name', 'email', 'created_at', 'company'];
+      const validSorts = ['first_name', 'last_name', 'email', 'created_at', 'company', 'job_title', 'role'];
       if (validSorts.includes(sort)) {
         const dir = direction === 'desc' ? 'DESC' : 'ASC';
         query += ` ORDER BY ${sort} ${dir}`;
