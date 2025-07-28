@@ -28,7 +28,7 @@ const ContactDetailPanel: React.FC<ContactDetailPanelProps> = ({
       {isOpen && (
         <div
           className={`
-            fixed inset-0 bg-black transition-opacity duration-700 z-40
+            fixed inset-0 bg-black transition-opacity duration-500 ease-in-out z-40
             ${isOpen ? 'bg-opacity-50' : 'bg-opacity-0'}
           `}
           onClick={onClose}
@@ -38,11 +38,12 @@ const ContactDetailPanel: React.FC<ContactDetailPanelProps> = ({
       {/* Sliding panel */}
       <div
         className={`
-          fixed inset-y-0 right-0 w-[90vw] max-w-[1400px] bg-white shadow-2xl transform transition-all duration-700 ease-out z-50
-          ${isOpen ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}
+          fixed inset-y-0 right-0 w-[90vw] max-w-[1400px] bg-white shadow-2xl transform transition-all duration-500 z-50
+          ${isOpen ? 'translate-x-0 opacity-100 scale-100' : 'translate-x-full opacity-0 scale-95'}
         `}
         style={{
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.05)'
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.05)',
+          transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)'
         }}
       >
         {/* Panel content */}

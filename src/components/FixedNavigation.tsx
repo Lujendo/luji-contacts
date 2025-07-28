@@ -36,66 +36,96 @@ const FixedNavigation: React.FC<FixedNavigationProps> = ({
       {/* Navigation Items */}
       <div className="flex-1 flex flex-col items-center py-4 space-y-2">
         {/* Add Contact */}
-        <button
-          onClick={() => onOpenPanel('contactForm')}
-          className="w-12 h-12 flex items-center justify-center rounded-lg text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
-          title="Add Contact"
-        >
-          <Plus className="h-6 w-6" />
-        </button>
+        <div className="relative group">
+          <button
+            onClick={() => onOpenPanel('contactForm')}
+            className="w-12 h-12 flex items-center justify-center rounded-lg text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+          >
+            <Plus className="h-6 w-6" />
+          </button>
+          <div className="absolute left-16 top-1/2 transform -translate-y-1/2 bg-gray-900 text-white text-sm px-2 py-1 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50">
+            Add Contact
+            <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45"></div>
+          </div>
+        </div>
 
         {/* Groups */}
-        <button
-          onClick={() => onOpenPanel('groupList')}
-          className="w-12 h-12 flex items-center justify-center rounded-lg text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
-          title="Groups"
-        >
-          <Users className="h-6 w-6" />
-        </button>
+        <div className="relative group">
+          <button
+            onClick={() => onOpenPanel('groupList')}
+            className="w-12 h-12 flex items-center justify-center rounded-lg text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+          >
+            <Users className="h-6 w-6" />
+          </button>
+          <div className="absolute left-16 top-1/2 transform -translate-y-1/2 bg-gray-900 text-white text-sm px-2 py-1 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50">
+            Groups
+            <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45"></div>
+          </div>
+        </div>
 
         {/* Email */}
-        <button
-          onClick={() => onOpenPanel('emailForm')}
-          className="relative w-12 h-12 flex items-center justify-center rounded-lg text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
-          title="Send Email"
-        >
-          <Send className="h-6 w-6" />
-          {selectedContactsCount > 0 && (
-            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-              {selectedContactsCount > 99 ? '99+' : selectedContactsCount}
-            </span>
-          )}
-        </button>
+        <div className="relative group">
+          <button
+            onClick={() => onOpenPanel('emailForm')}
+            className="relative w-12 h-12 flex items-center justify-center rounded-lg text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+          >
+            <Send className="h-6 w-6" />
+            {selectedContactsCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                {selectedContactsCount > 99 ? '99+' : selectedContactsCount}
+              </span>
+            )}
+          </button>
+          <div className="absolute left-16 top-1/2 transform -translate-y-1/2 bg-gray-900 text-white text-sm px-2 py-1 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50">
+            Send Email
+            <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45"></div>
+          </div>
+        </div>
 
         {/* Email History */}
-        <button
-          onClick={() => onOpenPanel('emailHistory')}
-          className="w-12 h-12 flex items-center justify-center rounded-lg text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
-          title="Email History"
-        >
-          <History className="h-6 w-6" />
-        </button>
+        <div className="relative group">
+          <button
+            onClick={() => onOpenPanel('emailHistory')}
+            className="w-12 h-12 flex items-center justify-center rounded-lg text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+          >
+            <History className="h-6 w-6" />
+          </button>
+          <div className="absolute left-16 top-1/2 transform -translate-y-1/2 bg-gray-900 text-white text-sm px-2 py-1 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50">
+            Email History
+            <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45"></div>
+          </div>
+        </div>
 
         {/* Import/Export */}
-        <button
-          onClick={() => onOpenPanel('importExport')}
-          className="w-12 h-12 flex items-center justify-center rounded-lg text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
-          title="Import/Export"
-        >
-          <ArrowUpDown className="h-6 w-6" />
-        </button>
+        <div className="relative group">
+          <button
+            onClick={() => onOpenPanel('importExport')}
+            className="w-12 h-12 flex items-center justify-center rounded-lg text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+          >
+            <ArrowUpDown className="h-6 w-6" />
+          </button>
+          <div className="absolute left-16 top-1/2 transform -translate-y-1/2 bg-gray-900 text-white text-sm px-2 py-1 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50">
+            Import/Export
+            <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45"></div>
+          </div>
+        </div>
       </div>
 
       {/* User Menu */}
       <div className="border-t border-gray-200 p-2">
         {/* Settings */}
-        <button
-          onClick={() => onOpenPanel('userSettings')}
-          className="w-12 h-12 flex items-center justify-center rounded-lg text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition-colors mb-2"
-          title="Settings"
-        >
-          <Settings className="h-6 w-6" />
-        </button>
+        <div className="relative group mb-2">
+          <button
+            onClick={() => onOpenPanel('userSettings')}
+            className="w-12 h-12 flex items-center justify-center rounded-lg text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+          >
+            <Settings className="h-6 w-6" />
+          </button>
+          <div className="absolute left-16 top-1/2 transform -translate-y-1/2 bg-gray-900 text-white text-sm px-2 py-1 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50">
+            Settings
+            <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45"></div>
+          </div>
+        </div>
 
         {/* User Profile */}
         <div className="relative group">
