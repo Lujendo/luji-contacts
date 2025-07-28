@@ -44,6 +44,27 @@ interface ContactDetailProps {
   onContactDelete?: (contactId: number) => void;
 }
 
+// Age calculation utility function
+const calculateAge = (birthday: string): number | null => {
+  if (!birthday) return null;
+
+  const birthDate = new Date(birthday);
+  const today = new Date();
+
+  // Check if the birth date is valid
+  if (isNaN(birthDate.getTime())) return null;
+
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+
+  // If birthday hasn't occurred this year yet, subtract 1
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+
+  return age >= 0 ? age : null;
+};
+
 // Form errors interface
 interface FormErrors {
   [key: string]: string;
@@ -641,7 +662,7 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
                 </div>
               )}
 
-              {/* Birthday */}
+              {/* Birthday & Age */}
               {editedContact.birthday && (
                 <div className="bg-gray-50 rounded-lg p-4">
                   <div className="flex items-center justify-between mb-2">
@@ -650,9 +671,19 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
                       Birthday
                     </label>
                   </div>
-                  <p className="text-gray-900 font-medium">
-                    {new Date(editedContact.birthday).toLocaleDateString()}
-                  </p>
+                  <div className="space-y-1">
+                    <p className="text-gray-900 font-medium">
+                      {new Date(editedContact.birthday).toLocaleDateString()}
+                    </p>
+                    {(() => {
+                      const age = calculateAge(editedContact.birthday);
+                      return age !== null ? (
+                        <p className="text-sm text-gray-600">
+                          {age} year{age !== 1 ? 's' : ''} old
+                        </p>
+                      ) : null;
+                    })()}
+                  </div>
                 </div>
               )}
 
@@ -904,11 +935,11 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
                 )}
               </div>
 
-              {/* Birthday */}
+              {/* Birthday & Age */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
                   <Calendar className="h-4 w-4 mr-2" />
-                  Birthday
+                  Birthday & Age
                 </label>
                 {editMode ? (
                   <input
@@ -919,17 +950,56 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                   />
                 ) : (
-                  <p className="text-gray-900 py-2 px-3 bg-gray-50 rounded-md">
-                    {editedContact.birthday
-                      ? new Date(editedContact.birthday).toLocaleDateString()
-                      : 'Not provided'
-                    }
-                  </p>
+                  <div className="py-2 px-3 bg-gray-50 rounded-md">
+                    {editedContact.birthday ? (
+                      <div className="space-y-1">
+                        <p className="text-gray-900 font-medium">
+                          {new Date(editedContact.birthday).toLocaleDateString()}
+                        </p>
+                        {(() => {
+                          const age = calculateAge(editedContact.birthday);
+                          return age !== null ? (
+                            <p className="text-sm text-gray-600">
+                              {age} year{age !== 1 ? 's' : ''} old
+                            </p>
+                          ) : null;
+                        })()}
+                      </div>
+                    ) : (
+                      <p className="text-gray-900">Not provided</p>
+                    )}
+                  </div>
                 )}
                 {errors.birthday && (
                   <p className="mt-1 text-sm text-red-600">{errors.birthday}</p>
                 )}
               </div>
+
+              {/* Age (calculated field - read-only) */}
+              {editedContact.birthday && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                    <Calendar className="h-4 w-4 mr-2" />
+                    Current Age
+                  </label>
+                  <div className="py-2 px-3 bg-blue-50 rounded-md border border-blue-200">
+                    {(() => {
+                      const age = calculateAge(editedContact.birthday);
+                      return age !== null ? (
+                        <div className="flex items-center">
+                          <span className="text-2xl font-bold text-blue-600 mr-2">{age}</span>
+                          <span className="text-blue-700">year{age !== 1 ? 's' : ''} old</span>
+                        </div>
+                      ) : (
+                        <p className="text-gray-500 italic">Unable to calculate age</p>
+                      );
+                    })()}
+                  </div>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Automatically calculated from birthday
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -1218,7 +1288,7 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
               {/* Contact Statistics */}
               <div className="bg-white border border-gray-200 rounded-lg p-4">
                 <h4 className="text-sm font-medium text-gray-900 mb-4">Contact Statistics</h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="text-center p-3 bg-indigo-50 rounded-lg">
                     <div className="text-2xl font-bold text-indigo-600">
                       {editedContact.Groups?.length || 0}
@@ -1248,6 +1318,14 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
                     </div>
                     <div className="text-sm text-purple-700">Contact Methods</div>
                   </div>
+                  {editedContact.birthday && (
+                    <div className="text-center p-3 bg-orange-50 rounded-lg">
+                      <div className="text-2xl font-bold text-orange-600">
+                        {calculateAge(editedContact.birthday) || '?'}
+                      </div>
+                      <div className="text-sm text-orange-700">Years Old</div>
+                    </div>
+                  )}
                 </div>
               </div>
 
