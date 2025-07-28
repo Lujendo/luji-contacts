@@ -34,7 +34,7 @@ export function createContactRoutes(db: DatabaseService, auth: AuthService, stor
             profile_image_url: contact.profile_image_url ? (
               contact.profile_image_url.startsWith('/api/files/')
                 ? contact.profile_image_url
-                : storage.getPublicUrl(contact.profile_image_url)
+                : `/api/files/${contact.profile_image_url}`
             ) : contact.profile_image_url,
             Groups: groups.map(g => ({ id: g.id, name: g.name })), // Use uppercase Groups for frontend compatibility
             groups: groups.map(g => ({ id: g.id, name: g.name }))  // Keep lowercase for backward compatibility
@@ -83,7 +83,7 @@ export function createContactRoutes(db: DatabaseService, auth: AuthService, stor
         profile_image_url: contact.profile_image_url ? (
           contact.profile_image_url.startsWith('/api/files/')
             ? contact.profile_image_url
-            : storage.getPublicUrl(contact.profile_image_url)
+            : `/api/files/${contact.profile_image_url}`
         ) : contact.profile_image_url,
         Groups: groups.map(g => ({ id: g.id, name: g.name })), // Use uppercase Groups for frontend compatibility
         groups: groups.map(g => ({ id: g.id, name: g.name }))  // Keep lowercase for backward compatibility
@@ -234,7 +234,7 @@ export function createContactRoutes(db: DatabaseService, auth: AuthService, stor
         profile_image_url: updatedContact.profile_image_url ? (
           updatedContact.profile_image_url.startsWith('/api/files/')
             ? updatedContact.profile_image_url
-            : storage.getPublicUrl(updatedContact.profile_image_url)
+            : `/api/files/${updatedContact.profile_image_url}`
         ) : updatedContact.profile_image_url,
         Groups: groups.map(g => ({ id: g.id, name: g.name })), // Use uppercase Groups for frontend compatibility
         groups: groups.map(g => ({ id: g.id, name: g.name }))  // Keep lowercase for backward compatibility

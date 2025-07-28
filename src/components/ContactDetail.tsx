@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, ChangeEvent, FormEvent } from "react";
+import React, { useState, useEffect, useRef, ChangeEvent } from "react";
 import { contactsApi } from '../api';
 import { Contact, Group, UpdateContactRequest } from '../types';
 import {
@@ -6,15 +6,11 @@ import {
   Save,
   X,
   Plus,
-  Search,
   Phone,
   Mail,
   User,
   Users,
-  Check,
   Trash2,
-  Filter,
-  ArrowUpDown,
   FileText,
   MapPin,
   Briefcase,
@@ -28,9 +24,27 @@ import {
   Upload
 } from "lucide-react";
 import SocialMediaSection from "./SocialMediaSection";
+import ProfileImage from './ui/ProfileImage';
 
 // Tab type definition
 type TabType = 'overview' | 'details' | 'address' | 'social' | 'notes' | 'groups' | 'activity';
+
+// Helper function to get contact initials
+const getContactInitials = (contact: Contact): string => {
+  const firstName = contact.first_name?.trim() || '';
+  const lastName = contact.last_name?.trim() || '';
+
+  if (firstName && lastName) {
+    return `${firstName[0]}${lastName[0]}`.toUpperCase();
+  } else if (firstName) {
+    return firstName[0].toUpperCase();
+  } else if (lastName) {
+    return lastName[0].toUpperCase();
+  } else if (contact.email) {
+    return contact.email[0].toUpperCase();
+  }
+  return 'U';
+};
 
 // Component props interface
 interface ContactDetailProps {
@@ -90,7 +104,6 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
   // State Management
   const [editMode, setEditMode] = useState<boolean>(false);
   const [editedContact, setEditedContact] = useState<Contact | null>(null);
-  const [contactId, setContactId] = useState<number | null>(null);
   const [error, setError] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [errors, setErrors] = useState<FormErrors>({});
@@ -115,7 +128,6 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
   useEffect(() => {
     if (contact) {
       setEditedContact({ ...contact });
-      setContactId(contact.id);
       setProfileImage(prev => ({
         ...prev,
         preview: contact.profile_image_url || null
@@ -513,9 +525,13 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
                     )}
                   </div>
                 ) : (
-                  <div className="w-32 h-32 rounded-full bg-gradient-to-br from-indigo-100 to-indigo-200 flex items-center justify-center border-4 border-gray-200 shadow-lg">
-                    <User className="h-16 w-16 text-indigo-400" />
-                  </div>
+                  <ProfileImage
+                    src={editedContact.profile_image_url}
+                    alt={`${editedContact.first_name || ''} ${editedContact.last_name || ''}`.trim() || 'Contact'}
+                    size="xl"
+                    fallbackInitials={getContactInitials(editedContact)}
+                    showBorder={true}
+                  />
                 )}
               </div>
 

@@ -2,7 +2,6 @@ import React from 'react';
 import { User } from '../types';
 import {
   Mail,
-  UserCircle,
   LogOut,
   ArrowUpDown,
   History,
@@ -11,6 +10,26 @@ import {
   Plus,
   Send
 } from 'lucide-react';
+import ProfileImage from './ui/ProfileImage';
+
+// Helper function to get user initials
+const getUserInitials = (user: User | null): string => {
+  if (!user) return 'U';
+
+  const username = user.username?.trim() || '';
+  const email = user.email?.trim() || '';
+
+  if (username) {
+    const parts = username.split(' ');
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    }
+    return username[0].toUpperCase();
+  } else if (email) {
+    return email[0].toUpperCase();
+  }
+  return 'U';
+};
 
 // Component props interface
 interface FixedNavigationProps {
@@ -133,15 +152,12 @@ const FixedNavigation: React.FC<FixedNavigationProps> = ({
             className="w-12 h-12 flex items-center justify-center rounded-lg text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
             title={user?.username || 'User Profile'}
           >
-            {user?.profile_image_url ? (
-              <img
-                src={user.profile_image_url}
-                alt="Profile"
-                className="w-8 h-8 rounded-full object-cover"
-              />
-            ) : (
-              <UserCircle className="h-8 w-8" />
-            )}
+            <ProfileImage
+              src={user?.profile_image_url}
+              alt={user?.username || 'User Profile'}
+              size="sm"
+              fallbackInitials={getUserInitials(user)}
+            />
           </button>
 
           {/* User dropdown menu */}

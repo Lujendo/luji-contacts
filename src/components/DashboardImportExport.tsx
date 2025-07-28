@@ -4,6 +4,7 @@ import { contactsApi } from '../api';
 import { saveAs } from 'file-saver';
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
+import { VCardParser, VCardExporter } from '../utils/vcardParser';
 import {
   Upload,
   Download,
@@ -15,6 +16,7 @@ import {
   CheckCircle2,
   X,
   AlertTriangle,
+  Contact as ContactIcon,
 } from 'lucide-react';
 import ColumnMapping from './ColumnMapping';
 
@@ -93,7 +95,7 @@ interface DashboardImportExportProps {
 type ImportStep = 'upload' | 'mapping' | 'preview' | 'importing' | 'complete';
 
 // Export format type
-type ExportFormat = 'csv' | 'xlsx' | 'json';
+type ExportFormat = 'csv' | 'xlsx' | 'json' | 'vcf';
 
 const DashboardImportExport: React.FC<DashboardImportExportProps> = ({
   onClose,
@@ -134,11 +136,13 @@ const DashboardImportExport: React.FC<DashboardImportExportProps> = ({
       'text/csv',
       'application/vnd.ms-excel',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'application/json'
+      'application/json',
+      'text/vcard',
+      'text/x-vcard'
     ];
 
-    if (!allowedTypes.includes(selectedFile.type) && !selectedFile.name.match(/\.(csv|xlsx|xls|json)$/i)) {
-      setError('Please select a CSV, Excel, or JSON file');
+    if (!allowedTypes.includes(selectedFile.type) && !selectedFile.name.match(/\.(csv|xlsx|xls|json|vcf)$/i)) {
+      setError('Please select a CSV, Excel, JSON, or vCard file');
       return;
     }
 
@@ -199,6 +203,36 @@ const DashboardImportExport: React.FC<DashboardImportExportProps> = ({
             setError('Invalid JSON file format');
             setLoading(false);
           }
+        } else if (file.name.endsWith('.vcf')) {
+          // Parse vCard
+          try {
+            const vCardResult = VCardParser.parseVCard(content as string);
+
+            if (vCardResult.errors.length > 0) {
+              console.warn('vCard parsing warnings:', vCardResult.errors);
+            }
+
+            if (vCardResult.contacts.length === 0) {
+              setError('No valid contacts found in vCard file');
+              setLoading(false);
+              return;
+            }
+
+            setParsedData(vCardResult.contacts);
+            setImportStep('preview'); // Skip mapping for vCard files
+            setLoading(false);
+
+            // Show success message with stats
+            if (vCardResult.totalCards > vCardResult.successfulCards) {
+              setSuccess(`Successfully parsed ${vCardResult.successfulCards} of ${vCardResult.totalCards} vCards`);
+            }
+          } catch (vCardError) {
+            setError('Invalid vCard file format');
+            setLoading(false);
+          }
+        } else {
+          setError('Unsupported file format');
+          setLoading(false);
         }
       } catch (error) {
         console.error('File parsing error:', error);
@@ -225,7 +259,7 @@ const DashboardImportExport: React.FC<DashboardImportExportProps> = ({
     setImportStep('preview');
   }, []);
 
-  // Transform data based on column mapping
+  // Transform data based on column mapping or direct vCard data
   const transformData = useCallback((): CreateContactRequest[] => {
     return parsedData.map(row => {
       const transformedRow: CreateContactRequest = {
@@ -249,19 +283,39 @@ const DashboardImportExport: React.FC<DashboardImportExportProps> = ({
         notes: ''
       };
 
-      // Apply column mapping
-      Object.entries(columnMapping).forEach(([csvColumn, contactField]) => {
-        if (contactField && row[csvColumn] !== undefined) {
-          const value = String(row[csvColumn]).trim();
-          if (value) {
-            (transformedRow as any)[contactField] = value;
+      // Check if this is vCard data (has direct field mapping)
+      if (file && file.name.endsWith('.vcf')) {
+        // For vCard data, map directly from parsed fields
+        const allowedFields: (keyof CreateContactRequest)[] = [
+          'first_name', 'last_name', 'email', 'phone', 'company', 'job_title',
+          'website', 'linkedin', 'twitter', 'facebook', 'instagram', 'birthday',
+          'address_street', 'address_city', 'address_state', 'address_zip',
+          'address_country', 'notes'
+        ];
+
+        allowedFields.forEach(field => {
+          if (row[field] !== undefined && row[field] !== null) {
+            const value = String(row[field]).trim();
+            if (value) {
+              transformedRow[field] = value;
+            }
           }
-        }
-      });
+        });
+      } else {
+        // For CSV/Excel data, apply column mapping
+        Object.entries(columnMapping).forEach(([csvColumn, contactField]) => {
+          if (contactField && row[csvColumn] !== undefined) {
+            const value = String(row[csvColumn]).trim();
+            if (value) {
+              (transformedRow as any)[contactField] = value;
+            }
+          }
+        });
+      }
 
       return transformedRow;
     });
-  }, [parsedData, columnMapping]);
+  }, [parsedData, columnMapping, file]);
 
   // Import contacts
   const handleImport = useCallback(async () => {
@@ -379,6 +433,10 @@ const DashboardImportExport: React.FC<DashboardImportExportProps> = ({
         const json = JSON.stringify(exportData, null, 2);
         const blob = new Blob([json], { type: 'application/json;charset=utf-8;' });
         saveAs(blob, `${filename}.json`);
+      } else if (exportFormat === 'vcf') {
+        const vCardContent = VCardExporter.exportToVCard(exportData);
+        const blob = new Blob([vCardContent], { type: 'text/vcard;charset=utf-8;' });
+        saveAs(blob, `${filename}.vcf`);
       }
 
       setSuccess(`Successfully exported ${contacts.length} contacts`);
@@ -509,7 +567,7 @@ const DashboardImportExport: React.FC<DashboardImportExportProps> = ({
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept=".csv,.xlsx,.xls,.json"
+                    accept=".csv,.xlsx,.xls,.json,.vcf"
                     onChange={handleFileSelect}
                     className="hidden"
                   />
@@ -526,7 +584,7 @@ const DashboardImportExport: React.FC<DashboardImportExportProps> = ({
                         Choose a file to upload
                       </p>
                       <p className="text-sm text-gray-600 mb-4">
-                        CSV, Excel (.xlsx, .xls), or JSON files up to 10MB
+                        CSV, Excel (.xlsx, .xls), JSON, or vCard (.vcf) files up to 10MB
                       </p>
                       <button
                         onClick={() => fileInputRef.current?.click()}
@@ -541,7 +599,7 @@ const DashboardImportExport: React.FC<DashboardImportExportProps> = ({
                 {/* Supported formats */}
                 <div className="bg-gray-50 rounded-lg p-4">
                   <h4 className="text-sm font-medium text-gray-900 mb-2">Supported Formats:</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div className="flex items-center">
                       <FileText className="h-5 w-5 text-green-500 mr-2" />
                       <span className="text-sm text-gray-700">CSV (.csv)</span>
@@ -553,6 +611,10 @@ const DashboardImportExport: React.FC<DashboardImportExportProps> = ({
                     <div className="flex items-center">
                       <FileJson className="h-5 w-5 text-green-500 mr-2" />
                       <span className="text-sm text-gray-700">JSON (.json)</span>
+                    </div>
+                    <div className="flex items-center">
+                      <ContactIcon className="h-5 w-5 text-green-500 mr-2" />
+                      <span className="text-sm text-gray-700">vCard (.vcf)</span>
                     </div>
                   </div>
                 </div>
@@ -725,7 +787,7 @@ const DashboardImportExport: React.FC<DashboardImportExportProps> = ({
             {/* Export Format Selection */}
             <div className="space-y-4">
               <h4 className="text-sm font-medium text-gray-900">Select Export Format</h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <label className="relative">
                   <input
                     type="radio"
@@ -793,6 +855,30 @@ const DashboardImportExport: React.FC<DashboardImportExportProps> = ({
                       <div>
                         <div className="font-medium text-gray-900">JSON</div>
                         <div className="text-sm text-gray-600">JavaScript Object Notation</div>
+                      </div>
+                    </div>
+                  </div>
+                </label>
+
+                <label className="relative">
+                  <input
+                    type="radio"
+                    name="exportFormat"
+                    value="vcf"
+                    checked={exportFormat === 'vcf'}
+                    onChange={(e) => setExportFormat(e.target.value as ExportFormat)}
+                    className="sr-only"
+                  />
+                  <div className={`border-2 rounded-lg p-4 cursor-pointer transition-colors ${
+                    exportFormat === 'vcf'
+                      ? 'border-indigo-500 bg-indigo-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}>
+                    <div className="flex items-center">
+                      <ContactIcon className="h-8 w-8 text-green-500 mr-3" />
+                      <div>
+                        <div className="font-medium text-gray-900">vCard</div>
+                        <div className="text-sm text-gray-600">Apple Contacts compatible</div>
                       </div>
                     </div>
                   </div>

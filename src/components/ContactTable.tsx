@@ -12,6 +12,24 @@ import {
     Loader,
     Briefcase
 } from 'lucide-react';
+import ProfileImage from './ui/ProfileImage';
+
+// Helper function to get contact initials
+const getContactInitials = (contact: Contact): string => {
+    const firstName = contact.first_name?.trim() || '';
+    const lastName = contact.last_name?.trim() || '';
+
+    if (firstName && lastName) {
+        return `${firstName[0]}${lastName[0]}`.toUpperCase();
+    } else if (firstName) {
+        return firstName[0].toUpperCase();
+    } else if (lastName) {
+        return lastName[0].toUpperCase();
+    } else if (contact.email) {
+        return contact.email[0].toUpperCase();
+    }
+    return 'U';
+};
 
 // Component props interface
 interface ContactTableProps {
@@ -282,18 +300,13 @@ const ContactTable: React.FC<ContactTableProps> = ({
                                 {/* Name */}
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     <div className="flex items-center">
-                                        <div className="flex-shrink-0 h-10 w-10">
-                                            {contact.profile_image_url ? (
-                                                <img
-                                                    className="h-10 w-10 rounded-full object-cover"
-                                                    src={contact.profile_image_url}
-                                                    alt={`${contact.first_name} ${contact.last_name}`}
-                                                />
-                                            ) : (
-                                                <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
-                                                    <User className="h-6 w-6 text-gray-400" />
-                                                </div>
-                                            )}
+                                        <div className="flex-shrink-0">
+                                            <ProfileImage
+                                                src={contact.profile_image_url}
+                                                alt={`${contact.first_name || ''} ${contact.last_name || ''}`.trim() || 'Contact'}
+                                                size="md"
+                                                fallbackInitials={getContactInitials(contact)}
+                                            />
                                         </div>
                                         <div className="ml-4">
                                             <div className="text-sm font-medium text-gray-900">

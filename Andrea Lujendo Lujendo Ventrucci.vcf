@@ -1,0 +1,26 @@
+BEGIN:VCARD
+VERSION:3.0
+PRODID:-//Apple Inc.//macOS 12.7.4//EN
+N:Lujendo Ventrucci;Andrea;Lujendo;;
+FN:Andrea Lujendo Lujendo Ventrucci
+ORG:Luji-Music Label and Publishing;
+EMAIL;type=INTERNET;type=HOME;type=pref:lujendo@gmail.com
+EMAIL;type=INTERNET;type=HOME:info@luji-music.com
+EMAIL;type=INTERNET;type=HOME:lujiventrucci@icloud.com
+item1.EMAIL;type=INTERNET:info@lujendo.com
+item1.X-ABLabel:iCloud
+item2.EMAIL;type=INTERNET:lujendo@icloud.com
+item2.X-ABLabel:iCloud
+item3.EMAIL;type=INTERNET:lujendo@me.com
+item3.X-ABLabel:iCloud
+TEL;type=CELL;type=VOICE;type=pref:+49 157 73597149
+TEL;type=WORK;type=VOICE:+49 7475 2671053
+ADR;type=HOME;type=pref:;;Planstr 8;Neckartenzlingen;;72654;Germany
+ADR;type=WORK:;;Unter Halden 6\,  Burladingen-Ringingen;Burladingen;;72393;Germany
+NOTE:Lujendo Ventrucci ***** GEMA Authore 1395510\nIPI 478810421\nGVL Vertragsnummer F12292\nISNI 0000 0004 9322 8986\nIPN 1300012951\nSteuernummer: 74431/03661\nSteuer IdNr: 89704126576\nMwSt/ VAT: DE325046826 \nArbeitsamt nr. : 621D384068 (114.S)\nIHK: 1546630\n\nELSTER\nBenutzername: Lujendo\nAktivierungs-ID: 109078430494493120\n\n\n---\nGEMA Publisher 1445571\nIPI 865351714\n\nGVL Vertragsnummer F12292\nGVL ID 838559826\nLabel Code LC 83637 (GroovyNotes)\nLabel Code LC 92562 (GrooveNotes)\nLabel Code LC 95485 (Creol Records)\nLabel Code LC 95486 (Cross Beat)\nLabel Code LC 95487 (NINE3)\n\nGVL Performer\nContract number 1300012951 \nGVL ID 1300012948\n\nDDEX Parz ID\nPA-DPIDA-2022082508-G\nGEMA Authore 1395510\nIPI 478810421\nGVL Vertragsnummer F12292\nSteuernummer: 74431/03661\nSteuer IdNr: 89704126576\nMwSt/ VAT: DE325046826 \nArbeitsamt nr. : 621D384068 (114.S)\nIHK: 1546630\n\nELSTER\nBenutzername: Lujendo\nAktivierungs-ID: 109078430494493120\n\n\n---\nGEMA Publisher 1445571\nIPI 865351714\n\nGVL Vertragsnummer F12292\nGVL ID 838559826\nLabel Code LC 83637 (GroovyNotes)\nLabel Code LC 92562 (GrooveNotes)\nLabel Code LC 95485 (Creol Records)\nLabel Code LC 95486 (Cross Beat)\nLabel Code LC 95487 (NINE3)\n\nGVL Performer\nContract number 1300012951 \nGVL ID 1300012948\nVentrucci
+item4.URL;type=pref:www.luji-music.com
+item4.X-ABLabel:_$!<HomePage>!$_
+item5.URL:http://www.lujiventrucci.com
+item5.X-ABLabel:_$!<HomePage>!$_
+PHOTO;ENCODING=b:VW5hYmxlIHRvIHJlYWQgcmVjb3JkSUQ=
+END:VCARD

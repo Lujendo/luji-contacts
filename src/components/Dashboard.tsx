@@ -20,7 +20,7 @@ import GroupForm from './GroupForm';
 import GroupEditForm from './GroupEditForm';
 import EmailForm from './EmailForm';
 import EmailHistory from './EmailHistory';
-import DashboardImportExport from './DashboardImportExport';
+import ImportModal from './ImportModal';
 import UserSettings from './UserSettings';
 import BulkGroupAssign from './BulkGroupAssign';
 import BulkGroupRemove from './BulkGroupRemove';
@@ -48,7 +48,7 @@ interface DashboardState {
   showGroupEditForm: boolean;
   showEmailForm: boolean;
   showEmailHistory: boolean;
-  showImportExport: boolean;
+  showImportModal: boolean;
   showUserSettings: boolean;
   showBulkGroupAssign: boolean;
   showBulkGroupRemove: boolean;
@@ -84,7 +84,7 @@ const Dashboard: React.FC = () => {
   const [showGroupEditForm, setShowGroupEditForm] = useState<boolean>(false);
   const [showEmailForm, setShowEmailForm] = useState<boolean>(false);
   const [showEmailHistory, setShowEmailHistory] = useState<boolean>(false);
-  const [showImportExport, setShowImportExport] = useState<boolean>(false);
+  const [showImportModal, setShowImportModal] = useState<boolean>(false);
   const [showUserSettings, setShowUserSettings] = useState<boolean>(false);
   const [showBulkGroupAssign, setShowBulkGroupAssign] = useState<boolean>(false);
   const [showBulkGroupRemove, setShowBulkGroupRemove] = useState<boolean>(false);
@@ -263,7 +263,7 @@ const Dashboard: React.FC = () => {
     setShowGroupEditForm(false);
     setShowEmailForm(false);
     setShowEmailHistory(false);
-    setShowImportExport(false);
+    setShowImportModal(false);
     setShowUserSettings(false);
     setShowBulkGroupAssign(false);
     setShowBulkGroupRemove(false);
@@ -292,7 +292,7 @@ const Dashboard: React.FC = () => {
         setShowEmailHistory(true);
         break;
       case 'importExport':
-        setShowImportExport(true);
+        setShowImportModal(true);
         break;
       case 'userSettings':
         setShowUserSettings(true);
@@ -434,7 +434,7 @@ const Dashboard: React.FC = () => {
       <ResizableRightPanel isVisible={
         showContactForm || showGroupList ||
         showGroupForm || showGroupEditForm || showEmailForm ||
-        showEmailHistory || showImportExport || showUserSettings ||
+        showEmailHistory || showUserSettings ||
         showBulkGroupAssign || showBulkGroupRemove || showGroupContactsManager
       }>
           {showContactForm && (
@@ -492,14 +492,7 @@ const Dashboard: React.FC = () => {
             />
           )}
 
-          {showImportExport && (
-            <DashboardImportExport
-              onClose={() => setShowImportExport(false)}
-              onContactsImported={(importedContacts) => {
-                setContacts(prev => [...prev, ...importedContacts]);
-              }}
-            />
-          )}
+
 
           {showUserSettings && (
             <UserSettings
@@ -576,6 +569,15 @@ const Dashboard: React.FC = () => {
           }}
         />
       )}
+
+      {/* Import Modal */}
+      <ImportModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        onContactsImported={(importedContacts) => {
+          setContacts(prev => [...prev, ...importedContacts]);
+        }}
+      />
     </div>
   );
 };
