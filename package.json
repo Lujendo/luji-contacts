@@ -1,7 +1,7 @@
 {
   "name": "luji-contacts",
   "description": "A contact management application with React frontend and Cloudflare Workers backend",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "cloudflare": {
     "label": "Luji Contacts App",
     "products": [
