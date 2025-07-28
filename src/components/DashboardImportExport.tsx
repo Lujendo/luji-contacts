@@ -16,7 +16,7 @@ import {
   X,
   AlertTriangle,
 } from 'lucide-react';
-// import ColumnMapping from './ColumnMapping.jsx'; // TODO: Convert to TypeScript
+import ColumnMapping from './ColumnMapping';
 
 // Alert component props interface
 interface AlertProps {
@@ -570,45 +570,12 @@ const DashboardImportExport: React.FC<DashboardImportExportProps> = ({
                   </p>
                 </div>
 
-                {/* Simple Column Mapping */}
-                <div className="space-y-4">
-                  <div className="bg-white border border-gray-200 rounded-lg p-4">
-                    <h4 className="text-sm font-medium text-gray-900 mb-4">Column Mapping</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {Object.keys(parsedData[0] || {}).map((fileColumn) => (
-                        <div key={fileColumn}>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            {fileColumn}
-                          </label>
-                          <select
-                            value={columnMapping[fileColumn] || ''}
-                            onChange={(e) => setColumnMapping(prev => ({
-                              ...prev,
-                              [fileColumn]: e.target.value
-                            }))}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                          >
-                            <option value="">-- Skip this column --</option>
-                            {Object.entries(EXPECTED_COLUMNS).map(([key, config]) => (
-                              <option key={key} value={key}>
-                                {config.label}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="flex justify-end">
-                    <button
-                      onClick={() => handleMappingComplete(columnMapping)}
-                      className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                    >
-                      Continue to Preview
-                    </button>
-                  </div>
-                </div>
+                <ColumnMapping
+                  fileColumns={Object.keys(parsedData[0] || {})}
+                  expectedColumns={EXPECTED_COLUMNS}
+                  onMappingComplete={handleMappingComplete}
+                  sampleData={parsedData.slice(0, 3)}
+                />
 
                 <div className="flex justify-between">
                   <button
