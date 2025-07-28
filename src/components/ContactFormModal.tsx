@@ -57,7 +57,7 @@ const ContactFormModal: React.FC<ContactFormModalProps> = ({
   initialData = {},
   isEditing = false
 }) => {
-  // Form state
+  // Form state - ensure all fields are always strings
   const [formData, setFormData] = useState<CreateContactRequest>({
     first_name: initialData.first_name || '',
     last_name: initialData.last_name || '',
@@ -89,14 +89,11 @@ const ContactFormModal: React.FC<ContactFormModalProps> = ({
   const [selectedGroups, setSelectedGroups] = useState<number[]>([]);
   const [activeTab, setActiveTab] = useState<string>('basic');
 
-  // Stable tab change handler
+  // Tab change handler - clear all errors to prevent flash
   const handleTabChange = (tabId: string) => {
-    console.log('Tab change:', tabId); // Debug log
     setActiveTab(tabId);
-    // Clear any general errors when switching tabs
-    if (errors.general) {
-      setErrors(prev => ({ ...prev, general: '' }));
-    }
+    // Clear ALL errors when switching tabs to prevent red flash
+    setErrors({});
   };
 
   // Refs
@@ -147,20 +144,23 @@ const ContactFormModal: React.FC<ContactFormModalProps> = ({
     }
   }, [isOpen, initialData]);
 
-  // Handle input changes - ensure this works properly
+  // Handle input changes - simplified and working
   const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    console.log('Input change:', name, value); // Debug log
 
-    setFormData(prev => {
-      const newData = { ...prev, [name]: value };
-      console.log('New form data:', newData); // Debug log
-      return newData;
-    });
+    // Direct state update without complex logic
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
 
-    // Clear error when user starts typing
+    // Clear specific field error
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
     }
   };
 
@@ -222,22 +222,27 @@ const ContactFormModal: React.FC<ContactFormModalProps> = ({
     const newErrors: FormErrors = {};
 
     // At least one of first name, last name, or email is required
-    if (!formData.first_name.trim() && !formData.last_name.trim() && !formData.email.trim()) {
+    const firstName = formData.first_name || '';
+    const lastName = formData.last_name || '';
+    const email = formData.email || '';
+
+    if (!firstName.trim() && !lastName.trim() && !email.trim()) {
       newErrors.general = 'Please provide at least a first name, last name, or email address';
     }
 
     // Email validation
-    if (formData.email.trim()) {
+    if (email.trim()) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(formData.email)) {
+      if (!emailRegex.test(email)) {
         newErrors.email = 'Please enter a valid email address';
       }
     }
 
     // Phone validation
-    if (formData.phone.trim()) {
+    const phone = formData.phone || '';
+    if (phone.trim()) {
       const phoneRegex = /^[\d\s+()-]{10,}$/;
-      if (!phoneRegex.test(formData.phone)) {
+      if (!phoneRegex.test(phone)) {
         newErrors.phone = 'Please enter a valid phone number';
       }
     }
