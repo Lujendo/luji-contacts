@@ -9,7 +9,8 @@ import {
     ArrowUpDown,
     ArrowUp,
     ArrowDown,
-    Loader
+    Loader,
+    Briefcase
 } from 'lucide-react';
 
 // Component props interface
@@ -41,7 +42,7 @@ interface SortIndicatorProps {
 interface SortableHeaderProps {
     column: string;
     label: string;
-    icon?: React.ComponentType<{ className?: string; size?: number }>;
+    icon?: React.ComponentType<any>;
     sortConfig?: SortConfig;
     onSort?: (field: string, direction: 'asc' | 'desc') => void;
 }
@@ -224,6 +225,14 @@ const ContactTable: React.FC<ContactTableProps> = ({
                             onSort={handleSort}
                         />
 
+                        <SortableHeader
+                            column="role"
+                            label="Role"
+                            icon={Briefcase}
+                            sortConfig={sortConfig}
+                            onSort={handleSort}
+                        />
+
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             <div className="flex items-center space-x-2">
                                 <Users className="h-4 w-4" />
@@ -340,6 +349,19 @@ const ContactTable: React.FC<ContactTableProps> = ({
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     <div className="text-sm text-gray-900">
                                         {contact.company || <span className="text-gray-400">No company</span>}
+                                    </div>
+                                </td>
+
+                                {/* Role */}
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                    <div className="text-sm text-gray-900">
+                                        {contact.role ? (
+                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                                                {contact.role}
+                                            </span>
+                                        ) : (
+                                            <span className="text-gray-400">No role</span>
+                                        )}
                                     </div>
                                 </td>
 

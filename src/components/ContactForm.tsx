@@ -72,6 +72,7 @@ const ContactForm: React.FC<ContactFormProps> = ({
     address_country: initialData?.address_country || '',
     company: initialData?.company || '',
     job_title: initialData?.job_title || '',
+    role: initialData?.role || '',
     linkedin: initialData?.linkedin || '',
     twitter: initialData?.twitter || '',
     facebook: initialData?.facebook || '',
@@ -478,6 +479,26 @@ const ContactForm: React.FC<ContactFormProps> = ({
                 />
                 {errors.job_title && (
                   <p className="mt-1 text-sm text-red-600">{errors.job_title}</p>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
+                  <User className="inline h-4 w-4 mr-1" />
+                  Role
+                </label>
+                <input
+                  type="text"
+                  id="role"
+                  name="role"
+                  value={formData.role || ''}
+                  onChange={handleInputChange}
+                  disabled={isSubmittingForm}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  placeholder="e.g., Music Publisher, Client, Vendor, Partner"
+                />
+                {errors.role && (
+                  <p className="mt-1 text-sm text-red-600">{errors.role}</p>
                 )}
               </div>
             </div>

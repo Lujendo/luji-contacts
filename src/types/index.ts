@@ -94,6 +94,7 @@ export interface Contact {
   dribbble?: string;
   company?: string;
   job_title?: string;
+  role?: string;
   notes?: string;
   profile_image_url?: string;
   created_at?: string;
@@ -130,6 +131,7 @@ export interface CreateContactRequest {
   dribbble?: string;
   company?: string;
   job_title?: string;
+  role?: string;
   notes?: string;
   profile_image_url?: string;
 }

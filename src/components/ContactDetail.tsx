@@ -240,6 +240,7 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
         phone: editedContact.phone,
         company: editedContact.company,
         job_title: editedContact.job_title,
+        role: editedContact.role,
         website: editedContact.website,
         linkedin: editedContact.linkedin,
         twitter: editedContact.twitter,
@@ -632,18 +633,21 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
                 )}
               </div>
 
-              {/* Company/Job Title */}
-              {(editedContact.company || editedContact.job_title) && (
+              {/* Company/Job Title/Role */}
+              {(editedContact.company || editedContact.job_title || editedContact.role) && (
                 <div className="bg-gray-50 rounded-lg p-4">
                   <div className="flex items-center justify-between mb-2">
                     <label className="text-sm font-medium text-gray-700 flex items-center">
                       <Building2 className="h-4 w-4 mr-2 text-indigo-500" />
-                      Work
+                      Professional Info
                     </label>
                   </div>
                   <div className="space-y-1">
                     {editedContact.job_title && (
                       <p className="text-gray-900 font-medium">{editedContact.job_title}</p>
+                    )}
+                    {editedContact.role && (
+                      <p className="text-indigo-600 font-medium text-sm">{editedContact.role}</p>
                     )}
                     {editedContact.company && (
                       <p className="text-gray-600">{editedContact.company}</p>
@@ -943,7 +947,8 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
 
               {/* Job Title */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                  <Briefcase className="h-4 w-4 mr-2" />
                   Job Title
                 </label>
                 {editMode ? (
@@ -957,6 +962,29 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
                   />
                 ) : (
                   <p className="text-gray-900 py-2 px-3 bg-gray-50 rounded-md">{editedContact.job_title || 'Not provided'}</p>
+                )}
+              </div>
+
+              {/* Role */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                  <User className="h-4 w-4 mr-2" />
+                  Role
+                </label>
+                {editMode ? (
+                  <input
+                    type="text"
+                    name="role"
+                    value={editedContact.role || ''}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="e.g., Music Publisher, Client, Vendor, Partner"
+                  />
+                ) : (
+                  <p className="text-gray-900 py-2 px-3 bg-gray-50 rounded-md">{editedContact.role || 'Not provided'}</p>
+                )}
+                {errors.role && (
+                  <p className="mt-1 text-sm text-red-600">{errors.role}</p>
                 )}
               </div>
 
@@ -1403,7 +1431,7 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
                 <h4 className="text-sm font-medium text-gray-900 mb-4">Profile Completeness</h4>
                 {(() => {
                   const fields = [
-                    'first_name', 'last_name', 'email', 'phone', 'company', 'job_title',
+                    'first_name', 'last_name', 'email', 'phone', 'company', 'job_title', 'role',
                     'address_street', 'address_city', 'website', 'birthday', 'notes'
                   ];
                   const filledFields = fields.filter(field => editedContact[field as keyof Contact]);
