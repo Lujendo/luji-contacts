@@ -1,8 +1,9 @@
 // Contact routes for CRUD operations
 import { Hono } from 'hono';
-import { DatabaseService, Contact, ApiResponse } from '../utils/database';
+import { DatabaseService, Contact, ApiResponse, ErrorHandler } from '../utils/database';
 import { AuthService, getAuthenticatedUser, createAuthMiddleware } from '../utils/auth';
 import { StorageService, ALLOWED_IMAGE_TYPES } from '../utils/storage';
+import { Validator } from '../utils/validation';
 
 export function createContactRoutes(db: DatabaseService, auth: AuthService, storage: StorageService) {
   const contacts = new Hono<{ Bindings: Env }>();
@@ -57,13 +58,16 @@ export function createContactRoutes(db: DatabaseService, auth: AuthService, stor
       const user = getAuthenticatedUser(c);
       const contactId = parseInt(c.req.param('id'));
 
-      if (isNaN(contactId)) {
-        return c.json({ error: 'Invalid contact ID' }, 400);
+      const idValidation = Validator.validateId(contactId, 'Contact ID');
+      if (!idValidation.valid) {
+        const error = ErrorHandler.validationError('Invalid contact ID', idValidation.errors);
+        return c.json(error.response, error.status);
       }
 
       const contact = await db.getContactById(contactId, user.id);
       if (!contact) {
-        return c.json({ error: 'Contact not found' }, 404);
+        const error = ErrorHandler.notFoundError('Contact not found');
+        return c.json(error.response, error.status);
       }
 
       // Get groups for this contact
@@ -96,16 +100,11 @@ export function createContactRoutes(db: DatabaseService, auth: AuthService, stor
       const user = getAuthenticatedUser(c);
       const body = await c.req.json();
 
-      // Validate required fields
-      if (!body.first_name && !body.last_name && !body.email) {
-        return c.json({ 
-          error: 'At least one of first_name, last_name, or email is required' 
-        }, 400);
-      }
-
-      // Validate email format if provided
-      if (body.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.email)) {
-        return c.json({ error: 'Invalid email format' }, 400);
+      // Validate contact data
+      const validation = Validator.validateContact(body);
+      if (!validation.valid) {
+        const error = ErrorHandler.validationError('Contact validation failed', validation.errors);
+        return c.json(error.response, error.status);
       }
 
       // Check contact limit

@@ -1,7 +1,8 @@
 // User routes for authentication and user management
 import { Hono } from 'hono';
-import { DatabaseService, ApiResponse, User } from '../utils/database';
+import { DatabaseService, ApiResponse, User, ErrorHandler } from '../utils/database';
 import { AuthService, validateRegistrationData, getAuthenticatedUser, createAuthMiddleware } from '../utils/auth';
+import { Validator } from '../utils/validation';
 
 export function createUserRoutes(db: DatabaseService, auth: AuthService) {
   const users = new Hono<{ Bindings: Env }>();
@@ -15,16 +16,15 @@ export function createUserRoutes(db: DatabaseService, auth: AuthService) {
       // Validate input data
       const validation = validateRegistrationData({ username, email, password });
       if (!validation.valid) {
-        return c.json({ 
-          error: 'Validation failed', 
-          details: validation.errors 
-        }, 400);
+        const error = ErrorHandler.validationError('Registration validation failed', validation.errors);
+        return c.json(error.response, error.status);
       }
 
       // Check if user already exists
       const existingUser = await db.getUserByEmail(email);
       if (existingUser) {
-        return c.json({ error: 'User already exists with this email' }, 409);
+        const error = ErrorHandler.conflictError('User already exists with this email');
+        return c.json(error.response, error.status);
       }
 
       // Hash password and create user
@@ -61,7 +61,8 @@ export function createUserRoutes(db: DatabaseService, auth: AuthService) {
 
     } catch (error) {
       console.error('Registration error:', error);
-      return c.json({ error: 'Internal server error' }, 500);
+      const errorResponse = ErrorHandler.internalError('Registration failed');
+      return c.json(errorResponse.response, errorResponse.status);
     }
   });
 
@@ -72,19 +73,22 @@ export function createUserRoutes(db: DatabaseService, auth: AuthService) {
       const { email, password } = body;
 
       if (!email || !password) {
-        return c.json({ error: 'Email and password are required' }, 400);
+        const error = ErrorHandler.validationError('Email and password are required');
+        return c.json(error.response, error.status);
       }
 
       // Find user by email
       const user = await db.getUserByEmail(email.toLowerCase().trim());
       if (!user) {
-        return c.json({ error: 'Invalid credentials' }, 401);
+        const error = ErrorHandler.authenticationError('Invalid credentials');
+        return c.json(error.response, error.status);
       }
 
       // Verify password
       const isValidPassword = await auth.comparePassword(password, user.password!);
       if (!isValidPassword) {
-        return c.json({ error: 'Invalid credentials' }, 401);
+        const error = ErrorHandler.authenticationError('Invalid credentials');
+        return c.json(error.response, error.status);
       }
 
       // Generate token
@@ -110,7 +114,8 @@ export function createUserRoutes(db: DatabaseService, auth: AuthService) {
 
     } catch (error) {
       console.error('Login error:', error);
-      return c.json({ error: 'Internal server error' }, 500);
+      const errorResponse = ErrorHandler.internalError('Login failed');
+      return c.json(errorResponse.response, errorResponse.status);
     }
   });
 

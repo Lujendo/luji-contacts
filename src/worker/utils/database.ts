@@ -9,6 +9,80 @@ export interface ApiResponse<T = any> {
   success?: boolean;
 }
 
+// Standardized Error Response Interface
+export interface ApiError {
+  error: string;
+  message?: string;
+  code?: string;
+  details?: any;
+  success: false;
+}
+
+// Error Types
+export enum ErrorType {
+  VALIDATION_ERROR = 'VALIDATION_ERROR',
+  AUTHENTICATION_ERROR = 'AUTHENTICATION_ERROR',
+  AUTHORIZATION_ERROR = 'AUTHORIZATION_ERROR',
+  NOT_FOUND_ERROR = 'NOT_FOUND_ERROR',
+  CONFLICT_ERROR = 'CONFLICT_ERROR',
+  RATE_LIMIT_ERROR = 'RATE_LIMIT_ERROR',
+  FILE_ERROR = 'FILE_ERROR',
+  DATABASE_ERROR = 'DATABASE_ERROR',
+  INTERNAL_ERROR = 'INTERNAL_ERROR'
+}
+
+// Error Response Helper
+export class ErrorHandler {
+  static createError(
+    type: ErrorType,
+    message: string,
+    details?: any,
+    statusCode: 400 | 401 | 403 | 404 | 409 | 429 | 500 = 500
+  ): { response: ApiError; status: 400 | 401 | 403 | 404 | 409 | 429 | 500 } {
+    return {
+      response: {
+        error: message,
+        code: type,
+        details,
+        success: false
+      },
+      status: statusCode
+    };
+  }
+
+  static validationError(message: string, details?: any) {
+    return this.createError(ErrorType.VALIDATION_ERROR, message, details, 400);
+  }
+
+  static authenticationError(message: string = 'Authentication required') {
+    return this.createError(ErrorType.AUTHENTICATION_ERROR, message, undefined, 401);
+  }
+
+  static authorizationError(message: string = 'Insufficient permissions') {
+    return this.createError(ErrorType.AUTHORIZATION_ERROR, message, undefined, 403);
+  }
+
+  static notFoundError(message: string = 'Resource not found') {
+    return this.createError(ErrorType.NOT_FOUND_ERROR, message, undefined, 404);
+  }
+
+  static conflictError(message: string, details?: any) {
+    return this.createError(ErrorType.CONFLICT_ERROR, message, details, 409);
+  }
+
+  static fileError(message: string, details?: any) {
+    return this.createError(ErrorType.FILE_ERROR, message, details, 400);
+  }
+
+  static databaseError(message: string = 'Database operation failed') {
+    return this.createError(ErrorType.DATABASE_ERROR, message, undefined, 500);
+  }
+
+  static internalError(message: string = 'Internal server error') {
+    return this.createError(ErrorType.INTERNAL_ERROR, message, undefined, 500);
+  }
+}
+
 export interface User {
   id: number;
   username?: string;
