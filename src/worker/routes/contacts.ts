@@ -231,7 +231,11 @@ export function createContactRoutes(db: DatabaseService, auth: AuthService, stor
       const storage = new StorageService(c.env.STORAGE);
       const contactWithGroups = {
         ...updatedContact,
-        profile_image_url: updatedContact.profile_image_url ? storage.getPublicUrl(updatedContact.profile_image_url) : updatedContact.profile_image_url,
+        profile_image_url: updatedContact.profile_image_url ? (
+          updatedContact.profile_image_url.startsWith('/api/files/')
+            ? updatedContact.profile_image_url
+            : storage.getPublicUrl(updatedContact.profile_image_url)
+        ) : updatedContact.profile_image_url,
         Groups: groups.map(g => ({ id: g.id, name: g.name })), // Use uppercase Groups for frontend compatibility
         groups: groups.map(g => ({ id: g.id, name: g.name }))  // Keep lowercase for backward compatibility
       };
