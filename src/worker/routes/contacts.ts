@@ -31,7 +31,11 @@ export function createContactRoutes(db: DatabaseService, auth: AuthService, stor
           const groups = await db.getGroupsByContactId(contact.id);
           return {
             ...contact,
-            profile_image_url: contact.profile_image_url ? storage.getPublicUrl(contact.profile_image_url) : contact.profile_image_url,
+            profile_image_url: contact.profile_image_url ? (
+              contact.profile_image_url.startsWith('/api/files/')
+                ? contact.profile_image_url
+                : storage.getPublicUrl(contact.profile_image_url)
+            ) : contact.profile_image_url,
             Groups: groups.map(g => ({ id: g.id, name: g.name })), // Use uppercase Groups for frontend compatibility
             groups: groups.map(g => ({ id: g.id, name: g.name }))  // Keep lowercase for backward compatibility
           };
@@ -76,7 +80,11 @@ export function createContactRoutes(db: DatabaseService, auth: AuthService, stor
 
       const contactWithGroups = {
         ...contact,
-        profile_image_url: contact.profile_image_url ? storage.getPublicUrl(contact.profile_image_url) : contact.profile_image_url,
+        profile_image_url: contact.profile_image_url ? (
+          contact.profile_image_url.startsWith('/api/files/')
+            ? contact.profile_image_url
+            : storage.getPublicUrl(contact.profile_image_url)
+        ) : contact.profile_image_url,
         Groups: groups.map(g => ({ id: g.id, name: g.name })), // Use uppercase Groups for frontend compatibility
         groups: groups.map(g => ({ id: g.id, name: g.name }))  // Keep lowercase for backward compatibility
       };
@@ -325,7 +333,7 @@ export function createContactRoutes(db: DatabaseService, auth: AuthService, stor
 
       const response: ApiResponse = {
         data: {
-          profile_image_url: storage.getPublicUrl(fileName),
+          profile_image_url: `/api/files/${fileName}`,
           contact: updatedContact
         },
         message: 'Profile image uploaded successfully',
@@ -384,7 +392,7 @@ export function createContactRoutes(db: DatabaseService, auth: AuthService, stor
 
       const response: ApiResponse = {
         data: {
-          profile_image_url: storage.getPublicUrl(fileName),
+          profile_image_url: `/api/files/${fileName}`,
           contact: updatedContact
         },
         message: 'Profile image uploaded successfully',
