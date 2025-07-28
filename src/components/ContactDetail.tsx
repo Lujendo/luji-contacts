@@ -30,7 +30,7 @@ import {
 import SocialMediaSection from "./SocialMediaSection";
 
 // Tab type definition
-type TabType = 'overview' | 'details' | 'address' | 'social' | 'notes' | 'groups';
+type TabType = 'overview' | 'details' | 'address' | 'social' | 'notes' | 'groups' | 'activity';
 
 // Component props interface
 interface ContactDetailProps {
@@ -423,7 +423,8 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
             { id: 'address', name: 'Address', icon: MapPin },
             { id: 'social', name: 'Social', icon: Share2 },
             { id: 'notes', name: 'Notes', icon: FileText },
-            { id: 'groups', name: 'Groups', icon: Users }
+            { id: 'groups', name: 'Groups', icon: Users },
+            { id: 'activity', name: 'Activity', icon: Calendar }
           ].map((tab) => {
             const Icon = tab.icon;
             return (
@@ -526,7 +527,7 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
             </div>
 
             {/* Quick Contact Info */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
               {/* Email */}
               <div className="bg-gray-50 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-2">
@@ -596,7 +597,189 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
                   <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
                 )}
               </div>
+
+              {/* Company/Job Title */}
+              {(editedContact.company || editedContact.job_title) && (
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-sm font-medium text-gray-700 flex items-center">
+                      <Building2 className="h-4 w-4 mr-2 text-indigo-500" />
+                      Work
+                    </label>
+                  </div>
+                  <div className="space-y-1">
+                    {editedContact.job_title && (
+                      <p className="text-gray-900 font-medium">{editedContact.job_title}</p>
+                    )}
+                    {editedContact.company && (
+                      <p className="text-gray-600">{editedContact.company}</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Website */}
+              {editedContact.website && (
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-sm font-medium text-gray-700 flex items-center">
+                      <Globe className="h-4 w-4 mr-2 text-indigo-500" />
+                      Website
+                    </label>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <p className="text-gray-900 font-medium truncate">{editedContact.website}</p>
+                    <a
+                      href={editedContact.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-indigo-600 hover:text-indigo-800 p-1 rounded-full hover:bg-indigo-50"
+                    >
+                      <Link className="h-4 w-4" />
+                    </a>
+                  </div>
+                </div>
+              )}
+
+              {/* Birthday */}
+              {editedContact.birthday && (
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-sm font-medium text-gray-700 flex items-center">
+                      <Calendar className="h-4 w-4 mr-2 text-indigo-500" />
+                      Birthday
+                    </label>
+                  </div>
+                  <p className="text-gray-900 font-medium">
+                    {new Date(editedContact.birthday).toLocaleDateString()}
+                  </p>
+                </div>
+              )}
+
+              {/* Address Summary */}
+              {(editedContact.address_city || editedContact.address_state || editedContact.address_country) && (
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-sm font-medium text-gray-700 flex items-center">
+                      <MapPin className="h-4 w-4 mr-2 text-indigo-500" />
+                      Location
+                    </label>
+                  </div>
+                  <p className="text-gray-900 font-medium">
+                    {[editedContact.address_city, editedContact.address_state, editedContact.address_country]
+                      .filter(Boolean)
+                      .join(', ')
+                    }
+                  </p>
+                </div>
+              )}
+
+              {/* Groups Summary */}
+              {editedContact.Groups && editedContact.Groups.length > 0 && (
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-sm font-medium text-gray-700 flex items-center">
+                      <Users className="h-4 w-4 mr-2 text-indigo-500" />
+                      Groups ({editedContact.Groups.length})
+                    </label>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {editedContact.Groups.slice(0, 3).map((group) => (
+                      <span
+                        key={group.id}
+                        className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800"
+                      >
+                        {group.name}
+                      </span>
+                    ))}
+                    {editedContact.Groups.length > 3 && (
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                        +{editedContact.Groups.length - 3} more
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
+
+            {/* Social Media Quick Links */}
+            {(editedContact.linkedin || editedContact.twitter || editedContact.facebook || editedContact.instagram) && (
+              <div className="mb-8">
+                <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                  <Share2 className="h-5 w-5 mr-2" />
+                  Social Media
+                </h3>
+                <div className="flex flex-wrap gap-3">
+                  {editedContact.linkedin && (
+                    <a
+                      href={editedContact.linkedin}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center px-4 py-2 border border-blue-300 rounded-md text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors"
+                    >
+                      <Share2 className="h-4 w-4 mr-2" />
+                      LinkedIn
+                    </a>
+                  )}
+                  {editedContact.twitter && (
+                    <a
+                      href={editedContact.twitter}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center px-4 py-2 border border-sky-300 rounded-md text-sm font-medium text-sky-700 bg-sky-50 hover:bg-sky-100 transition-colors"
+                    >
+                      <Share2 className="h-4 w-4 mr-2" />
+                      Twitter
+                    </a>
+                  )}
+                  {editedContact.facebook && (
+                    <a
+                      href={editedContact.facebook}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center px-4 py-2 border border-blue-300 rounded-md text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors"
+                    >
+                      <Share2 className="h-4 w-4 mr-2" />
+                      Facebook
+                    </a>
+                  )}
+                  {editedContact.instagram && (
+                    <a
+                      href={editedContact.instagram}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center px-4 py-2 border border-pink-300 rounded-md text-sm font-medium text-pink-700 bg-pink-50 hover:bg-pink-100 transition-colors"
+                    >
+                      <Share2 className="h-4 w-4 mr-2" />
+                      Instagram
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Notes Preview */}
+            {editedContact.notes && (
+              <div className="mb-8">
+                <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                  <FileText className="h-5 w-5 mr-2" />
+                  Notes
+                </h3>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <p className="text-gray-700 text-sm line-clamp-3">
+                    {editedContact.notes}
+                  </p>
+                  {editedContact.notes.length > 150 && (
+                    <button
+                      onClick={() => setActiveTab('notes')}
+                      className="mt-2 text-indigo-600 hover:text-indigo-800 text-sm font-medium"
+                    >
+                      Read more →
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -886,26 +1069,218 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
 
         {activeTab === 'groups' && (
           <div className="p-6">
+            {/* Add to Group Section */}
+            {editMode && allGroups && allGroups.length > 0 && (
+              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                <h4 className="text-sm font-medium text-gray-900 mb-3">Add to Groups</h4>
+                <div className="flex flex-wrap gap-2">
+                  {allGroups
+                    .filter(group => !editedContact.Groups?.some(g => g.id === group.id))
+                    .map((group) => (
+                      <button
+                        key={group.id}
+                        onClick={() => onAddToGroup && onAddToGroup(editedContact.id, group.id)}
+                        className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-white border border-gray-300 text-gray-700 hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700 transition-colors"
+                      >
+                        <Plus className="h-3 w-3 mr-1" />
+                        {group.name}
+                      </button>
+                    ))}
+                </div>
+              </div>
+            )}
+
+            {/* Current Groups */}
             {editedContact.Groups && editedContact.Groups.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {editedContact.Groups.map((group) => (
-                  <div
-                    key={group.id}
-                    className="bg-gradient-to-r from-indigo-50 to-indigo-100 border border-indigo-200 rounded-lg p-4 hover:shadow-md transition-shadow"
-                  >
-                    <div className="flex items-center">
-                      <Users className="h-5 w-5 text-indigo-600 mr-2" />
-                      <span className="font-medium text-indigo-900">{group.name}</span>
+              <div>
+                <h4 className="text-sm font-medium text-gray-900 mb-4">Current Groups</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {editedContact.Groups.map((group) => (
+                    <div
+                      key={group.id}
+                      className="bg-gradient-to-r from-indigo-50 to-indigo-100 border border-indigo-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <Users className="h-5 w-5 text-indigo-600 mr-2" />
+                          <span className="font-medium text-indigo-900">{group.name}</span>
+                        </div>
+                        {editMode && onRemoveFromGroup && (
+                          <button
+                            onClick={() => onRemoveFromGroup(editedContact.id, group.id)}
+                            className="text-red-500 hover:text-red-700 p-1 rounded-full hover:bg-red-50 transition-colors"
+                            title="Remove from group"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             ) : (
               <div className="text-center py-12">
                 <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">This contact is not assigned to any groups</p>
+                <p className="text-gray-500 mb-4">This contact is not assigned to any groups</p>
+                {editMode && allGroups && allGroups.length > 0 && (
+                  <p className="text-sm text-gray-400">Use the "Add to Groups" section above to assign this contact to groups</p>
+                )}
               </div>
             )}
+          </div>
+        )}
+
+        {activeTab === 'activity' && (
+          <div className="p-6">
+            <div className="space-y-6">
+              {/* Contact Information */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h4 className="text-sm font-medium text-gray-900 mb-4 flex items-center">
+                  <Info className="h-4 w-4 mr-2" />
+                  Contact Information
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-500">Contact ID:</span>
+                    <span className="ml-2 font-mono text-gray-900">#{editedContact.id}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">User ID:</span>
+                    <span className="ml-2 font-mono text-gray-900">#{editedContact.user_id}</span>
+                  </div>
+                  {editedContact.created_at && (
+                    <div>
+                      <span className="text-gray-500">Created:</span>
+                      <span className="ml-2 text-gray-900">
+                        {new Date(editedContact.created_at).toLocaleString()}
+                      </span>
+                    </div>
+                  )}
+                  {editedContact.updated_at && (
+                    <div>
+                      <span className="text-gray-500">Last Updated:</span>
+                      <span className="ml-2 text-gray-900">
+                        {new Date(editedContact.updated_at).toLocaleString()}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Quick Actions */}
+              <div className="bg-white border border-gray-200 rounded-lg p-4">
+                <h4 className="text-sm font-medium text-gray-900 mb-4">Quick Actions</h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {editedContact.email && (
+                    <a
+                      href={`mailto:${editedContact.email}`}
+                      className="flex items-center justify-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+                    >
+                      <Mail className="h-4 w-4 mr-2" />
+                      Email
+                    </a>
+                  )}
+                  {editedContact.phone && (
+                    <a
+                      href={`tel:${editedContact.phone}`}
+                      className="flex items-center justify-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+                    >
+                      <Phone className="h-4 w-4 mr-2" />
+                      Call
+                    </a>
+                  )}
+                  {editedContact.website && (
+                    <a
+                      href={editedContact.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+                    >
+                      <Globe className="h-4 w-4 mr-2" />
+                      Website
+                    </a>
+                  )}
+                  {editedContact.linkedin && (
+                    <a
+                      href={editedContact.linkedin}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+                    >
+                      <Share2 className="h-4 w-4 mr-2" />
+                      LinkedIn
+                    </a>
+                  )}
+                </div>
+              </div>
+
+              {/* Contact Statistics */}
+              <div className="bg-white border border-gray-200 rounded-lg p-4">
+                <h4 className="text-sm font-medium text-gray-900 mb-4">Contact Statistics</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="text-center p-3 bg-indigo-50 rounded-lg">
+                    <div className="text-2xl font-bold text-indigo-600">
+                      {editedContact.Groups?.length || 0}
+                    </div>
+                    <div className="text-sm text-indigo-700">Groups</div>
+                  </div>
+                  <div className="text-center p-3 bg-green-50 rounded-lg">
+                    <div className="text-2xl font-bold text-green-600">
+                      {editedContact.created_at
+                        ? Math.floor((Date.now() - new Date(editedContact.created_at).getTime()) / (1000 * 60 * 60 * 24))
+                        : 0
+                      }
+                    </div>
+                    <div className="text-sm text-green-700">Days Since Added</div>
+                  </div>
+                  <div className="text-center p-3 bg-purple-50 rounded-lg">
+                    <div className="text-2xl font-bold text-purple-600">
+                      {[
+                        editedContact.email,
+                        editedContact.phone,
+                        editedContact.website,
+                        editedContact.linkedin,
+                        editedContact.twitter,
+                        editedContact.facebook,
+                        editedContact.instagram
+                      ].filter(Boolean).length}
+                    </div>
+                    <div className="text-sm text-purple-700">Contact Methods</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Data Completeness */}
+              <div className="bg-white border border-gray-200 rounded-lg p-4">
+                <h4 className="text-sm font-medium text-gray-900 mb-4">Profile Completeness</h4>
+                {(() => {
+                  const fields = [
+                    'first_name', 'last_name', 'email', 'phone', 'company', 'job_title',
+                    'address_street', 'address_city', 'website', 'birthday', 'notes'
+                  ];
+                  const filledFields = fields.filter(field => editedContact[field as keyof Contact]);
+                  const completeness = Math.round((filledFields.length / fields.length) * 100);
+
+                  return (
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm text-gray-600">
+                          {filledFields.length} of {fields.length} fields completed
+                        </span>
+                        <span className="text-sm font-medium text-gray-900">{completeness}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${completeness}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
           </div>
         )}
       </div>
