@@ -1,170 +1,75 @@
-import React, { useState, useEffect, useRef, FormEvent, ChangeEvent, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, FormEvent, ChangeEvent } from 'react';
 import { contactsApi } from '../api';
-import { Contact, Group, CreateContactRequest } from '../types';
+import { Contact, Group } from '../types';
 import Modal from './ui/Modal';
-import Tabs, { TabItem } from './ui/Tabs';
-import {
-  User,
-  Users,
-  Phone,
-  Mail,
-  Calendar,
-  MapPin,
-  Briefcase,
-  Share2,
-  Globe,
-  Building2,
-  FileText,
-  Camera,
-  Upload,
-  Check,
-  UserCircle,
-  ContactIcon,
-  X
-} from 'lucide-react';
 
-// Component props interface
 interface ContactFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   onContactCreated?: (contact: Contact) => void;
-  onContactAdded?: (contact: Contact) => void; // Legacy prop name for backward compatibility
+  onContactAdded?: (contact: Contact) => void;
   groups?: Group[];
-  isLoading?: boolean;
-  initialData?: Partial<Contact>;
-  isEditing?: boolean;
 }
 
-// Form validation interface
-interface FormErrors {
-  [key: string]: string;
-}
-
-// Profile image state interface
-interface ProfileImageState {
-  file: File | null;
-  preview: string | null;
-  isUploading: boolean;
+interface FormData {
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  company: string;
+  job_title: string;
+  notes: string;
 }
 
 const ContactFormModal: React.FC<ContactFormModalProps> = ({
   isOpen,
   onClose,
   onContactCreated,
-  onContactAdded, // Legacy support
-  groups = [],
-  isLoading = false,
-  initialData = {},
-  isEditing = false
+  onContactAdded,
+  groups = []
 }) => {
-  // Form state - ensure all fields are always strings
-  const [formData, setFormData] = useState<CreateContactRequest>({
-    first_name: initialData.first_name || '',
-    last_name: initialData.last_name || '',
-    email: initialData.email || '',
-    phone: initialData.phone || '',
-    company: initialData.company || '',
-    job_title: initialData.job_title || '',
-    website: initialData.website || '',
-    linkedin: initialData.linkedin || '',
-    twitter: initialData.twitter || '',
-    facebook: initialData.facebook || '',
-    instagram: initialData.instagram || '',
-    birthday: initialData.birthday || '',
-    address_street: initialData.address_street || '',
-    address_city: initialData.address_city || '',
-    address_state: initialData.address_state || '',
-    address_zip: initialData.address_zip || '',
-    address_country: initialData.address_country || '',
-    notes: initialData.notes || ''
+  const [formData, setFormData] = useState<FormData>({
+    first_name: '',
+    last_name: '',
+    email: '',
+    phone: '',
+    company: '',
+    job_title: '',
+    notes: ''
   });
 
-  const [errors, setErrors] = useState<FormErrors>({});
-  const [isSubmittingForm, setIsSubmittingForm] = useState<boolean>(false);
-  const [profileImage, setProfileImage] = useState<ProfileImageState>({
-    file: null,
-    preview: initialData?.profile_image_url || null,
-    isUploading: false
-  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
   const [selectedGroups, setSelectedGroups] = useState<number[]>([]);
-  const [activeTab, setActiveTab] = useState<string>('basic');
 
-  // Tab change handler - clear all errors to prevent flash
-  const handleTabChange = (tabId: string) => {
-    setActiveTab(tabId);
-    // Clear ALL errors when switching tabs to prevent red flash
-    setErrors({});
-  };
-
-  // Refs
-  const firstNameRef = useRef<HTMLInputElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Reset form when modal opens/closes
+  // Reset form when modal opens
   useEffect(() => {
     if (isOpen) {
-      // Reset form data
       setFormData({
-        first_name: initialData.first_name || '',
-        last_name: initialData.last_name || '',
-        email: initialData.email || '',
-        phone: initialData.phone || '',
-        company: initialData.company || '',
-        job_title: initialData.job_title || '',
-        website: initialData.website || '',
-        linkedin: initialData.linkedin || '',
-        twitter: initialData.twitter || '',
-        facebook: initialData.facebook || '',
-        instagram: initialData.instagram || '',
-        birthday: initialData.birthday || '',
-        address_street: initialData.address_street || '',
-        address_city: initialData.address_city || '',
-        address_state: initialData.address_state || '',
-        address_zip: initialData.address_zip || '',
-        address_country: initialData.address_country || '',
-        notes: initialData.notes || ''
-      });
-      
-      setErrors({}); // Clear all errors when modal opens
-      setIsSubmittingForm(false);
-      setProfileImage({
-        file: null,
-        preview: initialData?.profile_image_url || null,
-        isUploading: false
+        first_name: '',
+        last_name: '',
+        email: '',
+        phone: '',
+        company: '',
+        job_title: '',
+        notes: ''
       });
       setSelectedGroups([]);
-      setActiveTab('basic');
-      
-      // Focus first input after modal animation
-      setTimeout(() => {
-        if (firstNameRef.current) {
-          firstNameRef.current.focus();
-        }
-      }, 100);
+      setError('');
     }
-  }, [isOpen, initialData]);
+  }, [isOpen]);
 
-  // Handle input changes - simplified and working
+  // Handle input changes
   const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-
-    // Direct state update without complex logic
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
-
-    // Clear specific field error
-    if (errors[name]) {
-      setErrors(prev => {
-        const newErrors = { ...prev };
-        delete newErrors[name];
-        return newErrors;
-      });
-    }
+    setError(''); // Clear error when user types
   };
 
-  // Handle group toggle
+  // Handle group selection
   const handleGroupToggle = (groupId: number) => {
     setSelectedGroups(prev =>
       prev.includes(groupId)
@@ -173,304 +78,96 @@ const ContactFormModal: React.FC<ContactFormModalProps> = ({
     );
   };
 
-  // Handle profile image selection
-  const handleImageSelect = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        setErrors(prev => ({ ...prev, profile_image: 'Please select a valid image file' }));
-        return;
-      }
-
-      // Validate file size (5MB limit)
-      if (file.size > 5 * 1024 * 1024) {
-        setErrors(prev => ({ ...prev, profile_image: 'Image size must be less than 5MB' }));
-        return;
-      }
-
-      // Create preview
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setProfileImage({
-          file,
-          preview: e.target?.result as string,
-          isUploading: false
-        });
-      };
-      reader.readAsDataURL(file);
-
-      // Clear any previous errors
-      setErrors(prev => ({ ...prev, profile_image: '' }));
-    }
-  };
-
-  // Remove profile image
-  const handleImageRemove = useCallback(() => {
-    setProfileImage({
-      file: null,
-      preview: null,
-      isUploading: false
-    });
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  }, []);
-
-  // Validate form (only called on submit)
-  const validateForm = (): boolean => {
-    const newErrors: FormErrors = {};
-
-    // At least one of first name, last name, or email is required
-    const firstName = formData.first_name || '';
-    const lastName = formData.last_name || '';
-    const email = formData.email || '';
-
-    if (!firstName.trim() && !lastName.trim() && !email.trim()) {
-      newErrors.general = 'Please provide at least a first name, last name, or email address';
-    }
-
-    // Email validation
-    if (email.trim()) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        newErrors.email = 'Please enter a valid email address';
-      }
-    }
-
-    // Phone validation
-    const phone = formData.phone || '';
-    if (phone.trim()) {
-      const phoneRegex = /^[\d\s+()-]{10,}$/;
-      if (!phoneRegex.test(phone)) {
-        newErrors.phone = 'Please enter a valid phone number';
-      }
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
   // Handle form submission
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    
-    if (!validateForm()) {
+
+    // Basic validation
+    if (!formData.first_name.trim() && !formData.last_name.trim() && !formData.email.trim()) {
+      setError('Please provide at least a first name, last name, or email address');
       return;
     }
 
-    setIsSubmittingForm(true);
-    setErrors({});
+    setIsSubmitting(true);
+    setError('');
 
     try {
-      let contact: Contact;
+      const contactData = {
+        ...formData,
+        group_ids: selectedGroups
+      };
 
-      if (isEditing && initialData.id) {
-        // Update existing contact
-        contact = await contactsApi.updateContact(initialData.id, formData);
-      } else {
-        // Create new contact
-        contact = await contactsApi.createContact(formData);
-      }
-
-      // Upload profile image if provided
-      if (profileImage.file && contact.id) {
-        try {
-          setProfileImage(prev => ({ ...prev, isUploading: true }));
-          await contactsApi.uploadProfileImage(contact.id, profileImage.file);
-          // Refresh contact data to get updated profile image URL
-          contact = await contactsApi.getContact(contact.id);
-        } catch (imageError) {
-          console.error('Error uploading profile image:', imageError);
-          // Don't fail the entire operation for image upload errors
-        } finally {
-          setProfileImage(prev => ({ ...prev, isUploading: false }));
-        }
-      }
+      const newContact = await contactsApi.createContact(contactData);
 
       // Call the appropriate callback
-      const callback = onContactCreated || onContactAdded;
-      if (callback) {
-        callback(contact);
+      if (onContactCreated) {
+        onContactCreated(newContact);
+      } else if (onContactAdded) {
+        onContactAdded(newContact);
       }
 
       onClose();
-    } catch (error) {
-      console.error('Error saving contact:', error);
-      setErrors({
-        general: error instanceof Error ? error.message : 'Failed to save contact'
-      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create contact');
     } finally {
-      setIsSubmittingForm(false);
+      setIsSubmitting(false);
     }
   };
 
-  // Tab configuration
-  const tabs: TabItem[] = [
-    {
-      id: 'basic',
-      label: 'Basic Info',
-      icon: <UserCircle className="h-5 w-5" />,
-      content: (
-        <div className="space-y-6">
-          {/* Profile Image */}
-          <div className="flex items-center space-x-6">
-            <div className="relative">
-              {profileImage.preview ? (
-                <img
-                  src={profileImage.preview}
-                  alt="Profile preview"
-                  className="h-24 w-24 rounded-full object-cover border-4 border-gray-200"
-                />
-              ) : (
-                <div className="h-24 w-24 rounded-full bg-gray-200 flex items-center justify-center border-4 border-gray-200">
-                  <Camera className="h-8 w-8 text-gray-400" />
-                </div>
-              )}
-              {profileImage.isUploading && (
-                <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
-                </div>
-              )}
-            </div>
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Create New Contact"
+      size="lg"
+      showCloseButton={true}
+    >
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Error Message */}
+        {error && (
+          <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+            <p className="text-sm text-red-600">{error}</p>
+          </div>
+        )}
 
-            <div className="flex-1">
-              <div className="flex space-x-3">
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isSubmittingForm}
-                  className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <Upload className="h-4 w-4 mr-2" />
-                  Upload Photo
-                </button>
-                {profileImage.preview && (
-                  <button
-                    type="button"
-                    onClick={handleImageRemove}
-                    disabled={isSubmittingForm}
-                    className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <X className="h-4 w-4 mr-2" />
-                    Remove
-                  </button>
-                )}
-              </div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleImageSelect}
-                className="hidden"
-              />
-              <p className="mt-2 text-sm text-gray-500">
-                Upload a profile photo (max 5MB)
-              </p>
-              {errors.profile_image && (
-                <p className="mt-1 text-sm text-red-600">{errors.profile_image}</p>
-              )}
-            </div>
+        {/* Basic Information */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="first_name" className="block text-sm font-medium text-gray-700 mb-1">
+              First Name
+            </label>
+            <input
+              type="text"
+              id="first_name"
+              name="first_name"
+              value={formData.first_name}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Enter first name"
+            />
           </div>
 
-          {/* Name Fields */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="first_name" className="block text-sm font-medium text-gray-700 mb-1">
-                First Name
-              </label>
-              <input
-                ref={firstNameRef}
-                type="text"
-                id="first_name"
-                name="first_name"
-                value={formData.first_name}
-                onChange={handleInputChange}
-                disabled={isSubmittingForm}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                placeholder="Enter first name"
-              />
-              {errors.first_name && (
-                <p className="mt-1 text-sm text-red-600">{errors.first_name}</p>
-              )}
-            </div>
-
-            <div>
-              <label htmlFor="last_name" className="block text-sm font-medium text-gray-700 mb-1">
-                Last Name
-              </label>
-              <input
-                type="text"
-                id="last_name"
-                name="last_name"
-                value={formData.last_name}
-                onChange={handleInputChange}
-                disabled={isSubmittingForm}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                placeholder="Enter last name"
-              />
-              {errors.last_name && (
-                <p className="mt-1 text-sm text-red-600">{errors.last_name}</p>
-              )}
-            </div>
-          </div>
-
-          {/* Company and Job Title */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="company" className="block text-sm font-medium text-gray-700 mb-1">
-                <Building2 className="inline h-4 w-4 mr-1" />
-                Company
-              </label>
-              <input
-                type="text"
-                id="company"
-                name="company"
-                value={formData.company}
-                onChange={handleInputChange}
-                disabled={isSubmittingForm}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                placeholder="Enter company name"
-              />
-              {errors.company && (
-                <p className="mt-1 text-sm text-red-600">{errors.company}</p>
-              )}
-            </div>
-
-            <div>
-              <label htmlFor="job_title" className="block text-sm font-medium text-gray-700 mb-1">
-                <Briefcase className="inline h-4 w-4 mr-1" />
-                Job Title
-              </label>
-              <input
-                type="text"
-                id="job_title"
-                name="job_title"
-                value={formData.job_title}
-                onChange={handleInputChange}
-                disabled={isSubmittingForm}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                placeholder="Enter job title"
-              />
-              {errors.job_title && (
-                <p className="mt-1 text-sm text-red-600">{errors.job_title}</p>
-              )}
-            </div>
+          <div>
+            <label htmlFor="last_name" className="block text-sm font-medium text-gray-700 mb-1">
+              Last Name
+            </label>
+            <input
+              type="text"
+              id="last_name"
+              name="last_name"
+              value={formData.last_name}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Enter last name"
+            />
           </div>
         </div>
-      )
-    },
-    {
-      id: 'contact',
-      label: 'Contact',
-      icon: <ContactIcon className="h-5 w-5" />,
-      content: (
-        <div className="space-y-6">
-          {/* Email */}
+
+        {/* Contact Information */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-              <Mail className="inline h-4 w-4 mr-1" />
-              Email Address
+              Email
             </label>
             <input
               type="email"
@@ -478,20 +175,14 @@ const ContactFormModal: React.FC<ContactFormModalProps> = ({
               name="email"
               value={formData.email}
               onChange={handleInputChange}
-              disabled={isSubmittingForm}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Enter email address"
             />
-            {errors.email && (
-              <p className="mt-1 text-sm text-red-600">{errors.email}</p>
-            )}
           </div>
 
-          {/* Phone */}
           <div>
             <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-              <Phone className="inline h-4 w-4 mr-1" />
-              Phone Number
+              Phone
             </label>
             <input
               type="tel"
@@ -499,363 +190,99 @@ const ContactFormModal: React.FC<ContactFormModalProps> = ({
               name="phone"
               value={formData.phone}
               onChange={handleInputChange}
-              disabled={isSubmittingForm}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Enter phone number"
             />
-            {errors.phone && (
-              <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
-            )}
-          </div>
-
-          {/* Website */}
-          <div>
-            <label htmlFor="website" className="block text-sm font-medium text-gray-700 mb-1">
-              <Globe className="inline h-4 w-4 mr-1" />
-              Website
-            </label>
-            <input
-              type="url"
-              id="website"
-              name="website"
-              value={formData.website}
-              onChange={handleInputChange}
-              disabled={isSubmittingForm}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-              placeholder="https://example.com"
-            />
-            {errors.website && (
-              <p className="mt-1 text-sm text-red-600">{errors.website}</p>
-            )}
-          </div>
-
-          {/* Birthday */}
-          <div>
-            <label htmlFor="birthday" className="block text-sm font-medium text-gray-700 mb-1">
-              <Calendar className="inline h-4 w-4 mr-1" />
-              Birthday
-            </label>
-            <input
-              type="date"
-              id="birthday"
-              name="birthday"
-              value={formData.birthday}
-              onChange={handleInputChange}
-              disabled={isSubmittingForm}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-            />
-            {errors.birthday && (
-              <p className="mt-1 text-sm text-red-600">{errors.birthday}</p>
-            )}
           </div>
         </div>
-      )
-    },
-    {
-      id: 'address',
-      label: 'Address',
-      icon: <MapPin className="h-5 w-5" />,
-      content: (
-        <div className="space-y-6">
-          {/* Street Address */}
+
+        {/* Work Information */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label htmlFor="address_street" className="block text-sm font-medium text-gray-700 mb-1">
-              Street Address
+            <label htmlFor="company" className="block text-sm font-medium text-gray-700 mb-1">
+              Company
             </label>
             <input
               type="text"
-              id="address_street"
-              name="address_street"
-              value={formData.address_street}
+              id="company"
+              name="company"
+              value={formData.company}
               onChange={handleInputChange}
-              disabled={isSubmittingForm}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-              placeholder="Enter street address"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Enter company name"
             />
-            {errors.address_street && (
-              <p className="mt-1 text-sm text-red-600">{errors.address_street}</p>
-            )}
           </div>
 
-          {/* City and State */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="address_city" className="block text-sm font-medium text-gray-700 mb-1">
-                City
-              </label>
-              <input
-                type="text"
-                id="address_city"
-                name="address_city"
-                value={formData.address_city}
-                onChange={handleInputChange}
-                disabled={isSubmittingForm}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                placeholder="Enter city"
-              />
-              {errors.address_city && (
-                <p className="mt-1 text-sm text-red-600">{errors.address_city}</p>
-              )}
-            </div>
-
-            <div>
-              <label htmlFor="address_state" className="block text-sm font-medium text-gray-700 mb-1">
-                State/Province
-              </label>
-              <input
-                type="text"
-                id="address_state"
-                name="address_state"
-                value={formData.address_state}
-                onChange={handleInputChange}
-                disabled={isSubmittingForm}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                placeholder="Enter state or province"
-              />
-              {errors.address_state && (
-                <p className="mt-1 text-sm text-red-600">{errors.address_state}</p>
-              )}
-            </div>
-          </div>
-
-          {/* ZIP and Country */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="address_zip" className="block text-sm font-medium text-gray-700 mb-1">
-                ZIP/Postal Code
-              </label>
-              <input
-                type="text"
-                id="address_zip"
-                name="address_zip"
-                value={formData.address_zip}
-                onChange={handleInputChange}
-                disabled={isSubmittingForm}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                placeholder="Enter ZIP or postal code"
-              />
-              {errors.address_zip && (
-                <p className="mt-1 text-sm text-red-600">{errors.address_zip}</p>
-              )}
-            </div>
-
-            <div>
-              <label htmlFor="address_country" className="block text-sm font-medium text-gray-700 mb-1">
-                Country
-              </label>
-              <input
-                type="text"
-                id="address_country"
-                name="address_country"
-                value={formData.address_country}
-                onChange={handleInputChange}
-                disabled={isSubmittingForm}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                placeholder="Enter country"
-              />
-              {errors.address_country && (
-                <p className="mt-1 text-sm text-red-600">{errors.address_country}</p>
-              )}
-            </div>
+          <div>
+            <label htmlFor="job_title" className="block text-sm font-medium text-gray-700 mb-1">
+              Job Title
+            </label>
+            <input
+              type="text"
+              id="job_title"
+              name="job_title"
+              value={formData.job_title}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Enter job title"
+            />
           </div>
         </div>
-      )
-    },
-    {
-      id: 'social',
-      label: 'Social Media',
-      icon: <Share2 className="h-5 w-5" />,
-      content: (
-        <div className="space-y-6">
-          {/* LinkedIn */}
-          <div>
-            <label htmlFor="linkedin" className="block text-sm font-medium text-gray-700 mb-1">
-              LinkedIn Profile
-            </label>
-            <input
-              type="url"
-              id="linkedin"
-              name="linkedin"
-              value={formData.linkedin}
-              onChange={handleInputChange}
-              disabled={isSubmittingForm}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-              placeholder="https://linkedin.com/in/username"
-            />
-            {errors.linkedin && (
-              <p className="mt-1 text-sm text-red-600">{errors.linkedin}</p>
-            )}
-          </div>
 
-          {/* Twitter */}
+        {/* Groups */}
+        {groups.length > 0 && (
           <div>
-            <label htmlFor="twitter" className="block text-sm font-medium text-gray-700 mb-1">
-              Twitter Profile
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Groups
             </label>
-            <input
-              type="url"
-              id="twitter"
-              name="twitter"
-              value={formData.twitter}
-              onChange={handleInputChange}
-              disabled={isSubmittingForm}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-              placeholder="https://twitter.com/username"
-            />
-            {errors.twitter && (
-              <p className="mt-1 text-sm text-red-600">{errors.twitter}</p>
-            )}
-          </div>
-
-          {/* Facebook */}
-          <div>
-            <label htmlFor="facebook" className="block text-sm font-medium text-gray-700 mb-1">
-              Facebook Profile
-            </label>
-            <input
-              type="url"
-              id="facebook"
-              name="facebook"
-              value={formData.facebook}
-              onChange={handleInputChange}
-              disabled={isSubmittingForm}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-              placeholder="https://facebook.com/username"
-            />
-            {errors.facebook && (
-              <p className="mt-1 text-sm text-red-600">{errors.facebook}</p>
-            )}
-          </div>
-
-          {/* Instagram */}
-          <div>
-            <label htmlFor="instagram" className="block text-sm font-medium text-gray-700 mb-1">
-              Instagram Profile
-            </label>
-            <input
-              type="url"
-              id="instagram"
-              name="instagram"
-              value={formData.instagram}
-              onChange={handleInputChange}
-              disabled={isSubmittingForm}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-              placeholder="https://instagram.com/username"
-            />
-            {errors.instagram && (
-              <p className="mt-1 text-sm text-red-600">{errors.instagram}</p>
-            )}
-          </div>
-        </div>
-      )
-    },
-    {
-      id: 'notes',
-      label: 'Notes & Groups',
-      icon: <FileText className="h-5 w-5" />,
-      content: (
-        <div className="space-y-6">
-          {/* Notes */}
-          <div>
-            <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
-              <FileText className="inline h-4 w-4 mr-1" />
-              Notes
-            </label>
-            <textarea
-              id="notes"
-              name="notes"
-              rows={4}
-              value={formData.notes}
-              onChange={handleInputChange}
-              disabled={isSubmittingForm}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-              placeholder="Add any additional notes about this contact..."
-            />
-            {errors.notes && (
-              <p className="mt-1 text-sm text-red-600">{errors.notes}</p>
-            )}
-          </div>
-
-          {/* Groups */}
-          {groups.length > 0 && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Users className="inline h-4 w-4 mr-1" />
-                Groups
-              </label>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                {groups.map((group) => (
-                  <label key={group.id} className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={selectedGroups.includes(group.id)}
-                      onChange={() => handleGroupToggle(group.id)}
-                      disabled={isSubmittingForm}
-                      className="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 disabled:cursor-not-allowed"
-                    />
-                    <span className="ml-2 text-sm text-gray-700">{group.name}</span>
-                  </label>
-                ))}
-              </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+              {groups.map((group) => (
+                <label key={group.id} className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={selectedGroups.includes(group.id)}
+                    onChange={() => handleGroupToggle(group.id)}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700">{group.name}</span>
+                </label>
+              ))}
             </div>
-          )}
-        </div>
-      )
-    }
-  ];
-
-  return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title={isEditing ? 'Edit Contact' : 'Create New Contact'}
-      size="2xl"
-      showCloseButton={true}
-      closeOnOverlayClick={false} // Prevent accidental closes during form entry
-    >
-      <form onSubmit={handleSubmit} className="flex flex-col h-[600px]">
-        {/* General Error */}
-        {errors.general && (
-          <div className="mx-6 mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
-            <p className="text-sm text-red-600">{errors.general}</p>
           </div>
         )}
 
-        {/* Tabbed Content */}
-        <div className="flex-1 px-6 py-4">
-          <Tabs
-            tabs={tabs}
-            defaultTab="basic"
-            onTabChange={handleTabChange}
+        {/* Notes */}
+        <div>
+          <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
+            Notes
+          </label>
+          <textarea
+            id="notes"
+            name="notes"
+            value={formData.notes}
+            onChange={handleInputChange}
+            rows={3}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="Enter any additional notes"
           />
         </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200 bg-gray-50 mt-6">
+        {/* Form Actions */}
+        <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
           <button
             type="button"
             onClick={onClose}
-            disabled={isSubmittingForm}
-            className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={isSubmitting}
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             type="submit"
-            disabled={isSubmittingForm || isLoading}
-            className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={isSubmitting}
+            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
           >
-            {isSubmittingForm ? (
-              <div className="flex items-center">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                {isEditing ? 'Updating...' : 'Creating...'}
-              </div>
-            ) : (
-              <div className="flex items-center">
-                <Check className="h-4 w-4 mr-2" />
-                {isEditing ? 'Update Contact' : 'Create Contact'}
-              </div>
-            )}
+            {isSubmitting ? 'Creating...' : 'Create Contact'}
           </button>
         </div>
       </form>
