@@ -1,10 +1,10 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
-import Dashboard from './components/Dashboard.jsx';
+import Dashboard from './components/Dashboard';
 import Login from './components/Login';
 import Register from './components/Register';
-import EntryPage from './components/EntryPage.jsx';
+import EntryPage from './components/EntryPage';
 
 const App: React.FC = () => {
   return (
