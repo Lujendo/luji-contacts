@@ -1,0 +1,156 @@
+import React, { useState, FormEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/solid';
+import { authApi } from '../api';
+import { useAuth } from '../context/AuthContext';
+import { RegisterRequest } from '../types';
+
+const Register: React.FC = () => {
+  const [formData, setFormData] = useState<RegisterRequest>({
+    username: '',
+    email: '',
+    password: '',
+  });
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  
+  const navigate = useNavigate();
+  const { login } = useAuth();
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value,
+    }));
+    // Clear error when user starts typing
+    if (error) {
+      setError('');
+    }
+  };
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const response = await authApi.register(formData);
+      
+      console.log('Registration successful', response);
+      
+      // Auto-login after successful registration
+      login(response.token, response.user);
+      
+      // Navigate to dashboard
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Registration error:', error);
+      setError(error instanceof Error ? error.message : 'An error occurred during registration');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const togglePasswordVisibility = (): void => {
+    setShowPassword(prev => !prev);
+  };
+
+  const isFormValid = formData.username.trim() && formData.email.trim() && formData.password.trim();
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {error && (
+        <div className="text-red-500 text-center text-sm bg-red-50 p-3 rounded-md">
+          {error}
+        </div>
+      )}
+      
+      <div>
+        <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+          Username
+        </label>
+        <input
+          type="text"
+          id="username"
+          name="username"
+          value={formData.username}
+          onChange={handleInputChange}
+          required
+          disabled={isLoading}
+          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+          placeholder="Enter your username"
+        />
+      </div>
+      
+      <div>
+        <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+          Email
+        </label>
+        <input
+          type="email"
+          id="email"
+          name="email"
+          value={formData.email}
+          onChange={handleInputChange}
+          required
+          disabled={isLoading}
+          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+          placeholder="Enter your email"
+        />
+      </div>
+      
+      <div className="relative">
+        <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+          Password
+        </label>
+        <input
+          type={showPassword ? "text" : "password"}
+          id="password"
+          name="password"
+          value={formData.password}
+          onChange={handleInputChange}
+          required
+          disabled={isLoading}
+          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 disabled:cursor-not-allowed pr-10"
+          placeholder="Enter your password (min. 6 characters)"
+          minLength={6}
+        />
+        <button
+          type="button"
+          onClick={togglePasswordVisibility}
+          disabled={isLoading}
+          className="absolute inset-y-0 right-0 pr-3 flex items-center top-6 disabled:cursor-not-allowed"
+          aria-label={showPassword ? "Hide password" : "Show password"}
+        >
+          {showPassword ? (
+            <EyeSlashIcon className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+          ) : (
+            <EyeIcon className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+          )}
+        </button>
+      </div>
+      
+      <button
+        type="submit"
+        disabled={isLoading || !isFormValid}
+        className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
+      >
+        {isLoading ? (
+          <div className="flex items-center">
+            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Creating account...
+          </div>
+        ) : (
+          'Register'
+        )}
+      </button>
+    </form>
+  );
+};
+
+export default Register;

@@ -1,13 +1,12 @@
-// src/App.js
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext.jsx';
+import { AuthProvider } from './context/AuthContext';
 import Dashboard from './components/Dashboard.jsx';
-import Login from './components/Login.jsx';
-import Register from './components/Register.jsx';
+import Login from './components/Login';
+import Register from './components/Register';
 import EntryPage from './components/EntryPage.jsx';
 
-const App = () => {
+const App: React.FC = () => {
   return (
     <AuthProvider>
       <Router>
