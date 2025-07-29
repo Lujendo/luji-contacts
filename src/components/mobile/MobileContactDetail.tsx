@@ -40,6 +40,15 @@ const MobileContactDetail: React.FC<MobileContactDetailProps> = ({
   className = ''
 }) => {
   const getInitials = (contact: Contact) => {
+    // Use nickname if available, otherwise use first and last name
+    if (contact.nickname) {
+      const nicknameParts = contact.nickname.split(' ');
+      if (nicknameParts.length >= 2) {
+        return (nicknameParts[0].charAt(0) + nicknameParts[1].charAt(0)).toUpperCase();
+      }
+      return contact.nickname.charAt(0).toUpperCase();
+    }
+
     const first = contact.first_name?.charAt(0) || '';
     const last = contact.last_name?.charAt(0) || '';
     return (first + last).toUpperCase() || '?';
@@ -90,8 +99,16 @@ const MobileContactDetail: React.FC<MobileContactDetailProps> = ({
           />
           
           <h1 className="text-2xl font-bold text-gray-900 mb-1">
-            {contact.first_name} {contact.last_name}
+            {contact.nickname || (contact.first_name || contact.last_name)
+              ? contact.nickname || `${contact.first_name || ''} ${contact.last_name || ''}`.trim()
+              : 'Unnamed Contact'
+            }
           </h1>
+          {contact.nickname && (contact.first_name || contact.last_name) && (
+            <p className="text-gray-500 text-sm mb-1">
+              {`${contact.first_name || ''} ${contact.last_name || ''}`.trim()}
+            </p>
+          )}
           
           {contact.job_title && (
             <p className="text-gray-600 mb-1">{contact.job_title}</p>

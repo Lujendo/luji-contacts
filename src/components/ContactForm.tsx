@@ -61,6 +61,7 @@ const ContactForm: React.FC<ContactFormProps> = ({
   const [formData, setFormData] = useState<CreateContactRequest>({
     first_name: initialData?.first_name || '',
     last_name: initialData?.last_name || '',
+    nickname: initialData?.nickname || '',
     email: initialData?.email || '',
     phone: initialData?.phone || '',
     birthday: initialData?.birthday || '',

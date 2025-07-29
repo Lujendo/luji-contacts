@@ -59,6 +59,7 @@ const TabbedContactForm: React.FC<TabbedContactFormProps> = ({
   const [formData, setFormData] = useState<CreateContactRequest>({
     first_name: initialData.first_name || '',
     last_name: initialData.last_name || '',
+    nickname: initialData.nickname || '',
     email: initialData.email || '',
     phone: initialData.phone || '',
     company: initialData.company || '',
@@ -544,6 +545,26 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
           <p className="mt-1 text-sm text-red-600">{errors.last_name}</p>
         )}
       </div>
+    </div>
+
+    {/* Nickname / Artist Name */}
+    <div>
+      <label htmlFor="nickname" className="block text-sm font-medium text-gray-700 mb-1">
+        Nickname / Artist Name
+      </label>
+      <input
+        type="text"
+        id="nickname"
+        name="nickname"
+        value={formData.nickname}
+        onChange={handleInputChange}
+        disabled={isSubmittingForm}
+        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+        placeholder="Enter nickname or artist name"
+      />
+      {errors.nickname && (
+        <p className="mt-1 text-sm text-red-600">{errors.nickname}</p>
+      )}
     </div>
 
     {/* Company and Job Title */}
