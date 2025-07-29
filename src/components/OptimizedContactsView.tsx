@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { Contact } from '../types';
 import { Search, Filter, SortAsc, SortDesc } from 'lucide-react';
 import VirtualizedContactList from './VirtualizedContactList';
@@ -23,9 +23,26 @@ const OptimizedContactsView: React.FC<OptimizedContactsViewProps> = ({
   const [sortField, setSortField] = useState('first_name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [showFilters, setShowFilters] = useState(false);
+  const [containerHeight, setContainerHeight] = useState(600);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Debounce search query to avoid too many API calls
   const debouncedSearch = useDebounce(searchQuery, 300);
+
+  // Calculate container height dynamically
+  useEffect(() => {
+    const updateHeight = () => {
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        const availableHeight = window.innerHeight - rect.top - 20; // 20px bottom margin
+        setContainerHeight(Math.max(400, availableHeight)); // Minimum 400px
+      }
+    };
+
+    updateHeight();
+    window.addEventListener('resize', updateHeight);
+    return () => window.removeEventListener('resize', updateHeight);
+  }, []);
 
   // Convert selectedContacts array to Set for performance
   const selectedContactsSet = useMemo(() => {
@@ -58,7 +75,7 @@ const OptimizedContactsView: React.FC<OptimizedContactsViewProps> = ({
   ];
 
   return (
-    <div className={`flex flex-col h-full ${className}`}>
+    <div ref={containerRef} className={`flex flex-col h-full ${className}`}>
       {/* Search and Filter Bar */}
       <div className="flex-shrink-0 p-4 bg-white border-b border-gray-200">
         <div className="flex items-center space-x-4">
@@ -182,7 +199,7 @@ const OptimizedContactsView: React.FC<OptimizedContactsViewProps> = ({
           onContactClick={handleContactClick}
           onContactSelect={onContactSelection ? handleContactSelectionChange : undefined}
           selectedContacts={selectedContactsSet}
-          containerHeight={600} // This will be dynamically calculated
+          containerHeight={containerHeight}
           itemHeight={80}
           className="h-full"
         />

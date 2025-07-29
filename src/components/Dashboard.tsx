@@ -15,6 +15,7 @@ import {
 import FixedNavigation from './FixedNavigation';
 import ContactFormModal from './ContactFormModal';
 import ContactTable from './ContactTable';
+import OptimizedContactsView from './OptimizedContactsView';
 import GroupList from './GroupList';
 import GroupForm from './GroupForm';
 import GroupEditForm from './GroupEditForm';
@@ -403,16 +404,14 @@ const Dashboard: React.FC = () => {
               )}
             </div>
 
-            {/* Contact Table */}
-            <div className="flex-1 overflow-auto">
-              <ContactTable
-                contacts={filteredContacts}
-                selectedContacts={selectedContacts}
-                onSelectContact={handleContactSelect}
+            {/* Optimized Contact View */}
+            <div className="flex-1 overflow-hidden">
+              <OptimizedContactsView
+                onContactSelect={handleContactSelect}
                 onContactSelection={handleContactSelection}
                 onBulkSelection={handleBulkSelection}
-                sortConfig={sortConfig}
-                onSortChange={handleSortChange}
+                selectedContacts={selectedContacts}
+                className="h-full"
               />
             </div>
           </div>
