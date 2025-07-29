@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { Contact } from '../types';
-import { Search, Filter, SortAsc, SortDesc } from 'lucide-react';
+import { Search, Filter, SortAsc, SortDesc, X, Loader2 } from 'lucide-react';
 import VirtualizedContactList from './VirtualizedContactList';
 import { useDebounce } from '../hooks/useDebounce';
 
@@ -24,10 +24,32 @@ const OptimizedContactsView: React.FC<OptimizedContactsViewProps> = ({
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [showFilters, setShowFilters] = useState(false);
   const [containerHeight, setContainerHeight] = useState(600);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Debounce search query to avoid too many API calls
-  const debouncedSearch = useDebounce(searchQuery, 300);
+  // Optimized debounce - faster for short queries, slower for complex ones
+  const debounceDelay = useMemo(() => {
+    if (searchQuery.length <= 2) return 150; // Fast for short queries
+    if (searchQuery.length <= 5) return 200; // Medium for moderate queries
+    return 300; // Standard for longer queries
+  }, [searchQuery.length]);
+
+  const debouncedSearch = useDebounce(searchQuery, debounceDelay);
+
+  // Load recent searches from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('recentContactSearches');
+    if (saved) {
+      try {
+        setRecentSearches(JSON.parse(saved));
+      } catch (error) {
+        console.warn('Failed to load recent searches:', error);
+      }
+    }
+  }, []);
 
   // Calculate container height dynamically
   useEffect(() => {
@@ -66,6 +88,82 @@ const OptimizedContactsView: React.FC<OptimizedContactsViewProps> = ({
     onContactSelection?.(contact.id, selected);
   }, [onContactSelection]);
 
+  // Save search to recent searches
+  const saveRecentSearch = useCallback((query: string) => {
+    if (query.trim().length < 2) return;
+
+    const updated = [query, ...recentSearches.filter(s => s !== query)].slice(0, 5);
+    setRecentSearches(updated);
+    localStorage.setItem('recentContactSearches', JSON.stringify(updated));
+  }, [recentSearches]);
+
+  // Handle search input changes with loading state
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+    if (value !== debouncedSearch) {
+      setIsSearching(true);
+    }
+    setShowSuggestions(value.length > 0);
+  }, [debouncedSearch]);
+
+  // Handle search input focus
+  const handleSearchFocus = useCallback(() => {
+    if (searchQuery.length > 0 || recentSearches.length > 0) {
+      setShowSuggestions(true);
+    }
+  }, [searchQuery, recentSearches]);
+
+  // Handle search input blur (with delay to allow clicking suggestions)
+  const handleSearchBlur = useCallback(() => {
+    setTimeout(() => setShowSuggestions(false), 150);
+  }, []);
+
+  // Apply suggestion
+  const applySuggestion = useCallback((suggestion: string) => {
+    setSearchQuery(suggestion);
+    setShowSuggestions(false);
+    saveRecentSearch(suggestion);
+    searchInputRef.current?.blur();
+  }, [saveRecentSearch]);
+
+  // Clear search function
+  const clearSearch = useCallback(() => {
+    setSearchQuery('');
+    setIsSearching(false);
+    setShowSuggestions(false);
+    searchInputRef.current?.focus();
+  }, []);
+
+  // Track when search is complete and save to recent searches
+  useEffect(() => {
+    if (searchQuery === debouncedSearch) {
+      setIsSearching(false);
+      // Save non-empty searches to recent searches
+      if (debouncedSearch.trim().length >= 2) {
+        saveRecentSearch(debouncedSearch.trim());
+      }
+    }
+  }, [searchQuery, debouncedSearch, saveRecentSearch]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl/Cmd + K to focus search
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+      // Escape to clear search
+      if (e.key === 'Escape' && searchQuery) {
+        clearSearch();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [searchQuery, clearSearch]);
+
   const sortOptions = [
     { value: 'first_name', label: 'First Name' },
     { value: 'last_name', label: 'Last Name' },
@@ -79,16 +177,87 @@ const OptimizedContactsView: React.FC<OptimizedContactsViewProps> = ({
       {/* Search and Filter Bar */}
       <div className="flex-shrink-0 p-4 bg-white border-b border-gray-200">
         <div className="flex items-center space-x-4">
-          {/* Search Input */}
+          {/* Enhanced Search Input */}
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
+              ref={searchInputRef}
               type="text"
-              placeholder="Search contacts..."
+              placeholder="Search contacts... (Ctrl+K)"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              onChange={handleSearchChange}
+              onFocus={handleSearchFocus}
+              onBlur={handleSearchBlur}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && searchQuery.trim()) {
+                  saveRecentSearch(searchQuery.trim());
+                  setShowSuggestions(false);
+                }
+              }}
+              className="w-full pl-10 pr-12 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
+
+            {/* Right side icons */}
+            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center space-x-1">
+              {/* Loading indicator */}
+              {isSearching && (
+                <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
+              )}
+
+              {/* Clear button */}
+              {searchQuery && (
+                <button
+                  onClick={clearSearch}
+                  className="p-1 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors"
+                  title="Clear search (Esc)"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
+            {/* Search Suggestions Dropdown */}
+            {showSuggestions && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
+                {/* Recent Searches */}
+                {recentSearches.length > 0 && (
+                  <div className="p-2">
+                    <div className="text-xs font-medium text-gray-500 uppercase tracking-wider px-2 py-1">
+                      Recent Searches
+                    </div>
+                    {recentSearches.map((search, index) => (
+                      <button
+                        key={index}
+                        onClick={() => applySuggestion(search)}
+                        className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center"
+                      >
+                        <Search className="w-4 h-4 mr-2 text-gray-400" />
+                        {search}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Quick Search Suggestions */}
+                {searchQuery.length === 0 && (
+                  <div className="p-2 border-t border-gray-100">
+                    <div className="text-xs font-medium text-gray-500 uppercase tracking-wider px-2 py-1">
+                      Quick Filters
+                    </div>
+                    {['@gmail.com', '@company.com', 'has:phone', 'has:email'].map((suggestion) => (
+                      <button
+                        key={suggestion}
+                        onClick={() => applySuggestion(suggestion)}
+                        className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center"
+                      >
+                        <Filter className="w-4 h-4 mr-2 text-gray-400" />
+                        {suggestion}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Sort Dropdown */}
