@@ -242,16 +242,17 @@ export class DatabaseService {
   async createContact(contactData: Omit<Contact, 'id' | 'created_at' | 'updated_at'>): Promise<Contact> {
     const result = await this.db.prepare(`
       INSERT INTO contacts (
-        user_id, first_name, last_name, email, phone, address_street, address_city,
+        user_id, first_name, last_name, nickname, email, phone, address_street, address_city,
         address_state, address_zip, address_country, birthday, website, facebook,
         twitter, linkedin, instagram, youtube, tiktok, snapchat, discord, spotify,
         apple_music, github, behance, dribbble, company, job_title, role, notes, profile_image_url
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       RETURNING *
     `).bind(
       contactData.user_id,
       contactData.first_name,
       contactData.last_name,
+      contactData.nickname,
       contactData.email,
       contactData.phone,
       contactData.address_street,
@@ -307,7 +308,7 @@ export class DatabaseService {
       if (searchTerm.length > 0) {
         // Use more efficient search with proper indexing
         const searchCondition = ` AND (
-          first_name LIKE ? OR last_name LIKE ? OR
+          first_name LIKE ? OR last_name LIKE ? OR nickname LIKE ? OR
           (first_name || ' ' || last_name) LIKE ? OR
           email LIKE ? OR phone LIKE ? OR company LIKE ? OR
           job_title LIKE ? OR notes LIKE ?
@@ -322,6 +323,7 @@ export class DatabaseService {
         const searchParams = [
           prefixSearch,     // first_name prefix
           prefixSearch,     // last_name prefix
+          prefixSearch,     // nickname prefix
           containsSearch,   // full name contains
           prefixSearch,     // email prefix
           containsSearch,   // phone contains

@@ -80,6 +80,7 @@ export interface Contact {
   user_id: number;
   first_name?: string;
   last_name?: string;
+  nickname?: string;
   email?: string;
   phone?: string;
   address_street?: string;
@@ -117,6 +118,7 @@ export interface Contact {
 export interface CreateContactRequest {
   first_name?: string;
   last_name?: string;
+  nickname?: string;
   email?: string;
   phone?: string;
   address_street?: string;

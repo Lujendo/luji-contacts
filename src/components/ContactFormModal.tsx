@@ -16,6 +16,7 @@ interface ContactFormModalProps {
 interface FormData {
   first_name: string;
   last_name: string;
+  nickname: string;
   email: string;
   phone: string;
   company: string;
@@ -44,6 +45,7 @@ const ContactFormModal: React.FC<ContactFormModalProps> = ({
   const [formData, setFormData] = useState<FormData>({
     first_name: '',
     last_name: '',
+    nickname: '',
     email: '',
     phone: '',
     company: '',
@@ -300,6 +302,7 @@ const ContactFormModal: React.FC<ContactFormModalProps> = ({
       setFormData({
         first_name: '',
         last_name: '',
+        nickname: '',
         email: '',
         phone: '',
         company: '',
@@ -427,6 +430,20 @@ const ContactFormModal: React.FC<ContactFormModalProps> = ({
               placeholder="Enter last name"
             />
           </div>
+        </div>
+        <div>
+          <label htmlFor="nickname" className="block text-sm font-medium text-gray-700 mb-1">
+            Nickname / Artist Name
+          </label>
+          <input
+            type="text"
+            id="nickname"
+            name="nickname"
+            value={formData.nickname}
+            onChange={handleInputChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="Enter nickname or artist name"
+          />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>

@@ -21,6 +21,15 @@ const ContactListItem: React.FC<ContactListItemProps> = ({
   className = ''
 }) => {
   const getInitials = (contact: Contact) => {
+    // Use nickname if available, otherwise use first and last name
+    if (contact.nickname) {
+      const nicknameParts = contact.nickname.split(' ');
+      if (nicknameParts.length >= 2) {
+        return (nicknameParts[0].charAt(0) + nicknameParts[1].charAt(0)).toUpperCase();
+      }
+      return contact.nickname.charAt(0).toUpperCase();
+    }
+
     const first = contact.first_name?.charAt(0) || '';
     const last = contact.last_name?.charAt(0) || '';
     return (first + last).toUpperCase() || '?';
@@ -79,11 +88,16 @@ const ContactListItem: React.FC<ContactListItemProps> = ({
         </div>
         <div className="min-w-0 flex-1">
           <h3 className="text-sm font-medium text-gray-900 truncate">
-            {contact.first_name || contact.last_name
-              ? `${contact.first_name || ''} ${contact.last_name || ''}`.trim()
+            {contact.nickname || (contact.first_name || contact.last_name)
+              ? contact.nickname || `${contact.first_name || ''} ${contact.last_name || ''}`.trim()
               : 'Unnamed Contact'
             }
           </h3>
+          {contact.nickname && (contact.first_name || contact.last_name) && (
+            <p className="text-xs text-gray-400 truncate">
+              {`${contact.first_name || ''} ${contact.last_name || ''}`.trim()}
+            </p>
+          )}
           {contact.job_title && (
             <p className="text-xs text-gray-500 truncate">
               {contact.job_title}

@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS contacts (
   user_id INTEGER NOT NULL,
   first_name TEXT,
   last_name TEXT,
+  nickname TEXT,
   email TEXT,
   phone TEXT,
   address_street TEXT,
