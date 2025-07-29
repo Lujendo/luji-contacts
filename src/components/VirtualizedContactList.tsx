@@ -1,6 +1,7 @@
 import React, { useRef, useCallback, useEffect } from 'react';
 import { Contact } from '../types';
-import { useInfiniteContacts, useIntersectionObserver } from '../hooks/useInfiniteContacts';
+import { useInfiniteContacts } from '../hooks/useInfiniteContacts';
+import { useIntersectionObserver } from '../hooks/useIntersectionObserver';
 import ContactListItem from './ContactListItem';
 import ContactListSkeleton from './ContactListSkeleton';
 import { ChevronUp, ChevronDown } from 'lucide-react';
@@ -53,9 +54,9 @@ const VirtualizedContactList: React.FC<VirtualizedContactListProps> = ({
 
   // Intersection observer for infinite loading
   const loadMoreRef = useIntersectionObserver(
-    useCallback(() => {
+    useCallback((entry: IntersectionObserverEntry) => {
       console.log('Intersection triggered:', { hasMore, loading, totalContacts: contacts.length });
-      if (hasMore && !loading) {
+      if (entry.isIntersecting && hasMore && !loading) {
         console.log('Loading more contacts...');
         loadMore();
       }

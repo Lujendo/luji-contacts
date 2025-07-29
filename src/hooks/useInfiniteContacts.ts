@@ -155,36 +155,4 @@ export const useInfiniteContacts = (
   };
 };
 
-// Hook for intersection observer to trigger infinite loading
-export const useIntersectionObserver = (
-  callback: () => void,
-  options: IntersectionObserverInit = {}
-) => {
-  const targetRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const target = targetRef.current;
-    if (!target) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          callback();
-        }
-      },
-      {
-        threshold: 0.1,
-        rootMargin: '100px',
-        ...options
-      }
-    );
-
-    observer.observe(target);
-
-    return () => {
-      observer.unobserve(target);
-    };
-  }, [callback, options]);
-
-  return targetRef;
-};
