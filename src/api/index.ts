@@ -210,7 +210,7 @@ export const contactsApi = {
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
         // Compress image if it's too large
-        const processedFile = await this.compressImageIfNeeded(file);
+        const processedFile = await compressImageIfNeeded(file);
 
         const formData = new FormData();
         formData.append('profile_image', processedFile);
@@ -234,7 +234,7 @@ export const contactsApi = {
         return extractData(response);
       } catch (error) {
         // If this is the last attempt or it's not a network error, throw
-        if (attempt === retries || !this.isRetryableError(error)) {
+        if (attempt === retries || !isRetryableError(error)) {
           handleApiError(error);
         }
 
@@ -249,20 +249,21 @@ export const contactsApi = {
     // This should never be reached, but TypeScript requires it
     throw new Error('Upload failed after all retries');
   },
+};
 
-  // Helper method to determine if an error is retryable
-  isRetryableError(error: any): boolean {
-    // Retry on network errors, timeouts, and 5xx server errors
-    return (
-      !error.response ||
-      error.code === 'ECONNABORTED' ||
-      error.code === 'NETWORK_ERROR' ||
-      (error.response?.status >= 500 && error.response?.status < 600)
-    );
-  },
+// Helper function to determine if an error is retryable
+function isRetryableError(error: any): boolean {
+  // Retry on network errors, timeouts, and 5xx server errors
+  return (
+    !error.response ||
+    error.code === 'ECONNABORTED' ||
+    error.code === 'NETWORK_ERROR' ||
+    (error.response?.status >= 500 && error.response?.status < 600)
+  );
+}
 
-  // Helper method to compress images if needed
-  async compressImageIfNeeded(file: File): Promise<File> {
+// Helper function to compress images if needed
+async function compressImageIfNeeded(file: File): Promise<File> {
     // If file is smaller than 1MB, return as-is
     if (file.size <= 1024 * 1024) {
       return file;
@@ -316,8 +317,7 @@ export const contactsApi = {
       img.onerror = () => resolve(file); // Fallback to original
       img.src = URL.createObjectURL(file);
     });
-  },
-};
+}
 
 // ============================================================================
 // Groups API
