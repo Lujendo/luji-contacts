@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { Contact } from '../types';
 import { Search, Filter, SortAsc, SortDesc, X, Loader2 } from 'lucide-react';
-import SimpleContactList from './SimpleContactList';
+import EnhancedContactList from './EnhancedContactList';
 import { useDebounce } from '../hooks/useDebounce';
 
 interface OptimizedContactsViewProps {
@@ -345,9 +345,9 @@ const OptimizedContactsView: React.FC<OptimizedContactsViewProps> = ({
         )}
       </div>
 
-      {/* Simple Contact List */}
+      {/* Enhanced Contact List with Infinite Scrolling */}
       <div className="flex-1 overflow-hidden">
-        <SimpleContactList
+        <EnhancedContactList
           search={debouncedSearch}
           sort={sortField}
           direction={sortDirection}
