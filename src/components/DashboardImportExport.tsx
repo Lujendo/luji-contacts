@@ -415,7 +415,7 @@ const DashboardImportExport: React.FC<DashboardImportExportProps> = ({
         // Refresh contacts list if callback provided
         if (onContactsImported) {
           try {
-            const allContacts = await contactsApi.getContacts();
+            const allContacts = await contactsApi.getContactsLegacy();
             onContactsImported(allContacts);
           } catch (error) {
             console.error('Error refreshing contacts:', error);
@@ -442,8 +442,8 @@ const DashboardImportExport: React.FC<DashboardImportExportProps> = ({
     setError('');
 
     try {
-      const contacts = await contactsApi.getContacts();
-      
+      const contacts = await contactsApi.getContactsLegacy();
+
       if (contacts.length === 0) {
         setError('No contacts to export');
         setExportLoading(false);

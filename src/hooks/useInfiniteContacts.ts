@@ -85,10 +85,10 @@ export const useInfiniteContacts = (
       // Check cache first
       const cachedResponse = contactsCache.getWithStats(queryParams);
       if (cachedResponse && !reset) {
-        const newContacts = cachedResponse.data || [];
+        const newContacts = Array.isArray(cachedResponse.data) ? cachedResponse.data : [];
         const paginationInfo = cachedResponse.pagination;
 
-        setContacts(prev => reset ? newContacts : [...prev, ...newContacts]);
+        setContacts(prev => reset ? newContacts : [...(Array.isArray(prev) ? prev : []), ...newContacts]);
         setPagination(paginationInfo || null);
         setTotal(cachedResponse.total || 0);
         setHasMore(paginationInfo?.hasNext || false);
@@ -106,10 +106,10 @@ export const useInfiniteContacts = (
         // Cache the response
         contactsCache.set(queryParams, response);
 
-        const newContacts = response.data;
+        const newContacts = Array.isArray(response.data) ? response.data : [];
         const paginationInfo = response.pagination;
 
-        setContacts(prev => reset ? newContacts : [...prev, ...newContacts]);
+        setContacts(prev => reset ? newContacts : [...(Array.isArray(prev) ? prev : []), ...newContacts]);
         setPagination(paginationInfo || null);
         setTotal(response.total || 0);
         setHasMore(paginationInfo?.hasNext || false);

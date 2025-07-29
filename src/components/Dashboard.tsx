@@ -125,10 +125,10 @@ const Dashboard: React.FC = () => {
       
       try {
         const [contactsData, groupsData] = await Promise.all([
-          contactsApi.getContacts(),
+          contactsApi.getContactsLegacy(),
           groupsApi.getGroups()
         ]);
-        
+
         setContacts(contactsData);
         setGroups(groupsData);
       } catch (error) {
@@ -500,7 +500,7 @@ const Dashboard: React.FC = () => {
               onClose={() => setShowBulkGroupAssign(false)}
               onAssignmentComplete={() => {
                 // Refresh contacts to show updated group assignments
-                contactsApi.getContacts().then(setContacts);
+                contactsApi.getContactsLegacy().then(setContacts);
                 setSelectedContacts([]);
               }}
             />
@@ -513,7 +513,7 @@ const Dashboard: React.FC = () => {
               onClose={() => setShowBulkGroupRemove(false)}
               onRemovalComplete={() => {
                 // Refresh contacts to show updated group assignments
-                contactsApi.getContacts().then(setContacts);
+                contactsApi.getContactsLegacy().then(setContacts);
                 setSelectedContacts([]);
               }}
             />
@@ -539,7 +539,7 @@ const Dashboard: React.FC = () => {
           groups={groups}
           onClose={() => setShowGroupAssignModal(false)}
           onAssignmentComplete={() => {
-            contactsApi.getContacts().then(setContacts);
+            contactsApi.getContactsLegacy().then(setContacts);
             setSelectedContacts([]);
             setShowGroupAssignModal(false);
           }}
@@ -556,7 +556,7 @@ const Dashboard: React.FC = () => {
           }}
           onClose={() => setShowGroupRemoveModal(false)}
           onRemovalComplete={() => {
-            contactsApi.getContacts().then(setContacts);
+            contactsApi.getContactsLegacy().then(setContacts);
             setSelectedContacts([]);
             setShowGroupRemoveModal(false);
           }}
@@ -572,7 +572,7 @@ const Dashboard: React.FC = () => {
           try {
             // Small delay to ensure all imports are processed
             await new Promise(resolve => setTimeout(resolve, 500));
-            const refreshedContacts = await contactsApi.getContacts();
+            const refreshedContacts = await contactsApi.getContactsLegacy();
             setContacts(refreshedContacts);
             console.log(`Successfully refreshed contact list after importing ${importedContacts.length} contacts`);
           } catch (error) {

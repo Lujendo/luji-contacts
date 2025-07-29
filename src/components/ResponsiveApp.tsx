@@ -45,7 +45,7 @@ const ResponsiveApp: React.FC<ResponsiveAppProps> = ({ className = '' }) => {
   const loadContacts = async () => {
     try {
       setLoading(true);
-      const data = await contactsApi.getContacts();
+      const data = await contactsApi.getContactsLegacy();
       setContacts(data);
     } catch (error) {
       console.error('Error loading contacts:', error);

@@ -58,7 +58,7 @@ const VirtualizedContactList: React.FC<VirtualizedContactListProps> = ({
     itemHeight,
     containerHeight,
     overscan: 5,
-    totalItems: contacts.length
+    totalItems: Array.isArray(contacts) ? contacts.length : 0
   });
 
   // Scroll handler
@@ -80,8 +80,8 @@ const VirtualizedContactList: React.FC<VirtualizedContactListProps> = ({
     refresh();
   }, [search, sort, direction]);
 
-  // Get visible contacts
-  const visibleContacts = contacts.slice(startIndex, endIndex + 1);
+  // Get visible contacts with safety check
+  const visibleContacts = Array.isArray(contacts) ? contacts.slice(startIndex, endIndex + 1) : [];
 
   if (error) {
     return (
