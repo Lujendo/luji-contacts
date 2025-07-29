@@ -113,6 +113,17 @@ CREATE TABLE IF NOT EXISTS email_history (
 CREATE INDEX IF NOT EXISTS idx_contacts_user_id ON contacts(user_id);
 CREATE INDEX IF NOT EXISTS idx_contacts_email ON contacts(email);
 CREATE INDEX IF NOT EXISTS idx_contacts_name ON contacts(first_name, last_name);
+CREATE INDEX IF NOT EXISTS idx_contacts_phone ON contacts(phone);
+CREATE INDEX IF NOT EXISTS idx_contacts_company ON contacts(company);
+CREATE INDEX IF NOT EXISTS idx_contacts_created_at ON contacts(created_at);
+CREATE INDEX IF NOT EXISTS idx_contacts_updated_at ON contacts(updated_at);
+-- Composite indexes for common queries
+CREATE INDEX IF NOT EXISTS idx_contacts_user_created ON contacts(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_contacts_user_name ON contacts(user_id, first_name, last_name);
+CREATE INDEX IF NOT EXISTS idx_contacts_user_company ON contacts(user_id, company);
+-- Full-text search support (for search queries)
+CREATE INDEX IF NOT EXISTS idx_contacts_search ON contacts(user_id, first_name, last_name, email, phone, company, job_title);
+
 CREATE INDEX IF NOT EXISTS idx_groups_user_id ON groups(user_id);
 CREATE INDEX IF NOT EXISTS idx_group_contacts_group_id ON group_contacts(group_id);
 CREATE INDEX IF NOT EXISTS idx_group_contacts_contact_id ON group_contacts(contact_id);

@@ -146,12 +146,23 @@ export const contactsApi = {
     search?: string;
     sort?: string;
     direction?: 'asc' | 'desc';
-    page?: number;
-    limit?: number;
-  }): Promise<Contact[]> {
+    page?: string;
+    limit?: string;
+    offset?: string;
+  }): Promise<ApiResponse<Contact[]>> {
     try {
       const response = await api.get<ApiResponse<Contact[]>>('/contacts', { params });
-      return extractData(response);
+      return response.data;
+    } catch (error) {
+      handleApiError(error);
+    }
+  },
+
+  // Legacy method for backward compatibility
+  async getContactsLegacy(): Promise<Contact[]> {
+    try {
+      const response = await this.getContacts();
+      return response.data || [];
     } catch (error) {
       handleApiError(error);
     }

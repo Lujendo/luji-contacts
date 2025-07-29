@@ -287,20 +287,55 @@ export class DatabaseService {
     return result;
   }
 
-  async getContactsByUserId(userId: number, search?: string, sort?: string, direction?: string): Promise<Contact[]> {
+  async getContactsByUserId(
+    userId: number,
+    search?: string,
+    sort?: string,
+    direction?: string,
+    limit?: number,
+    offset?: number
+  ): Promise<{ contacts: Contact[], total: number }> {
+    // Build base query for counting
+    let countQuery = 'SELECT COUNT(*) as total FROM contacts WHERE user_id = ?';
     let query = 'SELECT * FROM contacts WHERE user_id = ?';
     const params: any[] = [userId];
+    const countParams: any[] = [userId];
 
+    // Add search conditions with optimized LIKE queries
     if (search) {
-      query += ` AND (
-        first_name LIKE ? OR last_name LIKE ? OR email LIKE ? OR
-        phone LIKE ? OR notes LIKE ? OR company LIKE ? OR
-        job_title LIKE ? OR role LIKE ? OR address_city LIKE ? OR address_country LIKE ?
-      )`;
-      const searchParam = `%${search}%`;
-      params.push(searchParam, searchParam, searchParam, searchParam, searchParam, searchParam, searchParam, searchParam, searchParam, searchParam);
+      const searchTerm = search.trim();
+      if (searchTerm.length > 0) {
+        // Use more efficient search with proper indexing
+        const searchCondition = ` AND (
+          first_name LIKE ? OR last_name LIKE ? OR
+          (first_name || ' ' || last_name) LIKE ? OR
+          email LIKE ? OR phone LIKE ? OR company LIKE ? OR
+          job_title LIKE ? OR notes LIKE ?
+        )`;
+        query += searchCondition;
+        countQuery += searchCondition;
+
+        // Optimize search parameters - use prefix matching where possible
+        const prefixSearch = `${searchTerm}%`;
+        const containsSearch = `%${searchTerm}%`;
+
+        const searchParams = [
+          prefixSearch,     // first_name prefix
+          prefixSearch,     // last_name prefix
+          containsSearch,   // full name contains
+          prefixSearch,     // email prefix
+          containsSearch,   // phone contains
+          prefixSearch,     // company prefix
+          prefixSearch,     // job_title prefix
+          containsSearch    // notes contains
+        ];
+
+        params.push(...searchParams);
+        countParams.push(...searchParams);
+      }
     }
 
+    // Add sorting
     if (sort) {
       const validSorts = ['first_name', 'last_name', 'email', 'created_at', 'company', 'job_title', 'role'];
       if (validSorts.includes(sort)) {
@@ -311,7 +346,30 @@ export class DatabaseService {
       query += ' ORDER BY created_at DESC';
     }
 
-    return await this.db.prepare(query).bind(...params).all<Contact>().then(result => result.results || []);
+    // Add pagination
+    if (limit !== undefined) {
+      query += ` LIMIT ${limit}`;
+      if (offset !== undefined) {
+        query += ` OFFSET ${offset}`;
+      }
+    }
+
+    // Execute both queries
+    const [contactsResult, countResult] = await Promise.all([
+      this.db.prepare(query).bind(...params).all<Contact>(),
+      this.db.prepare(countQuery).bind(...countParams).first<{ total: number }>()
+    ]);
+
+    return {
+      contacts: contactsResult.results || [],
+      total: countResult?.total || 0
+    };
+  }
+
+  // Keep the old method for backward compatibility
+  async getContactsByUserIdLegacy(userId: number, search?: string, sort?: string, direction?: string): Promise<Contact[]> {
+    const result = await this.getContactsByUserId(userId, search, sort, direction);
+    return result.contacts;
   }
 
   async getContactById(id: number, userId: number): Promise<Contact | null> {

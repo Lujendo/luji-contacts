@@ -11,23 +11,33 @@ export function createContactRoutes(db: DatabaseService, auth: AuthService, stor
   // Apply authentication middleware to all routes
   contacts.use('*', createAuthMiddleware(auth, db));
 
-  // Get all contacts with search and sorting
+  // Get all contacts with search, sorting, and pagination
   contacts.get('/', async (c) => {
     try {
       const user = getAuthenticatedUser(c);
-      const { search, sort, direction } = c.req.query();
+      const { search, sort, direction, limit, offset, page } = c.req.query();
 
-      const contactList = await db.getContactsByUserId(
+      // Parse pagination parameters
+      const parsedLimit = limit ? Math.min(parseInt(limit), 100) : 50; // Default 50, max 100
+      const parsedOffset = offset ? parseInt(offset) : 0;
+      const parsedPage = page ? parseInt(page) : 1;
+
+      // Calculate offset from page if provided
+      const finalOffset = page ? (parsedPage - 1) * parsedLimit : parsedOffset;
+
+      const result = await db.getContactsByUserId(
         user.id,
         search,
         sort,
-        direction
+        direction,
+        parsedLimit,
+        finalOffset
       );
 
       // Get groups for each contact (if needed)
       const storage = new StorageService(c.env.STORAGE);
       const contactsWithGroups = await Promise.all(
-        contactList.map(async (contact) => {
+        result.contacts.map(async (contact) => {
           const groups = await db.getGroupsByContactId(contact.id);
           return {
             ...contact,
@@ -42,9 +52,20 @@ export function createContactRoutes(db: DatabaseService, auth: AuthService, stor
         })
       );
 
+      const totalPages = Math.ceil(result.total / parsedLimit);
+      const currentPage = Math.floor(finalOffset / parsedLimit) + 1;
+
       const response: ApiResponse = {
         data: contactsWithGroups,
-        total: contactsWithGroups.length,
+        total: result.total,
+        pagination: {
+          limit: parsedLimit,
+          offset: finalOffset,
+          page: currentPage,
+          totalPages: totalPages,
+          hasNext: currentPage < totalPages,
+          hasPrev: currentPage > 1
+        },
         success: true
       };
 
@@ -117,10 +138,10 @@ export function createContactRoutes(db: DatabaseService, auth: AuthService, stor
 
       // Check contact limit
       if (user.contact_limit && user.contact_limit > 0) {
-        const existingContacts = await db.getContactsByUserId(user.id);
+        const existingContacts = await db.getContactsByUserIdLegacy(user.id);
         if (existingContacts.length >= user.contact_limit) {
-          return c.json({ 
-            error: `Contact limit reached. Maximum ${user.contact_limit} contacts allowed.` 
+          return c.json({
+            error: `Contact limit reached. Maximum ${user.contact_limit} contacts allowed.`
           }, 403);
         }
       }
