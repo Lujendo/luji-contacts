@@ -218,9 +218,9 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
       return;
     }
 
-    // Validate file size (5MB limit)
-    if (file.size > 5 * 1024 * 1024) {
-      setError('Image size must be less than 5MB');
+    // Validate file size (10MB limit - will be compressed automatically)
+    if (file.size > 10 * 1024 * 1024) {
+      setError('Image size must be less than 10MB');
       return;
     }
 
@@ -230,7 +230,8 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
       setProfileImage({
         file,
         preview: e.target?.result as string,
-        isUploading: false
+        isUploading: false,
+        progress: 0
       });
     };
     reader.readAsDataURL(file);
@@ -281,14 +282,22 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
 
       // Upload profile image if changed
       if (profileImage.file) {
-        setProfileImage(prev => ({ ...prev, isUploading: true }));
+        setProfileImage(prev => ({ ...prev, isUploading: true, progress: 0 }));
         try {
-          await contactsApi.uploadProfileImage(editedContact.id, profileImage.file);
+          await contactsApi.uploadProfileImage(
+            editedContact.id,
+            profileImage.file,
+            (progress) => {
+              setProfileImage(prev => ({ ...prev, progress }));
+            }
+          );
+          setProfileImage(prev => ({ ...prev, progress: 100 }));
         } catch (imageError) {
           console.error('Error uploading profile image:', imageError);
+          setError('Failed to upload profile image. Please try again.');
           // Don't fail the entire operation for image upload errors
         }
-        setProfileImage(prev => ({ ...prev, isUploading: false }));
+        setProfileImage(prev => ({ ...prev, isUploading: false, progress: 0 }));
       }
 
       // Call the appropriate callback

@@ -43,6 +43,7 @@ interface ProfileImageState {
   file: File | null;
   preview: string | null;
   isUploading: boolean;
+  progress: number;
 }
 
 const TabbedContactForm: React.FC<TabbedContactFormProps> = ({
@@ -81,7 +82,8 @@ const TabbedContactForm: React.FC<TabbedContactFormProps> = ({
   const [profileImage, setProfileImage] = useState<ProfileImageState>({
     file: null,
     preview: initialData?.profile_image_url || null,
-    isUploading: false
+    isUploading: false,
+    progress: 0
   });
   const [selectedGroups, setSelectedGroups] = useState<number[]>([]);
   const [activeTab, setActiveTab] = useState<string>('basic');
@@ -127,9 +129,9 @@ const TabbedContactForm: React.FC<TabbedContactFormProps> = ({
         return;
       }
 
-      // Validate file size (5MB limit)
-      if (file.size > 5 * 1024 * 1024) {
-        setErrors(prev => ({ ...prev, profile_image: 'Image size must be less than 5MB' }));
+      // Validate file size (10MB limit - will be compressed automatically)
+      if (file.size > 10 * 1024 * 1024) {
+        setErrors(prev => ({ ...prev, profile_image: 'Image size must be less than 10MB' }));
         return;
       }
 
@@ -139,7 +141,8 @@ const TabbedContactForm: React.FC<TabbedContactFormProps> = ({
         setProfileImage({
           file,
           preview: e.target?.result as string,
-          isUploading: false
+          isUploading: false,
+          progress: 0
         });
       };
       reader.readAsDataURL(file);
@@ -154,7 +157,8 @@ const TabbedContactForm: React.FC<TabbedContactFormProps> = ({
     setProfileImage({
       file: null,
       preview: null,
-      isUploading: false
+      isUploading: false,
+      progress: 0
     });
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -215,15 +219,26 @@ const TabbedContactForm: React.FC<TabbedContactFormProps> = ({
       // Upload profile image if provided
       if (profileImage.file && contact.id) {
         try {
-          setProfileImage(prev => ({ ...prev, isUploading: true }));
-          await contactsApi.uploadProfileImage(contact.id, profileImage.file);
+          setProfileImage(prev => ({ ...prev, isUploading: true, progress: 0 }));
+
+          // Upload with progress tracking
+          await contactsApi.uploadProfileImage(
+            contact.id,
+            profileImage.file,
+            (progress) => {
+              setProfileImage(prev => ({ ...prev, progress }));
+            }
+          );
+
           // Refresh contact data to get updated profile image URL
           contact = await contactsApi.getContact(contact.id);
+          setProfileImage(prev => ({ ...prev, progress: 100 }));
         } catch (imageError) {
           console.error('Error uploading profile image:', imageError);
+          setErrors(prev => ({ ...prev, profile_image: 'Failed to upload profile image. Please try again.' }));
           // Don't fail the entire operation for image upload errors
         } finally {
-          setProfileImage(prev => ({ ...prev, isUploading: false }));
+          setProfileImage(prev => ({ ...prev, isUploading: false, progress: 0 }));
         }
       }
 
@@ -421,7 +436,9 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
         )}
         {profileImage.isUploading && (
           <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+            <div className="text-white text-xs font-medium">
+              {profileImage.progress}%
+            </div>
           </div>
         )}
       </div>
@@ -457,8 +474,22 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
           className="hidden"
         />
         <p className="mt-2 text-sm text-gray-500">
-          Upload a profile photo (max 5MB)
+          Upload a profile photo (max 10MB - will be compressed automatically)
         </p>
+        {profileImage.isUploading && (
+          <div className="mt-2">
+            <div className="flex justify-between text-sm text-gray-600 mb-1">
+              <span>Uploading...</span>
+              <span>{profileImage.progress}%</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div
+                className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-out"
+                style={{ width: `${profileImage.progress}%` }}
+              ></div>
+            </div>
+          </div>
+        )}
         {errors.profile_image && (
           <p className="mt-1 text-sm text-red-600">{errors.profile_image}</p>
         )}

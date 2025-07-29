@@ -201,24 +201,121 @@ export const contactsApi = {
     }
   },
 
-  async uploadProfileImage(contactId: number, file: File): Promise<FileUploadResponse> {
-    try {
-      const formData = new FormData();
-      formData.append('profile_image', file);
-      
-      const response = await api.put<ApiResponse<FileUploadResponse>>(
-        `/contacts/${contactId}/profile-image`,
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
+  async uploadProfileImage(
+    contactId: number,
+    file: File,
+    onProgress?: (progress: number) => void,
+    retries: number = 2
+  ): Promise<FileUploadResponse> {
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        // Compress image if it's too large
+        const processedFile = await this.compressImageIfNeeded(file);
+
+        const formData = new FormData();
+        formData.append('profile_image', processedFile);
+
+        const response = await api.put<ApiResponse<FileUploadResponse>>(
+          `/contacts/${contactId}/profile-image`,
+          formData,
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+            timeout: 120000, // 2 minutes for file uploads
+            onUploadProgress: (progressEvent) => {
+              if (onProgress && progressEvent.total) {
+                const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                onProgress(progress);
+              }
+            },
+          }
+        );
+        return extractData(response);
+      } catch (error) {
+        // If this is the last attempt or it's not a network error, throw
+        if (attempt === retries || !this.isRetryableError(error)) {
+          handleApiError(error);
         }
-      );
-      return extractData(response);
-    } catch (error) {
-      handleApiError(error);
+
+        // Wait before retrying (exponential backoff)
+        if (attempt < retries) {
+          await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+          if (onProgress) onProgress(0); // Reset progress for retry
+        }
+      }
     }
+
+    // This should never be reached, but TypeScript requires it
+    throw new Error('Upload failed after all retries');
+  },
+
+  // Helper method to determine if an error is retryable
+  isRetryableError(error: any): boolean {
+    // Retry on network errors, timeouts, and 5xx server errors
+    return (
+      !error.response ||
+      error.code === 'ECONNABORTED' ||
+      error.code === 'NETWORK_ERROR' ||
+      (error.response?.status >= 500 && error.response?.status < 600)
+    );
+  },
+
+  // Helper method to compress images if needed
+  async compressImageIfNeeded(file: File): Promise<File> {
+    // If file is smaller than 1MB, return as-is
+    if (file.size <= 1024 * 1024) {
+      return file;
+    }
+
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+
+      img.onload = () => {
+        // Calculate new dimensions (max 800x800)
+        const maxSize = 800;
+        let { width, height } = img;
+
+        if (width > height) {
+          if (width > maxSize) {
+            height = (height * maxSize) / width;
+            width = maxSize;
+          }
+        } else {
+          if (height > maxSize) {
+            width = (width * maxSize) / height;
+            height = maxSize;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        // Draw and compress
+        ctx?.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              const compressedFile = new File([blob], file.name, {
+                type: 'image/jpeg',
+                lastModified: Date.now(),
+              });
+              resolve(compressedFile);
+            } else {
+              resolve(file); // Fallback to original
+            }
+          },
+          'image/jpeg',
+          0.8 // 80% quality
+        );
+      };
+
+      img.onerror = () => resolve(file); // Fallback to original
+      img.src = URL.createObjectURL(file);
+    });
   },
 };
 
