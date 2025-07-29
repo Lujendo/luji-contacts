@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { contactsApi } from '../api';
 import { Contact, PaginationInfo } from '../types';
-import { contactsCache } from '../utils/contactsCache';
+// Temporarily removed cache import to fix initialization issue
+// import { contactsCache } from '../utils/contactsCache';
 
 interface UseInfiniteContactsOptions {
   limit?: number;
@@ -54,8 +55,6 @@ export const useInfiniteContacts = (
       setContacts([]);
       setHasMore(true);
       setError(null);
-      // Clear cache for search changes
-      contactsCache.invalidate();
       if (enabled) {
         loadContacts(1, true);
       }
@@ -85,22 +84,22 @@ export const useInfiniteContacts = (
         direction: direction || undefined
       };
 
-      // Check cache first
-      const cachedResponse = contactsCache.getWithStats(queryParams);
-      if (cachedResponse && !reset) {
-        const newContacts = Array.isArray(cachedResponse.data) ? cachedResponse.data : [];
-        const paginationInfo = cachedResponse.pagination;
+      // Temporarily disable cache to debug initialization issue
+      // const cachedResponse = contactsCache.getWithStats(queryParams);
+      // if (cachedResponse && !reset) {
+      //   const newContacts = Array.isArray(cachedResponse.data) ? cachedResponse.data : [];
+      //   const paginationInfo = cachedResponse.pagination;
 
-        setContacts(prev => reset ? newContacts : [...(Array.isArray(prev) ? prev : []), ...newContacts]);
-        setPagination(paginationInfo || null);
-        setTotal(cachedResponse.total || 0);
-        setHasMore(paginationInfo?.hasNext || false);
+      //   setContacts(prev => reset ? newContacts : [...(Array.isArray(prev) ? prev : []), ...newContacts]);
+      //   setPagination(paginationInfo || null);
+      //   setTotal(cachedResponse.total || 0);
+      //   setHasMore(paginationInfo?.hasNext || false);
 
-        currentPageRef.current = page;
-        setLoading(false);
-        isLoadingRef.current = false;
-        return;
-      }
+      //   currentPageRef.current = page;
+      //   setLoading(false);
+      //   isLoadingRef.current = false;
+      //   return;
+      // }
 
 
 
@@ -108,8 +107,8 @@ export const useInfiniteContacts = (
       const response = await contactsApi.getContacts(queryParams);
 
       if (response.success && response.data) {
-        // Cache the response
-        contactsCache.set(queryParams, response);
+        // Temporarily disable cache
+        // contactsCache.set(queryParams, response);
 
         const newContacts = Array.isArray(response.data) ? response.data : [];
         const paginationInfo = response.pagination;
