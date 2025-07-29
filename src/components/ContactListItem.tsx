@@ -80,9 +80,19 @@ const ContactListItem: React.FC<ContactListItemProps> = ({
       {/* Contact information */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between">
-          <h3 className="text-base font-medium text-gray-900 truncate">
-            {contact.first_name} {contact.last_name}
-          </h3>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-base font-medium text-gray-900 truncate">
+              {contact.first_name || contact.last_name
+                ? `${contact.first_name || ''} ${contact.last_name || ''}`.trim()
+                : 'Unnamed Contact'
+              }
+            </h3>
+            {contact.job_title && (
+              <p className="text-sm text-gray-500 truncate">
+                {contact.job_title}
+              </p>
+            )}
+          </div>
           
           {/* Quick action icons */}
           <div className="flex items-center space-x-2 ml-4">
@@ -113,37 +123,64 @@ const ContactListItem: React.FC<ContactListItemProps> = ({
           </div>
         </div>
 
-        {/* Contact details */}
+        {/* Contact details - matching old ContactTable format */}
         <div className="mt-1 space-y-1">
-          {contact.phone && (
-            <div className="flex items-center text-sm text-gray-600">
-              <Phone className="w-3 h-3 mr-2 text-gray-400" />
-              <span className="truncate">{formatPhoneNumber(contact.phone)}</span>
-            </div>
-          )}
-          
-          {contact.email && (
+          {/* Email */}
+          {contact.email ? (
             <div className="flex items-center text-sm text-gray-600">
               <Mail className="w-3 h-3 mr-2 text-gray-400" />
-              <span className="truncate">{contact.email}</span>
+              <a
+                href={`mailto:${contact.email}`}
+                className="text-blue-600 hover:text-blue-800 truncate"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {contact.email}
+              </a>
+            </div>
+          ) : (
+            <div className="flex items-center text-sm text-gray-400">
+              <Mail className="w-3 h-3 mr-2" />
+              <span className="truncate">No email</span>
             </div>
           )}
-          
-          {contact.company && (
+
+          {/* Phone */}
+          {contact.phone ? (
+            <div className="flex items-center text-sm text-gray-600">
+              <Phone className="w-3 h-3 mr-2 text-gray-400" />
+              <a
+                href={`tel:${contact.phone}`}
+                className="text-blue-600 hover:text-blue-800 truncate"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {formatPhoneNumber(contact.phone)}
+              </a>
+            </div>
+          ) : (
+            <div className="flex items-center text-sm text-gray-400">
+              <Phone className="w-3 h-3 mr-2" />
+              <span className="truncate">No phone</span>
+            </div>
+          )}
+
+          {/* Company */}
+          {contact.company ? (
             <div className="flex items-center text-sm text-gray-600">
               <Building className="w-3 h-3 mr-2 text-gray-400" />
-              <span className="truncate">
-                {contact.company}
-                {contact.job_title && ` • ${contact.job_title}`}
-              </span>
+              <span className="truncate">{contact.company}</span>
+            </div>
+          ) : (
+            <div className="flex items-center text-sm text-gray-400">
+              <Building className="w-3 h-3 mr-2" />
+              <span className="truncate">No company</span>
             </div>
           )}
-          
-          {(contact.city || contact.state) && (
-            <div className="flex items-center text-sm text-gray-600">
-              <MapPin className="w-3 h-3 mr-2 text-gray-400" />
-              <span className="truncate">
-                {[contact.city, contact.state].filter(Boolean).join(', ')}
+
+          {/* Role */}
+          {contact.role && (
+            <div className="flex items-center text-sm">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                {contact.role}
               </span>
             </div>
           )}

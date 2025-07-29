@@ -69,10 +69,12 @@ const VirtualizedContactList: React.FC<VirtualizedContactListProps> = ({
   // Intersection observer for infinite loading
   const loadMoreRef = useIntersectionObserver(
     useCallback(() => {
+      console.log('Intersection triggered:', { hasMore, loading, totalContacts: contacts.length });
       if (hasMore && !loading) {
+        console.log('Loading more contacts...');
         loadMore();
       }
-    }, [hasMore, loading, loadMore])
+    }, [hasMore, loading, loadMore, contacts.length])
   );
 
   // Refresh when search/sort changes
@@ -107,6 +109,10 @@ const VirtualizedContactList: React.FC<VirtualizedContactListProps> = ({
         <div className="px-4 py-2 text-sm text-gray-600 bg-gray-50 border-b">
           Showing {contacts.length} of {total} contacts
           {search && ` matching "${search}"`}
+          {/* Debug info */}
+          <span className="ml-4 text-xs text-gray-400">
+            (hasMore: {hasMore ? 'yes' : 'no'}, loading: {loading ? 'yes' : 'no'})
+          </span>
         </div>
       )}
 
