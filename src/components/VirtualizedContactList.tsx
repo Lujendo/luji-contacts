@@ -3,6 +3,7 @@ import { Contact } from '../types';
 import { useInfiniteContacts, useIntersectionObserver } from '../hooks/useInfiniteContacts';
 import ContactListItem from './ContactListItem';
 import ContactListSkeleton from './ContactListSkeleton';
+import { ChevronUp, ChevronDown } from 'lucide-react';
 
 interface VirtualizedContactListProps {
   search?: string;
@@ -10,6 +11,7 @@ interface VirtualizedContactListProps {
   direction?: string;
   onContactClick: (contact: Contact) => void;
   onContactSelect?: (contact: Contact, selected: boolean) => void;
+  onSortChange?: (field: string) => void;
   selectedContacts?: Set<number>;
   className?: string;
   itemHeight?: number;
@@ -22,6 +24,7 @@ const VirtualizedContactList: React.FC<VirtualizedContactListProps> = ({
   direction = '',
   onContactClick,
   onContactSelect,
+  onSortChange,
   selectedContacts = new Set(),
   className = '',
   itemHeight = 80,
@@ -64,6 +67,46 @@ const VirtualizedContactList: React.FC<VirtualizedContactListProps> = ({
     refresh();
   }, [search, sort, direction]);
 
+  // Sortable column header component
+  const SortableHeader: React.FC<{
+    field: string;
+    label: string;
+    className?: string;
+    sortable?: boolean;
+  }> = ({ field, label, className = '', sortable = true }) => {
+    const isActive = sort === field;
+    const isAsc = direction === 'asc';
+
+    const handleClick = () => {
+      if (sortable && onSortChange) {
+        onSortChange(field);
+      }
+    };
+
+    if (!sortable) {
+      return <div className={className}>{label}</div>;
+    }
+
+    return (
+      <button
+        onClick={handleClick}
+        className={`${className} flex items-center space-x-1 hover:text-gray-700 transition-colors ${
+          isActive ? 'text-blue-600' : 'text-gray-500'
+        }`}
+        title={`Sort by ${label}`}
+      >
+        <span>{label}</span>
+        {isActive && (
+          isAsc ? (
+            <ChevronUp className="w-3 h-3" />
+          ) : (
+            <ChevronDown className="w-3 h-3" />
+          )
+        )}
+      </button>
+    );
+  };
+
   if (error) {
     return (
       <div className={`flex flex-col items-center justify-center py-12 ${className}`}>
@@ -85,25 +128,52 @@ const VirtualizedContactList: React.FC<VirtualizedContactListProps> = ({
     <div className={`flex flex-col ${className}`}>
       {/* Stats */}
       {total > 0 && (
-        <div className="px-4 py-2 text-sm text-gray-600 bg-gray-50 border-b">
-          Showing {contacts.length} of {total} contacts
-          {search && ` matching "${search}"`}
-          {/* Debug info */}
-          <span className="ml-4 text-xs text-gray-400">
-            (hasMore: {hasMore ? 'yes' : 'no'}, loading: {loading ? 'yes' : 'no'})
-          </span>
+        <div className="px-4 py-2 text-sm text-gray-600 bg-gray-50 border-b flex items-center justify-between">
+          <div>
+            Showing {contacts.length} of {total} contacts
+            {search && ` matching "${search}"`}
+            {/* Debug info */}
+            <span className="ml-4 text-xs text-gray-400">
+              (hasMore: {hasMore ? 'yes' : 'no'}, loading: {loading ? 'yes' : 'no'})
+            </span>
+          </div>
+          <div className="text-xs text-gray-500">
+            Click column headers to sort
+          </div>
         </div>
       )}
 
-      {/* Table Header */}
+      {/* Sortable Table Header */}
       {contacts.length > 0 && (
-        <div className="grid grid-cols-12 gap-4 items-center px-4 py-3 bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-500 uppercase tracking-wider">
+        <div className="grid grid-cols-12 gap-4 items-center px-4 py-3 bg-gray-50 border-b border-gray-200 text-xs font-medium uppercase tracking-wider">
           {onContactSelect && <div className="col-span-1"></div>}
-          <div className={onContactSelect ? 'col-span-3' : 'col-span-4'}>Name</div>
-          <div className="col-span-2">Email</div>
-          <div className="col-span-2">Phone</div>
-          <div className="col-span-2">Company</div>
-          <div className="col-span-2">Role/Groups</div>
+          <SortableHeader
+            field="first_name"
+            label="Name"
+            className={onContactSelect ? 'col-span-3' : 'col-span-4'}
+          />
+          <SortableHeader
+            field="email"
+            label="Email"
+            className="col-span-2"
+          />
+          <SortableHeader
+            field="phone"
+            label="Phone"
+            className="col-span-2"
+            sortable={false}
+          />
+          <SortableHeader
+            field="company"
+            label="Company"
+            className="col-span-2"
+          />
+          <SortableHeader
+            field="role"
+            label="Role/Groups"
+            className="col-span-2"
+            sortable={false}
+          />
         </div>
       )}
 

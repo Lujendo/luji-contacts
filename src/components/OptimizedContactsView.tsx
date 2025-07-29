@@ -260,33 +260,17 @@ const OptimizedContactsView: React.FC<OptimizedContactsViewProps> = ({
             )}
           </div>
 
-          {/* Sort Dropdown */}
-          <div className="relative">
-            <select
-              value={sortField}
-              onChange={(e) => handleSortChange(e.target.value)}
-              className="appearance-none bg-white border border-gray-300 rounded-lg px-4 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              {sortOptions.map(option => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Sort Direction Button */}
-          <button
-            onClick={() => setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')}
-            className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            title={`Sort ${sortDirection === 'asc' ? 'Descending' : 'Ascending'}`}
-          >
-            {sortDirection === 'asc' ? (
-              <SortAsc className="w-5 h-5 text-gray-600" />
-            ) : (
-              <SortDesc className="w-5 h-5 text-gray-600" />
-            )}
-          </button>
+          {/* Sort Info Display */}
+          {sortField && (
+            <div className="flex items-center px-3 py-2 bg-blue-50 text-blue-700 rounded-lg text-sm">
+              <span>Sorted by {sortOptions.find(opt => opt.value === sortField)?.label}</span>
+              {sortDirection === 'asc' ? (
+                <SortAsc className="w-4 h-4 ml-1" />
+              ) : (
+                <SortDesc className="w-4 h-4 ml-1" />
+              )}
+            </div>
+          )}
 
           {/* Filter Button */}
           <button
@@ -367,6 +351,7 @@ const OptimizedContactsView: React.FC<OptimizedContactsViewProps> = ({
           direction={sortDirection}
           onContactClick={handleContactClick}
           onContactSelect={onContactSelection ? handleContactSelectionChange : undefined}
+          onSortChange={handleSortChange}
           selectedContacts={selectedContactsSet}
           containerHeight={containerHeight}
           itemHeight={80}
