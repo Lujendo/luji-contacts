@@ -317,19 +317,21 @@ export class DatabaseService {
         query += searchCondition;
         countQuery += searchCondition;
 
-        // Optimize search parameters - use prefix matching where possible
+        // Optimize search parameters
+        // Use contains search for names to find partial matches (e.g., "Andrea" finds "John Andrea")
+        // Use prefix search for emails for better performance on indexed fields
         const prefixSearch = `${searchTerm}%`;
         const containsSearch = `%${searchTerm}%`;
 
         const searchParams = [
-          prefixSearch,     // first_name prefix
-          prefixSearch,     // last_name prefix
-          prefixSearch,     // nickname prefix
+          containsSearch,   // first_name contains (find Andrea anywhere in first name)
+          containsSearch,   // last_name contains (find Andrea anywhere in last name)
+          containsSearch,   // nickname contains (find Andrea anywhere in nickname)
           containsSearch,   // full name contains
-          prefixSearch,     // email prefix
+          prefixSearch,     // email prefix (keep prefix for email efficiency)
           containsSearch,   // phone contains
-          prefixSearch,     // company prefix
-          prefixSearch,     // job_title prefix
+          containsSearch,   // company contains (changed to find partial company names)
+          containsSearch,   // job_title contains (changed to find partial job titles)
           containsSearch    // notes contains
         ];
 
