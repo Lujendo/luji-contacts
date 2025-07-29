@@ -222,7 +222,7 @@ const TabbedContactForm: React.FC<TabbedContactFormProps> = ({
           setProfileImage(prev => ({ ...prev, isUploading: true, progress: 0 }));
 
           // Upload with progress tracking
-          await contactsApi.uploadProfileImage(
+          const uploadResult = await contactsApi.uploadProfileImage(
             contact.id,
             profileImage.file,
             (progress) => {
@@ -230,9 +230,17 @@ const TabbedContactForm: React.FC<TabbedContactFormProps> = ({
             }
           );
 
-          // Refresh contact data to get updated profile image URL
-          contact = await contactsApi.getContact(contact.id);
-          setProfileImage(prev => ({ ...prev, progress: 100 }));
+          // Update the contact with the new profile image URL
+          contact.profile_image_url = uploadResult.profile_image_url;
+
+          // Update the local preview to show the uploaded image with cache busting
+          const imageUrlWithCacheBust = `${uploadResult.profile_image_url}?t=${Date.now()}`;
+          setProfileImage(prev => ({
+            ...prev,
+            preview: imageUrlWithCacheBust,
+            progress: 100,
+            file: null // Clear the file since it's now uploaded
+          }));
         } catch (imageError) {
           console.error('Error uploading profile image:', imageError);
           setErrors(prev => ({ ...prev, profile_image: 'Failed to upload profile image. Please try again.' }));

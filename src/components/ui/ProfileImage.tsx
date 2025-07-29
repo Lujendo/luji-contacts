@@ -21,6 +21,14 @@ const ProfileImage: React.FC<ProfileImageProps> = ({
   const [imageError, setImageError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Reset error state when src changes
+  React.useEffect(() => {
+    if (src) {
+      setImageError(false);
+      setIsLoading(true);
+    }
+  }, [src]);
+
   const sizeClasses = {
     sm: 'w-8 h-8',
     md: 'w-10 h-10',
