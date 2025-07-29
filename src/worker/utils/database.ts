@@ -305,6 +305,7 @@ export class DatabaseService {
     // Add search conditions with optimized LIKE queries
     if (search) {
       const searchTerm = search.trim();
+      console.log('🔍 Database Search - Term:', searchTerm, 'Length:', searchTerm.length);
 
       if (searchTerm.length > 0) {
         // Use more efficient search with proper indexing
@@ -338,6 +339,9 @@ export class DatabaseService {
         params.push(...searchParams);
         countParams.push(...searchParams);
 
+        console.log('🔍 Database Search - Final query:', query);
+        console.log('🔍 Database Search - Params count:', searchParams.length);
+
       }
     }
 
@@ -366,9 +370,17 @@ export class DatabaseService {
       this.db.prepare(countQuery).bind(...countParams).first<{ total: number }>()
     ]);
 
+    const contacts = contactsResult.results || [];
+    const total = countResult?.total || 0;
+
+    console.log('🔍 Database Search - Results:', contacts.length, 'contacts found, total:', total);
+    if (search && contacts.length > 0) {
+      console.log('🔍 Database Search - First result:', contacts[0].first_name, contacts[0].last_name, contacts[0].nickname);
+    }
+
     return {
-      contacts: contactsResult.results || [],
-      total: countResult?.total || 0
+      contacts,
+      total
     };
   }
 
