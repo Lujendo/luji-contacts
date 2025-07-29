@@ -107,6 +107,54 @@ const VirtualizedContactList: React.FC<VirtualizedContactListProps> = ({
     );
   };
 
+  // Multi-option sortable header for name column
+  const NameSortableHeader: React.FC<{
+    className?: string;
+  }> = ({ className = '' }) => {
+    const isFirstNameActive = sort === 'first_name';
+    const isLastNameActive = sort === 'last_name';
+    const isAsc = direction === 'asc';
+
+    return (
+      <div className={`${className} flex items-center space-x-2`}>
+        <span className="text-gray-500 text-xs font-medium uppercase tracking-wider">Name:</span>
+        <button
+          onClick={() => onSortChange && onSortChange('first_name')}
+          className={`flex items-center space-x-1 hover:text-gray-700 transition-colors text-xs ${
+            isFirstNameActive ? 'text-blue-600 font-medium' : 'text-gray-500'
+          }`}
+          title="Sort by First Name"
+        >
+          <span>First</span>
+          {isFirstNameActive && (
+            isAsc ? (
+              <ChevronUp className="w-3 h-3" />
+            ) : (
+              <ChevronDown className="w-3 h-3" />
+            )
+          )}
+        </button>
+        <span className="text-gray-300">|</span>
+        <button
+          onClick={() => onSortChange && onSortChange('last_name')}
+          className={`flex items-center space-x-1 hover:text-gray-700 transition-colors text-xs ${
+            isLastNameActive ? 'text-blue-600 font-medium' : 'text-gray-500'
+          }`}
+          title="Sort by Last Name"
+        >
+          <span>Last</span>
+          {isLastNameActive && (
+            isAsc ? (
+              <ChevronUp className="w-3 h-3" />
+            ) : (
+              <ChevronDown className="w-3 h-3" />
+            )
+          )}
+        </button>
+      </div>
+    );
+  };
+
   if (error) {
     return (
       <div className={`flex flex-col items-center justify-center py-12 ${className}`}>
@@ -147,9 +195,7 @@ const VirtualizedContactList: React.FC<VirtualizedContactListProps> = ({
       {contacts.length > 0 && (
         <div className="grid grid-cols-12 gap-4 items-center px-4 py-3 bg-gray-50 border-b border-gray-200 text-xs font-medium uppercase tracking-wider">
           {onContactSelect && <div className="col-span-1"></div>}
-          <SortableHeader
-            field="first_name"
-            label="Name"
+          <NameSortableHeader
             className={onContactSelect ? 'col-span-3' : 'col-span-4'}
           />
           <SortableHeader
