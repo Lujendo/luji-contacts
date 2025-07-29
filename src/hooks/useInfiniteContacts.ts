@@ -48,16 +48,19 @@ export const useInfiniteContacts = (
   // Reset when search changes
   useEffect(() => {
     if (searchRef.current !== search) {
+
       searchRef.current = search;
       currentPageRef.current = 1;
       setContacts([]);
       setHasMore(true);
       setError(null);
+      // Clear cache for search changes
+      contactsCache.invalidate();
       if (enabled) {
         loadContacts(1, true);
       }
     }
-  }, [search, enabled]);
+  }, [search, enabled, loadContacts]);
 
   // Initial load
   useEffect(() => {
@@ -98,6 +101,8 @@ export const useInfiniteContacts = (
         isLoadingRef.current = false;
         return;
       }
+
+
 
       // Fetch from API
       const response = await contactsApi.getContacts(queryParams);

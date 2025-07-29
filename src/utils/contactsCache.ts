@@ -27,7 +27,9 @@ class ContactsCache {
       page: queryKey.page || '1',
       limit: queryKey.limit || '50'
     };
-    return JSON.stringify(normalized);
+    const key = JSON.stringify(normalized);
+
+    return key;
   }
 
   get(queryKey: ContactsQueryKey): ApiResponse<Contact[]> | null {

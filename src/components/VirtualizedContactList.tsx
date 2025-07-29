@@ -64,8 +64,9 @@ const VirtualizedContactList: React.FC<VirtualizedContactListProps> = ({
 
   // Refresh when search/sort changes
   useEffect(() => {
+
     refresh();
-  }, [search, sort, direction]);
+  }, [search, sort, direction, refresh]);
 
   // Sortable column header component
   const SortableHeader: React.FC<{

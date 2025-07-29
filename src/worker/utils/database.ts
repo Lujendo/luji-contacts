@@ -305,6 +305,7 @@ export class DatabaseService {
     // Add search conditions with optimized LIKE queries
     if (search) {
       const searchTerm = search.trim();
+
       if (searchTerm.length > 0) {
         // Use more efficient search with proper indexing
         const searchCondition = ` AND (
@@ -334,6 +335,7 @@ export class DatabaseService {
 
         params.push(...searchParams);
         countParams.push(...searchParams);
+
       }
     }
 

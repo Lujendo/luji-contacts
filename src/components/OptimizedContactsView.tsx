@@ -100,12 +100,13 @@ const OptimizedContactsView: React.FC<OptimizedContactsViewProps> = ({
   // Handle search input changes with loading state
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
+
     setSearchQuery(value);
     if (value !== debouncedSearch) {
       setIsSearching(true);
     }
     setShowSuggestions(value.length > 0);
-  }, [debouncedSearch]);
+  }, [debouncedSearch, searchQuery]);
 
   // Handle search input focus
   const handleSearchFocus = useCallback(() => {
@@ -137,6 +138,7 @@ const OptimizedContactsView: React.FC<OptimizedContactsViewProps> = ({
 
   // Track when search is complete and save to recent searches
   useEffect(() => {
+
     if (searchQuery === debouncedSearch) {
       setIsSearching(false);
       // Save non-empty searches to recent searches
