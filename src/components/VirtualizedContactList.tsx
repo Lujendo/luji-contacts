@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useRef, useCallback, useEffect } from 'react';
 import { Contact } from '../types';
-import { useVirtualScrolling, useScrollHandler } from '../hooks/useVirtualScrolling';
 import { useInfiniteContacts, useIntersectionObserver } from '../hooks/useInfiniteContacts';
 import ContactListItem from './ContactListItem';
 import ContactListSkeleton from './ContactListSkeleton';
@@ -29,7 +28,6 @@ const VirtualizedContactList: React.FC<VirtualizedContactListProps> = ({
   containerHeight = 600
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [scrollTop, setScrollTop] = useState(0);
 
   // Infinite loading hook
   const {
@@ -48,23 +46,7 @@ const VirtualizedContactList: React.FC<VirtualizedContactListProps> = ({
     enabled: true
   });
 
-  // Virtual scrolling hook
-  const {
-    startIndex,
-    endIndex,
-    totalHeight,
-    offsetY
-  } = useVirtualScrolling({
-    itemHeight,
-    containerHeight,
-    overscan: 5,
-    totalItems: Array.isArray(contacts) ? contacts.length : 0
-  });
 
-  // Scroll handler
-  const handleScroll = useScrollHandler((scrollTop) => {
-    setScrollTop(scrollTop);
-  });
 
   // Intersection observer for infinite loading
   const loadMoreRef = useIntersectionObserver(
@@ -81,9 +63,6 @@ const VirtualizedContactList: React.FC<VirtualizedContactListProps> = ({
   useEffect(() => {
     refresh();
   }, [search, sort, direction]);
-
-  // Get visible contacts with safety check
-  const visibleContacts = Array.isArray(contacts) ? contacts.slice(startIndex, endIndex + 1) : [];
 
   if (error) {
     return (
@@ -116,37 +95,36 @@ const VirtualizedContactList: React.FC<VirtualizedContactListProps> = ({
         </div>
       )}
 
-      {/* Virtual scrolling container */}
+      {/* Table Header */}
+      {contacts.length > 0 && (
+        <div className="grid grid-cols-12 gap-4 items-center px-4 py-3 bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-500 uppercase tracking-wider">
+          {onContactSelect && <div className="col-span-1"></div>}
+          <div className={onContactSelect ? 'col-span-3' : 'col-span-4'}>Name</div>
+          <div className="col-span-2">Email</div>
+          <div className="col-span-2">Phone</div>
+          <div className="col-span-2">Company</div>
+          <div className="col-span-2">Role/Groups</div>
+        </div>
+      )}
+
+      {/* Contact list container - simplified without virtual scrolling for now */}
       <div
         ref={containerRef}
         className="flex-1 overflow-auto"
         style={{ height: containerHeight }}
-        onScroll={handleScroll}
       >
-        {/* Total height spacer */}
-        <div style={{ height: totalHeight, position: 'relative' }}>
-          {/* Visible items container */}
-          <div
-            style={{
-              transform: `translateY(${offsetY}px)`,
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0
-            }}
-          >
-            {visibleContacts.map((contact, index) => (
-              <ContactListItem
-                key={contact.id}
-                contact={contact}
-                onClick={() => onContactClick(contact)}
-                onSelect={onContactSelect ? (selected) => onContactSelect(contact, selected) : undefined}
-                selected={selectedContacts.has(contact.id)}
-                style={{ height: itemHeight }}
-                className="border-b border-gray-100"
-              />
-            ))}
-          </div>
+        {/* Contact items */}
+        <div className="bg-white">
+          {contacts.map((contact) => (
+            <ContactListItem
+              key={contact.id}
+              contact={contact}
+              onClick={() => onContactClick(contact)}
+              onSelect={onContactSelect ? (selected) => onContactSelect(contact, selected) : undefined}
+              selected={selectedContacts.has(contact.id)}
+              className=""
+            />
+          ))}
         </div>
 
         {/* Loading indicator */}
