@@ -199,11 +199,18 @@ const Dashboard: React.FC = () => {
   const handleGroupHighlight = useCallback((groupId: number) => {
     const group = groups.find(g => g.id === groupId);
     if (group) {
-      setActiveGroup(group);
-      setHighlightedGroupId(groupId);
-      console.log('Highlighting group:', group.name);
+      // If clicking the same group that's already active, toggle it off
+      if (activeGroup?.id === groupId) {
+        setActiveGroup(null);
+        setHighlightedGroupId(null);
+        console.log('Clearing group filter');
+      } else {
+        setActiveGroup(group);
+        setHighlightedGroupId(groupId);
+        console.log('Filtering by group:', group.name, `(${group.contact_count || 0} contacts)`);
+      }
     }
-  }, [groups]);
+  }, [groups, activeGroup]);
 
   const handleShowAllContacts = useCallback(() => {
     setActiveGroup(null);
@@ -466,6 +473,8 @@ const Dashboard: React.FC = () => {
                 showCacheStats={process.env.NODE_ENV === 'development'}
                 searchQuery={searchTerm}
                 groupId={activeGroup?.id}
+                activeGroupName={activeGroup?.name}
+                onClearGroupFilter={handleShowAllContacts}
                 onEditContact={(contact) => {
                   setSelectedContact(contact);
                   setShowContactForm(true);

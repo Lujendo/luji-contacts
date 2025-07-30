@@ -151,18 +151,25 @@ const GroupsSidebar: React.FC<GroupsSidebarProps> = ({
                     key={group.id}
                     onClick={() => handleGroupClick(group)}
                     className={`group relative p-3 mb-2 rounded-lg border cursor-pointer transition-all duration-200 ${
-                      highlightedGroupId === group.id
+                      activeGroup?.id === group.id
+                        ? 'bg-blue-50 border-blue-300 shadow-md ring-1 ring-blue-200'
+                        : highlightedGroupId === group.id
                         ? 'bg-indigo-50 border-indigo-200 shadow-sm'
-                        : activeGroup?.id === group.id
-                        ? 'bg-blue-50 border-blue-200 shadow-sm'
                         : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-medium text-gray-900 truncate">
-                          {group.name}
-                        </h3>
+                        <div className="flex items-center space-x-2">
+                          <h3 className="text-sm font-medium text-gray-900 truncate">
+                            {group.name}
+                          </h3>
+                          {activeGroup?.id === group.id && (
+                            <span className="px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                              FILTERING
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xs text-gray-500 mt-1">
                           {group.contact_count || 0} contact{(group.contact_count || 0) !== 1 ? 's' : ''}
                         </p>
@@ -234,7 +241,7 @@ const GroupsSidebar: React.FC<GroupsSidebarProps> = ({
                 onClick={() => onGroupClick(group.id)}
                 className={`w-8 h-8 mx-auto flex items-center justify-center rounded-md text-xs font-medium transition-colors ${
                   activeGroup?.id === group.id
-                    ? 'bg-blue-100 text-blue-900'
+                    ? 'bg-blue-500 text-white shadow-md ring-2 ring-blue-200'
                     : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                 }`}
                 title={group.name}

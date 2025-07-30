@@ -20,6 +20,8 @@ interface OptimizedContactsViewProps {
   onViewDetails?: (contact: Contact) => void;
   searchQuery?: string;
   groupId?: number;
+  activeGroupName?: string;
+  onClearGroupFilter?: () => void;
 }
 
 const OptimizedContactsView: React.FC<OptimizedContactsViewProps> = ({
@@ -36,7 +38,9 @@ const OptimizedContactsView: React.FC<OptimizedContactsViewProps> = ({
   onAddToGroup,
   onViewDetails,
   searchQuery = '',
-  groupId
+  groupId,
+  activeGroupName,
+  onClearGroupFilter
 }) => {
   const [internalSearchQuery, setInternalSearchQuery] = useState('');
   const [sortField, setSortField] = useState('first_name');
@@ -307,6 +311,27 @@ const OptimizedContactsView: React.FC<OptimizedContactsViewProps> = ({
               </div>
             )}
           </div>
+
+          {/* Group Filter Indicator */}
+          {groupId && activeGroupName && (
+            <div className="flex items-center justify-between bg-indigo-50 border border-indigo-200 rounded-lg px-3 py-2 mt-3">
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
+                <span className="text-sm font-medium text-indigo-900">
+                  Filtering by group: <span className="font-semibold">{activeGroupName}</span>
+                </span>
+              </div>
+              {onClearGroupFilter && (
+                <button
+                  onClick={onClearGroupFilter}
+                  className="text-indigo-600 hover:text-indigo-800 p-1 rounded-full hover:bg-indigo-100 transition-colors"
+                  title="Clear group filter"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Sort Info Display */}
           {sortField && (
