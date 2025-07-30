@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { MobileProvider } from './context/MobileContext';
+import { AppearanceProvider } from './contexts/AppearanceContext';
 import Dashboard from './components/Dashboard';
 import Login from './components/Login';
 import Register from './components/Register';
@@ -13,7 +14,8 @@ const App: React.FC = () => {
   return (
     <AuthProvider>
       <MobileProvider>
-        <Router>
+        <AppearanceProvider>
+          <Router>
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/auth" element={<EntryPage />} />
@@ -23,7 +25,8 @@ const App: React.FC = () => {
             {/* Keep original dashboard route for desktop-specific access */}
             <Route path="/dashboard-desktop" element={<Dashboard />} />
           </Routes>
-        </Router>
+          </Router>
+        </AppearanceProvider>
       </MobileProvider>
     </AuthProvider>
   );

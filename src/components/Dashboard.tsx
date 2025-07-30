@@ -33,6 +33,10 @@ import ApplicationMenuBar from './ApplicationMenuBar';
 import ContactDetailPanel from './ContactDetailPanel';
 import GroupAssignModal from './GroupAssignModal';
 import GroupRemoveModal from './GroupRemoveModal';
+import Header from './Header';
+import Footer from './Footer';
+import AppearanceSettingsComponent from './AppearanceSettings';
+import { useAppearance } from '../contexts/AppearanceContext';
 
 // Icon imports
 import {
@@ -100,6 +104,10 @@ const Dashboard: React.FC = () => {
   const [showMergeContacts, setShowMergeContacts] = useState<boolean>(false);
   const [showDuplicateDetection, setShowDuplicateDetection] = useState<boolean>(false);
   const [contactsToMerge, setContactsToMerge] = useState<Contact[]>([]);
+  const [showAppearanceSettings, setShowAppearanceSettings] = useState<boolean>(false);
+
+  // Use appearance context
+  const { settings: appearanceSettings, updateSettings: updateAppearanceSettings } = useAppearance();
 
   // Data states
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -325,6 +333,7 @@ const Dashboard: React.FC = () => {
     setShowGroupRemoveModal(false);
     setShowMergeContacts(false);
     setShowDuplicateDetection(false);
+    setShowAppearanceSettings(false);
   }, []);
 
   const openPanel = useCallback((panelName: string): void => {
@@ -345,6 +354,9 @@ const Dashboard: React.FC = () => {
         break;
       case 'duplicateDetection':
         setShowDuplicateDetection(true);
+        break;
+      case 'appearanceSettings':
+        setShowAppearanceSettings(true);
         break;
       case 'emailHistory':
         setShowEmailHistory(true);
@@ -392,17 +404,28 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-    <div className="flex h-screen bg-gray-100">
-      {/* Fixed Navigation Sidebar */}
-      <FixedNavigation
-        user={user}
-        onLogout={handleLogout}
-        onOpenPanel={openPanel}
-        selectedContactsCount={selectedContacts.length}
-      />
+    <div className="flex flex-col h-screen bg-gray-100">
+      {/* Header */}
+      {appearanceSettings.showHeader && (
+        <Header
+          user={user}
+          onSettingsClick={() => openPanel('appearanceSettings')}
+          onProfileClick={() => openPanel('userSettings')}
+        />
+      )}
 
-      {/* Main Content Area */}
-      <div className="flex-1 overflow-hidden ml-16">
+      {/* Main Content with Sidebar */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Fixed Navigation Sidebar */}
+        <FixedNavigation
+          user={user}
+          onLogout={handleLogout}
+          onOpenPanel={openPanel}
+          selectedContactsCount={selectedContacts.length}
+        />
+
+        {/* Main Content Area */}
+        <div className="flex-1 overflow-hidden ml-16">
         {/* Main Contact List */}
         <div className="h-full bg-white">
           <div className="h-full flex flex-col">
@@ -477,7 +500,7 @@ const Dashboard: React.FC = () => {
         showGroupForm || showGroupEditForm || showEmailForm ||
         showEmailHistory || showUserSettings ||
         showBulkGroupAssign || showBulkGroupRemove || showGroupContactsManager ||
-        showDuplicateDetection
+        showDuplicateDetection || showAppearanceSettings
       }>
 
           {showGroupList && (
@@ -584,6 +607,13 @@ const Dashboard: React.FC = () => {
               onClose={() => setShowDuplicateDetection(false)}
             />
           )}
+
+          {showAppearanceSettings && (
+            <AppearanceSettingsComponent
+              onClose={() => setShowAppearanceSettings(false)}
+              onSettingsChange={updateAppearanceSettings}
+            />
+          )}
         </ResizableRightPanel>
 
       {/* Modals */}
@@ -637,6 +667,16 @@ const Dashboard: React.FC = () => {
         }}
       />
 
+      {/* Footer */}
+      {appearanceSettings.showFooter && (
+        <Footer
+          onPrivacyClick={() => {/* TODO: Handle privacy page */}}
+          onTermsClick={() => {/* TODO: Handle terms page */}}
+          onAboutClick={() => {/* TODO: Handle about page */}}
+          onSupportClick={() => {/* TODO: Handle support page */}}
+        />
+      )}
+
       {/* Contact Form Modal */}
       <ContactFormModal
         isOpen={showContactForm}
@@ -661,6 +701,7 @@ const Dashboard: React.FC = () => {
           }}
         />
       )}
+      </div>
     </div>
   );
 };

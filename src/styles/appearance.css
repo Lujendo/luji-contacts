@@ -1,0 +1,272 @@
+/* Appearance Settings CSS */
+
+/* Dark Mode Styles */
+.dark {
+  color-scheme: dark;
+}
+
+.dark body {
+  background-color: #111827;
+  color: #f9fafb;
+}
+
+.dark .bg-white {
+  background-color: #1f2937;
+}
+
+.dark .bg-gray-50 {
+  background-color: #111827;
+}
+
+.dark .bg-gray-100 {
+  background-color: #1f2937;
+}
+
+.dark .bg-gray-200 {
+  background-color: #374151;
+}
+
+.dark .text-gray-900 {
+  color: #f9fafb;
+}
+
+.dark .text-gray-700 {
+  color: #d1d5db;
+}
+
+.dark .text-gray-600 {
+  color: #9ca3af;
+}
+
+.dark .text-gray-500 {
+  color: #6b7280;
+}
+
+.dark .text-gray-400 {
+  color: #4b5563;
+}
+
+.dark .border-gray-200 {
+  border-color: #374151;
+}
+
+.dark .border-gray-300 {
+  border-color: #4b5563;
+}
+
+.dark .hover\:bg-gray-50:hover {
+  background-color: #374151;
+}
+
+.dark .hover\:bg-gray-100:hover {
+  background-color: #4b5563;
+}
+
+/* Compact Mode */
+.compact-mode {
+  --spacing-unit: 0.75;
+}
+
+.compact-mode .p-4 {
+  padding: calc(1rem * var(--spacing-unit));
+}
+
+.compact-mode .p-6 {
+  padding: calc(1.5rem * var(--spacing-unit));
+}
+
+.compact-mode .py-2 {
+  padding-top: calc(0.5rem * var(--spacing-unit));
+  padding-bottom: calc(0.5rem * var(--spacing-unit));
+}
+
+.compact-mode .py-3 {
+  padding-top: calc(0.75rem * var(--spacing-unit));
+  padding-bottom: calc(0.75rem * var(--spacing-unit));
+}
+
+.compact-mode .space-y-4 > * + * {
+  margin-top: calc(1rem * var(--spacing-unit));
+}
+
+.compact-mode .space-y-6 > * + * {
+  margin-top: calc(1.5rem * var(--spacing-unit));
+}
+
+.compact-mode .h-16 {
+  height: calc(4rem * var(--spacing-unit));
+}
+
+/* High Contrast Mode */
+.high-contrast {
+  --contrast-multiplier: 1.5;
+}
+
+.high-contrast .text-gray-600 {
+  color: #374151;
+}
+
+.high-contrast .text-gray-500 {
+  color: #4b5563;
+}
+
+.high-contrast .border-gray-200 {
+  border-color: #6b7280;
+}
+
+.high-contrast .border-gray-300 {
+  border-color: #4b5563;
+}
+
+.high-contrast .bg-gray-50 {
+  background-color: #f3f4f6;
+}
+
+.high-contrast .bg-gray-100 {
+  background-color: #e5e7eb;
+}
+
+/* Dark mode high contrast */
+.dark.high-contrast .text-gray-400 {
+  color: #9ca3af;
+}
+
+.dark.high-contrast .text-gray-500 {
+  color: #d1d5db;
+}
+
+.dark.high-contrast .border-gray-200 {
+  border-color: #6b7280;
+}
+
+/* No Animations */
+.no-animations * {
+  animation-duration: 0s !important;
+  animation-delay: 0s !important;
+  transition-duration: 0s !important;
+  transition-delay: 0s !important;
+}
+
+/* Font Size Variations */
+.text-size-small {
+  font-size: 14px;
+}
+
+.text-size-medium {
+  font-size: 16px;
+}
+
+.text-size-large {
+  font-size: 18px;
+}
+
+/* Accent Color Support */
+:root {
+  --accent-color: #3b82f6;
+  --accent-color-hover: #2563eb;
+  --accent-color-light: #dbeafe;
+}
+
+.bg-accent {
+  background-color: var(--accent-color);
+}
+
+.bg-accent:hover {
+  background-color: var(--accent-color-hover);
+}
+
+.text-accent {
+  color: var(--accent-color);
+}
+
+.border-accent {
+  border-color: var(--accent-color);
+}
+
+.bg-accent-light {
+  background-color: var(--accent-color-light);
+}
+
+/* Sidebar Position */
+.sidebar-right .fixed-nav {
+  right: 0;
+  left: auto;
+}
+
+.sidebar-right .main-content {
+  margin-left: 0;
+  margin-right: 4rem;
+}
+
+/* Responsive adjustments for appearance settings */
+@media (max-width: 768px) {
+  .compact-mode {
+    --spacing-unit: 0.5;
+  }
+  
+  .high-contrast .text-gray-600 {
+    color: #1f2937;
+  }
+}
+
+/* Focus styles for accessibility */
+.high-contrast *:focus {
+  outline: 3px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  .dark {
+    color-scheme: light;
+  }
+  
+  .dark body {
+    background-color: white;
+    color: black;
+  }
+}
+
+/* Smooth transitions when not disabled */
+:root:not(.no-animations) * {
+  transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+/* Custom scrollbar for dark mode */
+.dark ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: #374151;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #6b7280;
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* Loading states for dark mode */
+.dark .animate-pulse {
+  animation: pulse-dark 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse-dark {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
