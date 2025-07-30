@@ -40,7 +40,7 @@ import { useAppearance } from '../contexts/AppearanceContext';
 // Modal imports
 import UserSettingsModal from './modals/UserSettingsModal';
 import GroupListModal from './modals/GroupListModal';
-import GroupSidePanel from './modals/GroupSidePanel';
+import GroupsSidebar from './GroupsSidebar';
 import GroupFormModal from './modals/GroupFormModal';
 import GroupEditFormModal from './modals/GroupEditFormModal';
 import EmailFormModal from './modals/EmailFormModal';
@@ -64,7 +64,6 @@ interface DashboardState {
   // Panel visibility
   showContactForm: boolean;
   showContactDetail: boolean;
-  showGroupList: boolean;
   showGroupForm: boolean;
   showGroupEditForm: boolean;
   showEmailForm: boolean;
@@ -76,6 +75,9 @@ interface DashboardState {
   showGroupContactsManager: boolean;
   showGroupAssignModal: boolean;
   showGroupRemoveModal: boolean;
+
+  // UI state
+  isGroupsSidebarCollapsed: boolean;
   showMergeContacts: boolean;
   showDuplicateDetection: boolean;
   
@@ -101,7 +103,6 @@ const Dashboard: React.FC = () => {
   // Panel visibility states
   const [showContactForm, setShowContactForm] = useState<boolean>(false);
   const [showContactDetail, setShowContactDetail] = useState<boolean>(false);
-  const [showGroupList, setShowGroupList] = useState<boolean>(false);
   const [showGroupForm, setShowGroupForm] = useState<boolean>(false);
   const [showGroupEditForm, setShowGroupEditForm] = useState<boolean>(false);
   const [showEmailForm, setShowEmailForm] = useState<boolean>(false);
@@ -113,6 +114,9 @@ const Dashboard: React.FC = () => {
   const [showGroupContactsManager, setShowGroupContactsManager] = useState<boolean>(false);
   const [showGroupAssignModal, setShowGroupAssignModal] = useState<boolean>(false);
   const [showGroupRemoveModal, setShowGroupRemoveModal] = useState<boolean>(false);
+
+  // UI states
+  const [isGroupsSidebarCollapsed, setIsGroupsSidebarCollapsed] = useState<boolean>(false);
   const [showMergeContacts, setShowMergeContacts] = useState<boolean>(false);
   const [showDuplicateDetection, setShowDuplicateDetection] = useState<boolean>(false);
   const [contactsToMerge, setContactsToMerge] = useState<Contact[]>([]);
@@ -207,6 +211,26 @@ const Dashboard: React.FC = () => {
     console.log('Showing all contacts');
   }, []);
 
+  // New group sidebar handlers
+  const handleGroupsSidebarToggle = useCallback(() => {
+    setIsGroupsSidebarCollapsed(prev => !prev);
+  }, []);
+
+  const handleGroupDelete = useCallback(async (groupId: number) => {
+    try {
+      await groupsApi.deleteGroup(groupId);
+      setGroups(prev => prev.filter(g => g.id !== groupId));
+
+      // Clear active group if it was deleted
+      if (activeGroup?.id === groupId) {
+        setActiveGroup(null);
+        setHighlightedGroupId(null);
+      }
+    } catch (error) {
+      console.error('Error deleting group:', error);
+    }
+  }, [activeGroup]);
+
   const handleContactUpdate = useCallback(async (updatedContact: Contact): Promise<void> => {
     try {
       const updated = await contactsApi.updateContact(updatedContact.id, updatedContact);
@@ -284,7 +308,6 @@ const Dashboard: React.FC = () => {
   const closeAllPanels = useCallback((): void => {
     setShowContactForm(false);
     setShowContactDetail(false);
-    setShowGroupList(false);
     setShowGroupForm(false);
     setShowGroupEditForm(false);
     setShowEmailForm(false);
@@ -307,9 +330,6 @@ const Dashboard: React.FC = () => {
     switch (panelName) {
       case 'contactForm':
         setShowContactForm(true);
-        break;
-      case 'groupList':
-        setShowGroupList(true);
         break;
       case 'groupForm':
         setShowGroupForm(true);
@@ -390,6 +410,23 @@ const Dashboard: React.FC = () => {
           selectedContactsCount={selectedContacts.length}
         />
 
+        {/* Groups Sidebar */}
+        <GroupsSidebar
+          groups={groups}
+          activeGroup={activeGroup}
+          highlightedGroupId={highlightedGroupId}
+          onGroupClick={handleGroupHighlight}
+          onGroupEdit={(group) => {
+            setSelectedGroup(group);
+            setShowGroupEditForm(true);
+          }}
+          onGroupDelete={handleGroupDelete}
+          onAddNewGroup={() => setShowGroupForm(true)}
+          onShowAll={handleShowAllContacts}
+          isCollapsed={isGroupsSidebarCollapsed}
+          onToggleCollapse={handleGroupsSidebarToggle}
+        />
+
         {/* Main Content Area */}
         <div className="flex-1 overflow-hidden ml-16">
         {/* Main Contact List */}
@@ -402,7 +439,7 @@ const Dashboard: React.FC = () => {
               onMergeSelected={() => setShowMergeContacts(true)}
               onImport={() => openPanel('importExport')}
               onExport={() => openPanel('importExport')}
-              onManageGroups={() => openPanel('groupContactsManager')}
+              onManageGroups={() => {/* Groups now managed via sidebar */}}
               onSettings={() => openPanel('userSettings')}
               onSortChange={(field, direction) => setSortConfig({ field, direction })}
               onViewModeChange={setViewMode}
@@ -462,27 +499,6 @@ const Dashboard: React.FC = () => {
       )}
 
       {/* Utility Modals - Now using beautiful modal dialogs instead of right panel */}
-
-      {/* Group Management - Side Panel */}
-      <GroupSidePanel
-        isOpen={showGroupList}
-        onClose={() => setShowGroupList(false)}
-        groups={groups}
-        onGroupSelect={handleGroupSelect}
-        onGroupEdit={(group) => {
-          setSelectedGroup(group);
-          setShowGroupEditForm(true);
-          setShowGroupList(false);
-        }}
-        onAddNewGroup={() => {
-          setShowGroupForm(true);
-          setShowGroupList(false);
-        }}
-        onHighlightGroupContacts={handleGroupHighlight}
-        onShowAll={handleShowAllContacts}
-        activeGroup={activeGroup}
-        highlightedGroupId={highlightedGroupId}
-      />
 
       <GroupFormModal
         isOpen={showGroupForm}
