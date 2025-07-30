@@ -116,7 +116,7 @@ const Dashboard: React.FC = () => {
   const [showGroupRemoveModal, setShowGroupRemoveModal] = useState<boolean>(false);
 
   // UI states
-  const [isGroupsSidebarCollapsed, setIsGroupsSidebarCollapsed] = useState<boolean>(false);
+  const [isGroupsSidebarCollapsed, setIsGroupsSidebarCollapsed] = useState<boolean>(true);
   const [showMergeContacts, setShowMergeContacts] = useState<boolean>(false);
   const [showDuplicateDetection, setShowDuplicateDetection] = useState<boolean>(false);
   const [contactsToMerge, setContactsToMerge] = useState<Contact[]>([]);
@@ -407,6 +407,8 @@ const Dashboard: React.FC = () => {
           user={user}
           onLogout={handleLogout}
           onOpenPanel={openPanel}
+          onToggleGroupsSidebar={handleGroupsSidebarToggle}
+          isGroupsSidebarExpanded={!isGroupsSidebarCollapsed}
           selectedContactsCount={selectedContacts.length}
         />
 

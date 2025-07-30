@@ -38,13 +38,17 @@ interface FixedNavigationProps {
   user: User | null;
   onLogout: () => void;
   onOpenPanel: (panelName: string) => void;
+  onToggleGroupsSidebar?: () => void;
+  isGroupsSidebarExpanded?: boolean;
   selectedContactsCount?: number;
 }
 
-const FixedNavigation: React.FC<FixedNavigationProps> = ({ 
-  user, 
-  onLogout, 
+const FixedNavigation: React.FC<FixedNavigationProps> = ({
+  user,
+  onLogout,
   onOpenPanel,
+  onToggleGroupsSidebar,
+  isGroupsSidebarExpanded = false,
   selectedContactsCount = 0
 }) => {
   return (
@@ -70,7 +74,23 @@ const FixedNavigation: React.FC<FixedNavigationProps> = ({
           </div>
         </div>
 
-
+        {/* Groups */}
+        <div className="relative group">
+          <button
+            onClick={onToggleGroupsSidebar}
+            className={`w-12 h-12 flex items-center justify-center rounded-lg transition-colors ${
+              isGroupsSidebarExpanded
+                ? 'text-indigo-600 bg-indigo-50'
+                : 'text-gray-600 hover:text-indigo-600 hover:bg-indigo-50'
+            }`}
+          >
+            <Users className="h-6 w-6" />
+          </button>
+          <div className="absolute left-16 top-1/2 transform -translate-y-1/2 bg-gray-900 text-white text-sm px-2 py-1 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50">
+            Groups
+            <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45"></div>
+          </div>
+        </div>
 
         {/* Email */}
         <div className="relative group">
