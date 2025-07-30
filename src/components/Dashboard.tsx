@@ -131,6 +131,8 @@ const Dashboard: React.FC = () => {
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
   const [selectedContacts, setSelectedContacts] = useState<number[]>([]);
+  const [activeGroup, setActiveGroup] = useState<Group | null>(null);
+  const [highlightedGroupId, setHighlightedGroupId] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [sortConfig, setSortConfig] = useState<SortConfig>({ field: 'first_name', direction: 'asc' });
   const [viewMode, setViewMode] = useState<'table' | 'grid' | 'list'>('table');
@@ -176,6 +178,14 @@ const Dashboard: React.FC = () => {
   // Filter and sort contacts
   useEffect(() => {
     let filtered = [...contacts];
+
+    // Apply group filter first
+    if (activeGroup) {
+      // Filter contacts that belong to the active group
+      filtered = filtered.filter(contact =>
+        contact.groups?.some(group => group.id === activeGroup.id) || false
+      );
+    }
 
     // Apply comprehensive search filter across ALL fields
     if (searchTerm.trim()) {
@@ -242,7 +252,7 @@ const Dashboard: React.FC = () => {
     });
 
     setFilteredContacts(filtered);
-  }, [contacts, searchTerm, sortConfig]);
+  }, [contacts, searchTerm, sortConfig, activeGroup]);
 
   // Event handlers
   const handleContactSelect: ContactEventHandler = useCallback((contact: Contact) => {
@@ -253,6 +263,21 @@ const Dashboard: React.FC = () => {
   const handleGroupSelect: GroupEventHandler = useCallback((group: Group) => {
     setSelectedGroup(group);
     setShowGroupContactsManager(true);
+  }, []);
+
+  const handleGroupHighlight = useCallback((groupId: number) => {
+    const group = groups.find(g => g.id === groupId);
+    if (group) {
+      setActiveGroup(group);
+      setHighlightedGroupId(groupId);
+      console.log('Highlighting group:', group.name);
+    }
+  }, [groups]);
+
+  const handleShowAllContacts = useCallback(() => {
+    setActiveGroup(null);
+    setHighlightedGroupId(null);
+    console.log('Showing all contacts');
   }, []);
 
   const handleContactUpdate = useCallback(async (updatedContact: Contact): Promise<void> => {
@@ -525,6 +550,10 @@ const Dashboard: React.FC = () => {
           setShowGroupForm(true);
           setShowGroupList(false);
         }}
+        onHighlightGroupContacts={handleGroupHighlight}
+        onShowAll={handleShowAllContacts}
+        activeGroup={activeGroup}
+        highlightedGroupId={highlightedGroupId}
       />
 
       <GroupFormModal

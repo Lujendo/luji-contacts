@@ -11,6 +11,10 @@ interface GroupSidePanelProps {
   onGroupSelect: (group: Group) => void;
   onGroupEdit: (group: Group) => void;
   onAddNewGroup: () => void;
+  onHighlightGroupContacts: (groupId: number) => void;
+  onShowAll: () => void;
+  activeGroup: Group | null;
+  highlightedGroupId: number | null;
 }
 
 const GroupSidePanel: React.FC<GroupSidePanelProps> = ({
@@ -19,7 +23,11 @@ const GroupSidePanel: React.FC<GroupSidePanelProps> = ({
   groups,
   onGroupSelect,
   onGroupEdit,
-  onAddNewGroup
+  onAddNewGroup,
+  onHighlightGroupContacts,
+  onShowAll,
+  activeGroup,
+  highlightedGroupId
 }) => {
   return (
     <SidePanel
@@ -47,6 +55,10 @@ const GroupSidePanel: React.FC<GroupSidePanelProps> = ({
             onClose={onClose}
             onGroupSelect={onGroupSelect}
             onGroupEdit={onGroupEdit}
+            onHighlightGroupContacts={onHighlightGroupContacts}
+            onShowAll={onShowAll}
+            activeGroup={activeGroup}
+            highlightedGroupId={highlightedGroupId}
           />
         </div>
       </div>
