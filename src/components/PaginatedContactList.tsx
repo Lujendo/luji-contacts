@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Contact } from '../types';
-import { contactsApi } from '../api';
+import { useOptimizedPagination } from '../hooks/useOptimizedPagination';
 import ContactListItem from './ContactListItem';
 import ContactListSkeleton from './ContactListSkeleton';
-import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Zap } from 'lucide-react';
 
 interface PaginatedContactListProps {
   search?: string;
@@ -15,6 +15,8 @@ interface PaginatedContactListProps {
   selectedContacts?: Set<number>;
   className?: string;
   containerHeight?: number;
+  enableCache?: boolean;
+  showCacheStats?: boolean;
 }
 
 const PaginatedContactList: React.FC<PaginatedContactListProps> = ({
@@ -26,77 +28,51 @@ const PaginatedContactList: React.FC<PaginatedContactListProps> = ({
   onSortChange,
   selectedContacts = new Set(),
   className = '',
-  containerHeight = 600
+  containerHeight = 600,
+  enableCache = true,
+  showCacheStats = false
 }) => {
-  const [contacts, setContacts] = useState<Contact[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [total, setTotal] = useState(0);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
-
   // Page size options
   const pageSizeOptions = [10, 25, 50, 100];
+  const [initialPageSize] = useState(25);
 
-  // Calculate pagination info
-  const totalPages = Math.ceil(total / pageSize);
-  const startRecord = (currentPage - 1) * pageSize + 1;
+  // Use optimized pagination hook with caching and prefetching
+  const {
+    contacts,
+    loading,
+    error,
+    total,
+    currentPage,
+    totalPages,
+    hasNextPage,
+    hasPreviousPage,
+    goToPage,
+    goToNextPage,
+    goToPreviousPage,
+    goToFirstPage,
+    goToLastPage,
+    setPageSize,
+    refresh,
+    cacheStats
+  } = useOptimizedPagination({
+    pageSize: initialPageSize,
+    search,
+    sort,
+    direction,
+    enabled: true,
+    enableCache,
+    prefetchAdjacent: true
+  });
+
+  // Calculate display info
+  const pageSize = Math.ceil(total / totalPages) || initialPageSize;
+  const startRecord = total > 0 ? (currentPage - 1) * pageSize + 1 : 0;
   const endRecord = Math.min(currentPage * pageSize, total);
-
-  // Load contacts for current page
-  const loadContacts = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const queryParams = {
-        page: currentPage.toString(),
-        limit: pageSize.toString(),
-        search: search || undefined,
-        sort: sort || undefined,
-        direction: direction || undefined
-      };
-
-      const response = await contactsApi.getContacts(queryParams);
-
-      if (response.success && response.data) {
-        setContacts(Array.isArray(response.data) ? response.data : []);
-        setTotal(response.total || 0);
-      } else {
-        throw new Error('Failed to load contacts');
-      }
-    } catch (err) {
-      console.error('Error loading contacts:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load contacts');
-    } finally {
-      setLoading(false);
-    }
-  }, [currentPage, pageSize, search, sort, direction]);
-
-  // Load contacts when dependencies change
-  useEffect(() => {
-    loadContacts();
-  }, [loadContacts]);
-
-  // Reset to first page when search or sort changes
-  useEffect(() => {
-    if (currentPage !== 1) {
-      setCurrentPage(1);
-    }
-  }, [search, sort, direction]);
 
   // Handle page size change
   const handlePageSizeChange = (newPageSize: number) => {
     setPageSize(newPageSize);
-    setCurrentPage(1); // Reset to first page
   };
-
-  // Navigation functions
-  const goToFirstPage = () => setCurrentPage(1);
-  const goToPreviousPage = () => setCurrentPage(Math.max(1, currentPage - 1));
-  const goToNextPage = () => setCurrentPage(Math.min(totalPages, currentPage + 1));
-  const goToLastPage = () => setCurrentPage(totalPages);
-  const goToPage = (page: number) => setCurrentPage(Math.max(1, Math.min(totalPages, page)));
 
   // Generate page numbers for pagination
   const getPageNumbers = () => {
@@ -221,6 +197,22 @@ const PaginatedContactList: React.FC<PaginatedContactListProps> = ({
     );
   };
 
+  // Cache stats display component
+  const CacheStatsDisplay: React.FC = () => {
+    const stats = cacheStats();
+    if (!stats || !showCacheStats) return null;
+
+    return (
+      <div className="px-4 py-2 bg-blue-50 border-b text-xs text-blue-700 flex items-center space-x-4">
+        <Zap className="w-4 h-4" />
+        <span>Cache: {stats.size}/{stats.maxSize} entries</span>
+        <span>Hit Rate: {(stats.hitRate * 100).toFixed(1)}%</span>
+        <span>Hits: {stats.hitCount}</span>
+        <span>Misses: {stats.missCount}</span>
+      </div>
+    );
+  };
+
   if (error) {
     return (
       <div className={`flex flex-col items-center justify-center py-12 ${className}`}>
@@ -228,7 +220,7 @@ const PaginatedContactList: React.FC<PaginatedContactListProps> = ({
           <p className="text-lg font-medium mb-2">Error loading contacts</p>
           <p className="text-sm text-gray-600 mb-4">{error}</p>
           <button
-            onClick={loadContacts}
+            onClick={refresh}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
             Try Again
@@ -240,6 +232,9 @@ const PaginatedContactList: React.FC<PaginatedContactListProps> = ({
 
   return (
     <div className={`flex flex-col ${className}`}>
+      {/* Cache Stats */}
+      <CacheStatsDisplay />
+
       {/* Stats and Page Size Selector */}
       <div className="px-4 py-3 bg-gray-50 border-b flex items-center justify-between">
         <div className="flex items-center space-x-4">
@@ -248,6 +243,11 @@ const PaginatedContactList: React.FC<PaginatedContactListProps> = ({
               <>
                 Showing {startRecord}-{endRecord} of {total} contacts
                 {search && ` matching "${search}"`}
+                {loading && (
+                  <span className="ml-2 text-blue-600 text-xs">
+                    ⚡ Loading...
+                  </span>
+                )}
               </>
             ) : (
               'No contacts found'

@@ -558,4 +558,51 @@ export class DatabaseService {
       ORDER BY g.name
     `).bind(contactId).all<Group>().then(result => result.results || []);
   }
+
+  // Batch get groups for multiple contacts (performance optimization)
+  async getBatchGroupsByContactIds(contactIds: number[]): Promise<Map<number, Group[]>> {
+    try {
+      if (contactIds.length === 0) {
+        return new Map();
+      }
+
+      // Create placeholders for the IN clause
+      const placeholders = contactIds.map(() => '?').join(',');
+
+      const query = `
+        SELECT
+          gc.contact_id,
+          g.id, g.name, g.description, g.color, g.created_at, g.updated_at
+        FROM groups g
+        JOIN group_contacts gc ON g.id = gc.group_id
+        WHERE gc.contact_id IN (${placeholders})
+        ORDER BY gc.contact_id, g.name
+      `;
+
+      const result = await this.db.prepare(query).bind(...contactIds).all();
+      const rows = result.results as (Group & { contact_id: number })[];
+
+      // Group the results by contact_id
+      const groupsByContact = new Map<number, Group[]>();
+
+      // Initialize all contact IDs with empty arrays
+      contactIds.forEach(id => {
+        groupsByContact.set(id, []);
+      });
+
+      // Populate the groups for each contact
+      rows.forEach(row => {
+        const { contact_id, ...group } = row;
+        const existingGroups = groupsByContact.get(contact_id) || [];
+        existingGroups.push(group);
+        groupsByContact.set(contact_id, existingGroups);
+      });
+
+      return groupsByContact;
+    } catch (error) {
+      console.error('Error batch getting groups for contacts:', error);
+      // Return empty map on error to prevent breaking the API
+      return new Map();
+    }
+  }
 }

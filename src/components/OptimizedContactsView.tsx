@@ -45,11 +45,11 @@ const OptimizedContactsView: React.FC<OptimizedContactsViewProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Optimized debounce - faster for short queries, slower for complex ones
+  // Optimized debounce - much faster for better UX
   const debounceDelay = useMemo(() => {
-    if (searchQuery.length <= 2) return 150; // Fast for short queries
-    if (searchQuery.length <= 5) return 200; // Medium for moderate queries
-    return 300; // Standard for longer queries
+    if (searchQuery.length <= 2) return 100; // Very fast for short queries
+    if (searchQuery.length <= 5) return 150; // Fast for moderate queries
+    return 200; // Reduced from 300ms for better responsiveness
   }, [searchQuery.length]);
 
   // Use debounced search for better performance
@@ -425,6 +425,8 @@ const OptimizedContactsView: React.FC<OptimizedContactsViewProps> = ({
             onSortChange={handleSortChange}
             selectedContacts={selectedContactsSet}
             containerHeight={containerHeight}
+            enableCache={enableCache}
+            showCacheStats={showCacheStats}
             className="h-full"
           />
         )}

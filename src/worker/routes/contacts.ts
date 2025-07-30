@@ -34,23 +34,28 @@ export function createContactRoutes(db: DatabaseService, auth: AuthService, stor
         finalOffset
       );
 
-      // Get groups for each contact (if needed)
+      // Optimize group loading - batch fetch all groups for all contacts at once
       const storage = new StorageService(c.env.STORAGE);
-      const contactsWithGroups = await Promise.all(
-        result.contacts.map(async (contact) => {
-          const groups = await db.getGroupsByContactId(contact.id);
-          return {
-            ...contact,
-            profile_image_url: contact.profile_image_url ? (
-              contact.profile_image_url.startsWith('/api/files/')
-                ? contact.profile_image_url
-                : `/api/files/${contact.profile_image_url}`
-            ) : contact.profile_image_url,
-            Groups: groups.map(g => ({ id: g.id, name: g.name })), // Use uppercase Groups for frontend compatibility
-            groups: groups.map(g => ({ id: g.id, name: g.name }))  // Keep lowercase for backward compatibility
-          };
-        })
-      );
+      const contactIds = result.contacts.map(c => c.id);
+
+      // Batch fetch all groups for all contacts in one query
+      const allContactGroups = contactIds.length > 0
+        ? await db.getBatchGroupsByContactIds(contactIds)
+        : new Map();
+
+      const contactsWithGroups = result.contacts.map((contact) => {
+        const groups = allContactGroups.get(contact.id) || [];
+        return {
+          ...contact,
+          profile_image_url: contact.profile_image_url ? (
+            contact.profile_image_url.startsWith('/api/files/')
+              ? contact.profile_image_url
+              : `/api/files/${contact.profile_image_url}`
+          ) : contact.profile_image_url,
+          Groups: groups.map(g => ({ id: g.id, name: g.name })), // Use uppercase Groups for frontend compatibility
+          groups: groups.map(g => ({ id: g.id, name: g.name }))  // Keep lowercase for backward compatibility
+        };
+      });
 
       const totalPages = Math.ceil(result.total / parsedLimit);
       const currentPage = Math.floor(finalOffset / parsedLimit) + 1;
