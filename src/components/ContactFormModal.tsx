@@ -607,20 +607,24 @@ const ContactFormModal: React.FC<ContactFormModalProps> = ({
       <form onSubmit={handleSubmit} className="flex flex-col h-[600px]">
         {/* Contact Name Display for Editing - Always show when contact exists */}
         {contact && (
-          <div className="mx-6 mt-4 mb-4 p-4 bg-blue-50 border border-blue-200 rounded-md">
+          <div className="mx-6 mt-2 mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
             <div className="flex items-center space-x-3">
               <div className="flex-shrink-0">
-                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                  <User className="w-5 h-5 text-blue-600" />
+                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                  <User className="w-4 h-4 text-blue-600" />
                 </div>
               </div>
-              <div>
-                <p className="text-sm font-medium text-blue-900">Editing Contact</p>
-                <p className="text-lg font-semibold text-blue-800">{getContactDisplayName()}</p>
+              <div className="flex-1">
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm font-medium text-blue-900">Editing Contact:</span>
+                  <span className="text-base font-bold text-blue-800 bg-blue-100 px-2 py-1 rounded">
+                    {getContactDisplayName()}
+                  </span>
+                </div>
                 {/* Debug info - remove after testing */}
-                <p className="text-xs text-gray-500">
-                  Debug: {contact.first_name || 'No first'} {contact.last_name || 'No last'} {contact.email || 'No email'}
-                </p>
+                <div className="text-xs text-gray-500 mt-1">
+                  Debug: {contact.first_name || 'No first'} | {contact.last_name || 'No last'} | {contact.email || 'No email'}
+                </div>
               </div>
             </div>
           </div>
