@@ -261,6 +261,11 @@ const Dashboard: React.FC = () => {
   }, []);
 
   const handleGroupSelect: GroupEventHandler = useCallback((group: Group) => {
+    console.log('handleGroupSelect called with group:', group);
+    if (!group) {
+      console.error('handleGroupSelect: group is null or undefined');
+      return;
+    }
     setSelectedGroup(group);
     setShowGroupContactsManager(true);
   }, []);

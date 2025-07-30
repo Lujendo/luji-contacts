@@ -23,6 +23,24 @@ const GroupContactsManager: React.FC<GroupContactsManagerProps> = ({
   onClose,
   onGroupUpdated
 }) => {
+  // Safety check - if group is not provided, show error
+  if (!group) {
+    return (
+      <div className="h-full flex items-center justify-center bg-white">
+        <div className="text-center">
+          <AlertTriangle className="h-12 w-12 text-red-400 mx-auto mb-4" />
+          <p className="text-red-600 font-medium">No group selected</p>
+          <p className="text-gray-500 text-sm mt-1">Please select a group to manage its contacts.</p>
+          <button
+            onClick={onClose}
+            className="mt-4 px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    );
+  }
   // State declarations
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedGroupMembers, setSelectedGroupMembers] = useState<number[]>([]);
@@ -281,7 +299,7 @@ const GroupContactsManager: React.FC<GroupContactsManagerProps> = ({
             Manage Group Contacts
           </h2>
           <p className="text-sm text-gray-600 mt-1">
-            Group: <span className="font-medium">{group.name}</span>
+            Group: <span className="font-medium">{group?.name || 'Unknown Group'}</span>
           </p>
         </div>
         <button
