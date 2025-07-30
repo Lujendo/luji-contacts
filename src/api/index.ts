@@ -212,6 +212,41 @@ export const contactsApi = {
     }
   },
 
+  // Group-related methods for contacts
+  async getGroupContacts(groupId: number): Promise<Contact[]> {
+    try {
+      const response = await api.get<ApiResponse<Group>>(`/groups/${groupId}`);
+      const group = extractData(response);
+      return group.contacts || [];
+    } catch (error) {
+      handleApiError(error);
+    }
+  },
+
+  async assignContactsToGroup(groupId: number, contactIds: number[]): Promise<BulkOperationResponse> {
+    try {
+      const response = await api.post<ApiResponse<BulkOperationResponse>>(
+        `/groups/${groupId}/contacts/bulk`,
+        { contactIds }
+      );
+      return extractData(response);
+    } catch (error) {
+      handleApiError(error);
+    }
+  },
+
+  async removeContactsFromGroup(groupId: number, contactIds: number[]): Promise<BulkOperationResponse> {
+    try {
+      const response = await api.delete<ApiResponse<BulkOperationResponse>>(
+        `/groups/${groupId}/contacts/bulk`,
+        { data: { contactIds } }
+      );
+      return extractData(response);
+    } catch (error) {
+      handleApiError(error);
+    }
+  },
+
   async uploadProfileImage(
     contactId: number,
     file: File,
