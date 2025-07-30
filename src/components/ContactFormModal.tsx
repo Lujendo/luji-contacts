@@ -575,10 +575,13 @@ const ContactFormModal: React.FC<ContactFormModalProps> = ({
 
   // Get contact display name for editing
   const getContactDisplayName = () => {
-    if (!isEditing || !contact) return '';
+    console.log('getContactDisplayName called:', { isEditing, contact });
+    if (!contact) return 'No Contact Data';
     const firstName = contact.first_name || '';
     const lastName = contact.last_name || '';
     const email = contact.email || '';
+
+    console.log('Contact data:', { firstName, lastName, email });
 
     if (firstName && lastName) {
       return `${firstName} ${lastName}`;
@@ -589,7 +592,7 @@ const ContactFormModal: React.FC<ContactFormModalProps> = ({
     } else if (email) {
       return email;
     } else {
-      return 'Contact';
+      return 'Unnamed Contact';
     }
   };
 
@@ -602,9 +605,9 @@ const ContactFormModal: React.FC<ContactFormModalProps> = ({
       showCloseButton={true}
     >
       <form onSubmit={handleSubmit} className="flex flex-col h-[600px]">
-        {/* Contact Name Display for Editing */}
-        {isEditing && (
-          <div className="mx-6 mb-4 p-4 bg-blue-50 border border-blue-200 rounded-md">
+        {/* Contact Name Display for Editing - Always show when contact exists */}
+        {contact && (
+          <div className="mx-6 mt-4 mb-4 p-4 bg-blue-50 border border-blue-200 rounded-md">
             <div className="flex items-center space-x-3">
               <div className="flex-shrink-0">
                 <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
@@ -614,6 +617,10 @@ const ContactFormModal: React.FC<ContactFormModalProps> = ({
               <div>
                 <p className="text-sm font-medium text-blue-900">Editing Contact</p>
                 <p className="text-lg font-semibold text-blue-800">{getContactDisplayName()}</p>
+                {/* Debug info - remove after testing */}
+                <p className="text-xs text-gray-500">
+                  Debug: {contact.first_name || 'No first'} {contact.last_name || 'No last'} {contact.email || 'No email'}
+                </p>
               </div>
             </div>
           </div>
