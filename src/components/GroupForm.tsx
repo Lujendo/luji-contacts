@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, FormEvent, ChangeEvent } from 'react';
 import { Group, CreateGroupRequest } from '../types';
-import { contactsApi } from '../api';
+import { groupsApi } from '../api';
 import { X, Loader, Users, Check } from 'lucide-react';
 
 // Component props interface
@@ -100,7 +100,7 @@ const GroupForm: React.FC<GroupFormProps> = ({
 
     try {
       // Create the group
-      const createdGroup = await contactsApi.createGroup({
+      const createdGroup = await groupsApi.createGroup({
         name: newGroup.name.trim(),
         description: newGroup.description?.trim() || ''
       });

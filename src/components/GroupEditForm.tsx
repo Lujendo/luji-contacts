@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, FormEvent, ChangeEvent } from 'react';
 import { Group, UpdateGroupRequest } from '../types';
-import { contactsApi } from '../api';
+import { groupsApi } from '../api';
 import { X, Save, Loader, Users, Check } from 'lucide-react';
 
 // Component props interface
@@ -110,7 +110,7 @@ const GroupEditForm: React.FC<GroupEditFormProps> = ({
 
     try {
       // Update the group
-      const updatedGroup = await contactsApi.updateGroup(group.id, {
+      const updatedGroup = await groupsApi.updateGroup(group.id, {
         name: editedGroup.name.trim(),
         description: editedGroup.description?.trim() || ''
       });
