@@ -305,6 +305,7 @@ export class DatabaseService {
 
     // If filtering by group, use JOIN with group_contacts table
     if (groupId !== undefined && groupId !== null) {
+      console.log('🔍 Database: Filtering by group ID:', groupId, 'for user:', userId);
       countQuery = `
         SELECT COUNT(DISTINCT c.id) as total
         FROM contacts c
@@ -320,6 +321,7 @@ export class DatabaseService {
       params.push(groupId);
       countParams.push(groupId);
     } else {
+      console.log('🔍 Database: No group filtering, showing all contacts for user:', userId);
       // Standard query without group filtering
       countQuery = 'SELECT COUNT(*) as total FROM contacts WHERE user_id = ?';
       query = 'SELECT * FROM contacts WHERE user_id = ?';
@@ -450,9 +452,16 @@ export class DatabaseService {
     const contacts = contactsResult.results || [];
     const total = countResult?.total || 0;
 
-    console.log('🔍 Database Search - Results:', contacts.length, 'contacts found, total:', total);
-    if (search && contacts.length > 0) {
-      console.log('🔍 Database Search - First result:', contacts[0].first_name, contacts[0].last_name, contacts[0].nickname);
+    if (groupId !== undefined && groupId !== null) {
+      console.log('🔍 Group Filtering Results - Group ID:', groupId, 'Found:', contacts.length, 'contacts, Total:', total);
+      if (contacts.length > 0) {
+        console.log('🔍 Group Filtering - Sample contacts:', contacts.slice(0, 3).map(c => `${c.first_name} ${c.last_name}`));
+      }
+    } else {
+      console.log('🔍 Database Search - Results:', contacts.length, 'contacts found, total:', total);
+      if (search && contacts.length > 0) {
+        console.log('🔍 Database Search - First result:', contacts[0].first_name, contacts[0].last_name, contacts[0].nickname);
+      }
     }
 
     return {

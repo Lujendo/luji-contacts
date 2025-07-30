@@ -26,6 +26,8 @@ export function createContactRoutes(db: DatabaseService, auth: AuthService, stor
       // Calculate offset from page if provided
       const finalOffset = page ? (parsedPage - 1) * parsedLimit : parsedOffset;
 
+      console.log('📡 API: Contacts request - User:', user.id, 'Group:', parsedGroupId, 'Search:', search, 'Page:', parsedPage);
+
       const result = await db.getContactsByUserId(
         user.id,
         search,
