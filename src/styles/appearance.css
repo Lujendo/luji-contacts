@@ -3,11 +3,21 @@
 /* Dark Mode Styles */
 .dark {
   color-scheme: dark;
+  color: #f9fafb !important;
 }
 
 .dark body {
-  background-color: #111827;
-  color: #f9fafb;
+  background-color: #111827 !important;
+  color: #f9fafb !important;
+}
+
+.dark #root {
+  background-color: #111827 !important;
+  color: #f9fafb !important;
+}
+
+.dark * {
+  border-color: #374151;
 }
 
 .dark .bg-white {
@@ -27,23 +37,40 @@
 }
 
 .dark .text-gray-900 {
-  color: #f9fafb;
+  color: #f9fafb !important;
+}
+
+.dark .text-gray-800 {
+  color: #f3f4f6 !important;
 }
 
 .dark .text-gray-700 {
-  color: #d1d5db;
+  color: #d1d5db !important;
 }
 
 .dark .text-gray-600 {
-  color: #9ca3af;
+  color: #9ca3af !important;
 }
 
 .dark .text-gray-500 {
-  color: #6b7280;
+  color: #6b7280 !important;
 }
 
 .dark .text-gray-400 {
-  color: #4b5563;
+  color: #9ca3af !important;
+}
+
+.dark .text-gray-300 {
+  color: #d1d5db !important;
+}
+
+/* Additional text colors for dark mode */
+.dark .text-black {
+  color: #f9fafb !important;
+}
+
+.dark .text-white {
+  color: #f9fafb !important;
 }
 
 .dark .border-gray-200 {
@@ -60,6 +87,71 @@
 
 .dark .hover\:bg-gray-100:hover {
   background-color: #4b5563;
+}
+
+/* Additional dark mode text styling */
+.dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
+  color: #f9fafb !important;
+}
+
+.dark p {
+  color: #d1d5db !important;
+}
+
+.dark label {
+  color: #f3f4f6 !important;
+}
+
+.dark span {
+  color: #d1d5db !important;
+}
+
+.dark div {
+  color: #d1d5db;
+}
+
+/* Form elements in dark mode */
+.dark input {
+  background-color: #374151 !important;
+  border-color: #4b5563 !important;
+  color: #f9fafb !important;
+}
+
+.dark input::placeholder {
+  color: #9ca3af !important;
+}
+
+.dark textarea {
+  background-color: #374151 !important;
+  border-color: #4b5563 !important;
+  color: #f9fafb !important;
+}
+
+.dark select {
+  background-color: #374151 !important;
+  border-color: #4b5563 !important;
+  color: #f9fafb !important;
+}
+
+/* Button text in dark mode */
+.dark button {
+  color: #f9fafb;
+}
+
+.dark .text-blue-600 {
+  color: #60a5fa !important;
+}
+
+.dark .text-blue-700 {
+  color: #3b82f6 !important;
+}
+
+.dark .text-blue-800 {
+  color: #2563eb !important;
+}
+
+.dark .text-blue-900 {
+  color: #1d4ed8 !important;
 }
 
 /* Compact Mode */
@@ -137,6 +229,47 @@
 
 .dark.high-contrast .border-gray-200 {
   border-color: #6b7280;
+}
+
+/* Modal and card content in dark mode */
+.dark .modal-content,
+.dark .card-content,
+.dark .panel-content {
+  background-color: #1f2937 !important;
+  color: #f9fafb !important;
+}
+
+/* Table content in dark mode */
+.dark table {
+  background-color: #1f2937 !important;
+  color: #f9fafb !important;
+}
+
+.dark th {
+  background-color: #374151 !important;
+  color: #f9fafb !important;
+}
+
+.dark td {
+  color: #d1d5db !important;
+  border-color: #4b5563 !important;
+}
+
+/* Navigation and sidebar in dark mode */
+.dark .sidebar,
+.dark .navigation {
+  background-color: #111827 !important;
+  color: #f9fafb !important;
+}
+
+/* Ensure all text is visible in dark mode */
+.dark * {
+  color: inherit;
+}
+
+.dark body,
+.dark .main-content {
+  color: #d1d5db !important;
 }
 
 /* No Animations */
