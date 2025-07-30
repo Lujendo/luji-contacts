@@ -414,8 +414,8 @@ const Dashboard: React.FC = () => {
         />
       )}
 
-      {/* Main Content with Sidebar */}
-      <div className="flex flex-1 overflow-hidden">
+      {/* Main Content with Sidebar - Takes remaining space */}
+      <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* Fixed Navigation Sidebar */}
         <FixedNavigation
           user={user}
@@ -666,8 +666,9 @@ const Dashboard: React.FC = () => {
           }
         }}
       />
+      </div>
 
-      {/* Footer */}
+      {/* Footer - Always at bottom */}
       {appearanceSettings.showFooter && (
         <Footer
           onPrivacyClick={() => {/* TODO: Handle privacy page */}}
@@ -701,7 +702,6 @@ const Dashboard: React.FC = () => {
           }}
         />
       )}
-      </div>
     </div>
   );
 };
