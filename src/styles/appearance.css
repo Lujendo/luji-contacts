@@ -272,6 +272,131 @@
   color: #d1d5db !important;
 }
 
+/* IMPORTANT: Dark text on light backgrounds in dark mode */
+.dark .bg-white *,
+.dark .bg-gray-50 *,
+.dark .bg-gray-100 * {
+  color: #1f2937 !important;
+}
+
+.dark .bg-white h1,
+.dark .bg-white h2,
+.dark .bg-white h3,
+.dark .bg-white h4,
+.dark .bg-white h5,
+.dark .bg-white h6 {
+  color: #111827 !important;
+}
+
+.dark .bg-white p,
+.dark .bg-white span,
+.dark .bg-white div,
+.dark .bg-white label {
+  color: #374151 !important;
+}
+
+/* Light background cards and modals need dark text */
+.dark .bg-white .text-gray-900 {
+  color: #111827 !important;
+}
+
+.dark .bg-white .text-gray-800 {
+  color: #1f2937 !important;
+}
+
+.dark .bg-white .text-gray-700 {
+  color: #374151 !important;
+}
+
+.dark .bg-white .text-gray-600 {
+  color: #4b5563 !important;
+}
+
+.dark .bg-white .text-gray-500 {
+  color: #6b7280 !important;
+}
+
+/* Form elements on light backgrounds */
+.dark .bg-white input,
+.dark .bg-white textarea,
+.dark .bg-white select {
+  background-color: #f9fafb !important;
+  border-color: #d1d5db !important;
+  color: #111827 !important;
+}
+
+.dark .bg-white input::placeholder {
+  color: #6b7280 !important;
+}
+
+/* Modal and card content with light backgrounds */
+.dark .modal-content.bg-white,
+.dark .card-content.bg-white,
+.dark .panel-content.bg-white {
+  color: #111827 !important;
+}
+
+/* Table content on light backgrounds */
+.dark .bg-white table {
+  color: #111827 !important;
+}
+
+.dark .bg-white th {
+  color: #111827 !important;
+}
+
+.dark .bg-white td {
+  color: #374151 !important;
+}
+
+/* Button text on light backgrounds */
+.dark .bg-white button {
+  color: #111827 !important;
+}
+
+/* Blue text colors on light backgrounds in dark mode */
+.dark .bg-white .text-blue-600 {
+  color: #2563eb !important;
+}
+
+.dark .bg-white .text-blue-700 {
+  color: #1d4ed8 !important;
+}
+
+.dark .bg-white .text-blue-800 {
+  color: #1e40af !important;
+}
+
+.dark .bg-white .text-blue-900 {
+  color: #1e3a8a !important;
+}
+
+/* Specific overrides for common light background scenarios */
+.dark .bg-gray-50 *,
+.dark .bg-gray-100 * {
+  color: #374151 !important;
+}
+
+.dark .bg-blue-50 *,
+.dark .bg-blue-100 * {
+  color: #1e40af !important;
+}
+
+.dark .bg-green-50 *,
+.dark .bg-green-100 * {
+  color: #065f46 !important;
+}
+
+.dark .bg-red-50 *,
+.dark .bg-red-100 * {
+  color: #991b1b !important;
+}
+
+.dark .bg-yellow-50 *,
+.dark .bg-yellow-100 * {
+  color: #92400e !important;
+}
+
 /* No Animations */
 .no-animations * {
   animation-duration: 0s !important;
