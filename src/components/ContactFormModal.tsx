@@ -4,6 +4,8 @@ import { Contact, Group } from '../types';
 import Modal from './ui/Modal';
 import Tabs, { TabItem } from './ui/Tabs';
 import { User, Mail, Phone, Building2, MapPin, FileText } from 'lucide-react';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 
 interface ContactFormModalProps {
   isOpen: boolean;
@@ -281,15 +283,36 @@ const ContactFormModal: React.FC<ContactFormModalProps> = ({
         <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
           Notes
         </label>
-        <textarea
-          id="notes"
-          name="notes"
-          value={formData.notes}
-          onChange={handleInputChange}
-          rows={6}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          placeholder="Enter any additional notes"
-        />
+        <div className="border border-gray-300 rounded-md">
+          <ReactQuill
+            value={formData.notes}
+            onChange={(value) => {
+              setFormData(prev => ({
+                ...prev,
+                notes: value
+              }));
+            }}
+            theme="snow"
+            placeholder="Enter any additional notes"
+            style={{ minHeight: '150px' }}
+            modules={{
+              toolbar: [
+                [{ 'header': [1, 2, 3, false] }],
+                ['bold', 'italic', 'underline', 'strike'],
+                [{ 'color': [] }, { 'background': [] }],
+                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                [{ 'indent': '-1'}, { 'indent': '+1' }],
+                ['link', 'blockquote'],
+                ['clean']
+              ],
+            }}
+            formats={[
+              'header', 'bold', 'italic', 'underline', 'strike',
+              'color', 'background', 'list', 'bullet', 'indent',
+              'link', 'blockquote'
+            ]}
+          />
+        </div>
       </div>
     </div>
   );

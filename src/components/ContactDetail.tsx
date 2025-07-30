@@ -25,6 +25,8 @@ import {
 } from "lucide-react";
 import SocialMediaSection from "./SocialMediaSection";
 import ProfileImage from './ui/ProfileImage';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 
 // Tab type definition
 type TabType = 'overview' | 'details' | 'address' | 'social' | 'notes' | 'groups' | 'activity';
@@ -906,10 +908,15 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
                   Notes
                 </h3>
                 <div className="bg-gray-50 rounded-lg p-4">
-                  <p className="text-gray-700 text-sm line-clamp-3">
-                    {editedContact.notes}
-                  </p>
-                  {editedContact.notes.length > 150 && (
+                  <div
+                    className="prose prose-sm max-w-none text-gray-700 line-clamp-3"
+                    dangerouslySetInnerHTML={{
+                      __html: editedContact.notes.length > 200
+                        ? editedContact.notes.substring(0, 200) + '...'
+                        : editedContact.notes
+                    }}
+                  />
+                  {editedContact.notes.length > 200 && (
                     <button
                       onClick={() => setActiveTab('notes')}
                       className="mt-2 text-indigo-600 hover:text-indigo-800 text-sm font-medium"
@@ -1273,19 +1280,44 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
                 Notes
               </label>
               {editMode ? (
-                <textarea
-                  name="notes"
-                  rows={8}
-                  value={editedContact.notes || ''}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                  placeholder="Add any additional notes about this contact..."
-                />
+                <div className="border border-gray-300 rounded-md">
+                  <ReactQuill
+                    value={editedContact.notes || ''}
+                    onChange={(value) => {
+                      setEditedContact(prev => ({
+                        ...prev,
+                        notes: value
+                      }));
+                    }}
+                    theme="snow"
+                    placeholder="Add any additional notes about this contact..."
+                    style={{ minHeight: '200px' }}
+                    modules={{
+                      toolbar: [
+                        [{ 'header': [1, 2, 3, false] }],
+                        ['bold', 'italic', 'underline', 'strike'],
+                        [{ 'color': [] }, { 'background': [] }],
+                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                        [{ 'indent': '-1'}, { 'indent': '+1' }],
+                        ['link', 'blockquote'],
+                        ['clean']
+                      ],
+                    }}
+                    formats={[
+                      'header', 'bold', 'italic', 'underline', 'strike',
+                      'color', 'background', 'list', 'bullet', 'indent',
+                      'link', 'blockquote'
+                    ]}
+                  />
+                </div>
               ) : (
                 <div className="bg-gray-50 rounded-md p-4 min-h-[200px]">
-                  <p className="text-gray-900 whitespace-pre-wrap">
-                    {editedContact.notes || 'No notes available'}
-                  </p>
+                  <div
+                    className="prose prose-sm max-w-none text-gray-900"
+                    dangerouslySetInnerHTML={{
+                      __html: editedContact.notes || '<p class="text-gray-500 italic">No notes available</p>'
+                    }}
+                  />
                 </div>
               )}
             </div>

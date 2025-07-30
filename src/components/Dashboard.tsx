@@ -40,6 +40,7 @@ import { useAppearance } from '../contexts/AppearanceContext';
 // Modal imports
 import UserSettingsModal from './modals/UserSettingsModal';
 import GroupListModal from './modals/GroupListModal';
+import GroupSidePanel from './modals/GroupSidePanel';
 import GroupFormModal from './modals/GroupFormModal';
 import GroupEditFormModal from './modals/GroupEditFormModal';
 import EmailFormModal from './modals/EmailFormModal';
@@ -509,8 +510,8 @@ const Dashboard: React.FC = () => {
 
       {/* Utility Modals - Now using beautiful modal dialogs instead of right panel */}
 
-      {/* Group Management Modals */}
-      <GroupListModal
+      {/* Group Management - Side Panel */}
+      <GroupSidePanel
         isOpen={showGroupList}
         onClose={() => setShowGroupList(false)}
         groups={groups}
