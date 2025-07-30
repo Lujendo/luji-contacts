@@ -521,6 +521,10 @@ const Dashboard: React.FC = () => {
           setShowGroupEditForm(true);
           setShowGroupList(false);
         }}
+        onAddNewGroup={() => {
+          setShowGroupForm(true);
+          setShowGroupList(false);
+        }}
       />
 
       <GroupFormModal
