@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import { useAppearance } from '../contexts/AppearanceContext';
 import { AppearanceSettings } from './AppearanceSettings';
+import Modal from './ui/Modal';
 
 // Component props interface
 interface UserSettingsProps {
@@ -328,25 +329,17 @@ const UserSettings: React.FC<UserSettingsProps> = ({ onClose, initialTab = 'prof
   ];
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-            <Settings className="h-6 w-6 mr-2" />
-            Settings
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-          >
-            <X className="h-6 w-6" />
-          </button>
-        </div>
+    <Modal
+      isOpen={true}
+      onClose={onClose}
+      title="Settings"
+      size="2xl"
+      showCloseButton={true}
+    >
 
-        <div className="flex h-[calc(90vh-120px)]">
-          {/* Sidebar */}
-          <div className="w-64 bg-gray-50 border-r border-gray-200">
+      <div className="flex h-[600px]">
+        {/* Sidebar */}
+        <div className="w-64 bg-gray-50 border-r border-gray-200">
             <nav className="p-4 space-y-2">
               {tabs.map((tab) => {
                 const Icon = tab.icon;
@@ -368,8 +361,8 @@ const UserSettings: React.FC<UserSettingsProps> = ({ onClose, initialTab = 'prof
             </nav>
           </div>
 
-          {/* Main Content */}
-          <div className="flex-1 overflow-y-auto">
+        {/* Main Content */}
+        <div className="flex-1 overflow-y-auto">
             {/* Messages */}
             {error && (
               <div className="m-6 p-4 bg-red-50 border border-red-200 rounded-md">
@@ -954,10 +947,9 @@ const UserSettings: React.FC<UserSettingsProps> = ({ onClose, initialTab = 'prof
                 </div>
               </div>
             )}
-          </div>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 };
 

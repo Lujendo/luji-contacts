@@ -1,5 +1,4 @@
 import React from 'react';
-import Modal from '../ui/Modal';
 import UserSettings from '../UserSettings';
 
 interface UserSettingsModalProps {
@@ -13,15 +12,11 @@ const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
   onClose,
   initialTab = 'profile'
 }) => {
+  // Only render UserSettings if modal should be open
+  if (!isOpen) return null;
+
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title="User Settings"
-      size="xl"
-    >
-      <UserSettings onClose={onClose} initialTab={initialTab} />
-    </Modal>
+    <UserSettings onClose={onClose} initialTab={initialTab} />
   );
 };
 
