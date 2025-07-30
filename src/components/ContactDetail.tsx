@@ -522,6 +522,29 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
 
       {/* Tab Content */}
       <div className="flex-1 overflow-y-auto">
+        {/* Contact Name Header - Always visible when editing */}
+        {editMode && (
+          <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-6 py-3">
+            <div className="flex items-center space-x-3">
+              <div className="flex-shrink-0">
+                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                  <User className="w-4 h-4 text-blue-600" />
+                </div>
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm font-medium text-blue-900">Editing Contact:</span>
+                  <span className="text-base font-bold text-blue-800 bg-blue-100 px-2 py-1 rounded">
+                    {editedContact.nickname || (editedContact.first_name || editedContact.last_name)
+                      ? editedContact.nickname || `${editedContact.first_name || ''} ${editedContact.last_name || ''}`.trim()
+                      : 'Unnamed Contact'
+                    }
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         {activeTab === 'overview' && (
           <div className="p-6">
             {/* Profile Header */}
