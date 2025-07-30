@@ -126,15 +126,36 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
     }
   }, [error]);
 
-  // Initialize contact data
+  // Initialize contact data and fetch fresh details with groups
   useEffect(() => {
-    if (contact) {
-      setEditedContact({ ...contact });
-      setProfileImage(prev => ({
-        ...prev,
-        preview: contact.profile_image_url || null
-      }));
-    }
+    const loadContactDetails = async () => {
+      if (contact) {
+        try {
+          // First set the basic contact data
+          setEditedContact({ ...contact });
+          setProfileImage(prev => ({
+            ...prev,
+            preview: contact.profile_image_url || null
+          }));
+
+          // If the contact doesn't have Groups data, fetch fresh details
+          if (!contact.Groups || contact.Groups.length === 0) {
+            console.log('🔄 Fetching fresh contact details with groups for contact:', contact.id);
+            const freshContact = await contactsApi.getContact(contact.id);
+
+            if (freshContact && freshContact.Groups) {
+              console.log('✅ Fresh contact loaded with groups:', freshContact.Groups);
+              setEditedContact(freshContact);
+            }
+          }
+        } catch (error) {
+          console.error('Error loading contact details:', error);
+          // Continue with the original contact data if fetch fails
+        }
+      }
+    };
+
+    loadContactDetails();
   }, [contact]);
 
   // Form validation
@@ -793,16 +814,16 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
               )}
 
               {/* Groups Summary */}
-              {editedContact.Groups && editedContact.Groups.length > 0 && (
+              {((editedContact.Groups && editedContact.Groups.length > 0) || (editedContact.groups && editedContact.groups.length > 0)) && (
                 <div className="bg-gray-50 rounded-lg p-4">
                   <div className="flex items-center justify-between mb-2">
                     <label className="text-sm font-medium text-gray-700 flex items-center">
                       <Users className="h-4 w-4 mr-2 text-indigo-500" />
-                      Groups ({editedContact.Groups.length})
+                      Groups ({(editedContact.Groups || editedContact.groups || []).length})
                     </label>
                   </div>
                   <div className="flex flex-wrap gap-1">
-                    {editedContact.Groups.slice(0, 3).map((group) => (
+                    {(editedContact.Groups || editedContact.groups || []).slice(0, 3).map((group) => (
                       <span
                         key={group.id}
                         className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800"
@@ -810,9 +831,9 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
                         {group.name}
                       </span>
                     ))}
-                    {editedContact.Groups.length > 3 && (
+                    {(editedContact.Groups || editedContact.groups || []).length > 3 && (
                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-                        +{editedContact.Groups.length - 3} more
+                        +{(editedContact.Groups || editedContact.groups || []).length - 3} more
                       </span>
                     )}
                   </div>
@@ -1379,12 +1400,20 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
               </div>
             )}
 
+            {/* Debug: Log group data */}
+            {console.log('🔍 ContactDetail Groups Debug:', {
+              'editedContact.Groups': editedContact.Groups,
+              'editedContact.groups': editedContact.groups,
+              'Groups length': editedContact.Groups?.length,
+              'groups length': editedContact.groups?.length
+            })}
+
             {/* Current Groups */}
-            {editedContact.Groups && editedContact.Groups.length > 0 ? (
+            {(editedContact.Groups && editedContact.Groups.length > 0) || (editedContact.groups && editedContact.groups.length > 0) ? (
               <div>
                 <h4 className="text-sm font-medium text-gray-900 mb-4">Current Groups</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {editedContact.Groups.map((group) => (
+                  {(editedContact.Groups || editedContact.groups || []).map((group) => (
                     <div
                       key={group.id}
                       className="bg-gradient-to-r from-indigo-50 to-indigo-100 border border-indigo-200 rounded-lg p-4 hover:shadow-md transition-shadow"
@@ -1510,7 +1539,7 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="text-center p-3 bg-indigo-50 rounded-lg">
                     <div className="text-2xl font-bold text-indigo-600">
-                      {editedContact.Groups?.length || 0}
+                      {(editedContact.Groups?.length || editedContact.groups?.length || 0)}
                     </div>
                     <div className="text-sm text-indigo-700">Groups</div>
                   </div>
