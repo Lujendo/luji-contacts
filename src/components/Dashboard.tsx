@@ -407,18 +407,18 @@ const Dashboard: React.FC = () => {
         />
       )}
 
-      {/* Main Content with Sidebar - Takes remaining space */}
-      <div className="flex flex-1 min-h-0 overflow-hidden">
-        {/* Fixed Navigation Sidebar */}
-        <FixedNavigation
-          user={user}
-          onLogout={handleLogout}
-          onOpenPanel={openPanel}
-          onToggleGroupsSidebar={handleGroupsSidebarToggle}
-          isGroupsSidebarExpanded={!isGroupsSidebarCollapsed}
-          selectedContactsCount={selectedContacts.length}
-        />
+      {/* Fixed Navigation Sidebar - Positioned absolutely */}
+      <FixedNavigation
+        user={user}
+        onLogout={handleLogout}
+        onOpenPanel={openPanel}
+        onToggleGroupsSidebar={handleGroupsSidebarToggle}
+        isGroupsSidebarExpanded={!isGroupsSidebarCollapsed}
+        selectedContactsCount={selectedContacts.length}
+      />
 
+      {/* Main Content with Groups Sidebar - Takes remaining space, offset by fixed nav */}
+      <div className="flex flex-1 min-h-0 overflow-hidden ml-16">
         {/* Groups Sidebar */}
         <GroupsSidebar
           groups={groups}
@@ -427,7 +427,7 @@ const Dashboard: React.FC = () => {
           onGroupClick={handleGroupHighlight}
           onGroupEdit={(group) => {
             setSelectedGroup(group);
-            setShowGroupEditForm(true);
+            setShowGroupContactsManager(true);
           }}
           onGroupDelete={handleGroupDelete}
           onAddNewGroup={() => setShowGroupForm(true)}
@@ -437,7 +437,7 @@ const Dashboard: React.FC = () => {
         />
 
         {/* Main Content Area */}
-        <div className="flex-1 overflow-hidden ml-16">
+        <div className="flex-1 overflow-hidden">
         {/* Main Contact List */}
         <div className="h-full bg-white">
           <div className="h-full flex flex-col">

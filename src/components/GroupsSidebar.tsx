@@ -38,14 +38,14 @@ const GroupsSidebar: React.FC<GroupsSidebarProps> = ({
     const timeDiff = now - (lastClickTime || 0);
 
     if (lastClickedGroup === group.id && timeDiff < DOUBLE_CLICK_DELAY) {
-      // Double click - open group management
+      // Double click - open group contacts manager (assignment modal)
       if (clickTimeout.current) {
         clearTimeout(clickTimeout.current);
         clickTimeout.current = null;
       }
       setLastClickedGroup(null);
       setLastClickTime(null);
-      onGroupEdit(group);
+      onGroupEdit(group); // This opens the group contacts manager
     } else {
       // Single click - filter by group
       setLastClickedGroup(group.id);
@@ -214,7 +214,7 @@ const GroupsSidebar: React.FC<GroupsSidebarProps> = ({
           {/* Footer */}
           <div className="p-3 border-t border-gray-200 bg-gray-50">
             <p className="text-xs text-gray-500 text-center">
-              Single click to filter • Double click to manage
+              Single click to filter • Double click to assign contacts
             </p>
           </div>
         </>
