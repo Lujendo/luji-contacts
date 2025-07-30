@@ -27,16 +27,28 @@ import BulkGroupAssign from './BulkGroupAssign';
 import BulkGroupRemove from './BulkGroupRemove';
 import GroupContactsManager from './GroupContactsManager';
 import MergeContactsModal from './MergeContactsModal';
-import DuplicateDetectionPanel from './DuplicateDetectionPanel';
-import ResizableRightPanel from './ResizableRightPanel';
+// import DuplicateDetectionPanel from './DuplicateDetectionPanel'; // Now using modal
+// import ResizableRightPanel from './ResizableRightPanel'; // Replaced with modals
 import ApplicationMenuBar from './ApplicationMenuBar';
 import ContactDetailPanel from './ContactDetailPanel';
 import GroupAssignModal from './GroupAssignModal';
 import GroupRemoveModal from './GroupRemoveModal';
 import Header from './Header';
 import Footer from './Footer';
-import AppearanceSettingsComponent from './AppearanceSettings';
 import { useAppearance } from '../contexts/AppearanceContext';
+
+// Modal imports
+import UserSettingsModal from './modals/UserSettingsModal';
+import GroupListModal from './modals/GroupListModal';
+import GroupFormModal from './modals/GroupFormModal';
+import GroupEditFormModal from './modals/GroupEditFormModal';
+import EmailFormModal from './modals/EmailFormModal';
+import EmailHistoryModal from './modals/EmailHistoryModal';
+import BulkGroupAssignModal from './modals/BulkGroupAssignModal';
+import BulkGroupRemoveModal from './modals/BulkGroupRemoveModal';
+import GroupContactsManagerModal from './modals/GroupContactsManagerModal';
+import DuplicateDetectionModal from './modals/DuplicateDetectionModal';
+import AppearanceSettingsModal from './modals/AppearanceSettingsModal';
 
 // Icon imports
 import {
@@ -494,129 +506,136 @@ const Dashboard: React.FC = () => {
         />
       )}
 
-      {/* Right Panel - Forms Only (No Contact Details) */}
-      <ResizableRightPanel isVisible={
-        showGroupList ||
-        showGroupForm || showGroupEditForm || showEmailForm ||
-        showEmailHistory || showUserSettings ||
-        showBulkGroupAssign || showBulkGroupRemove || showGroupContactsManager ||
-        showDuplicateDetection || showAppearanceSettings
-      }>
+      {/* Utility Modals - Now using beautiful modal dialogs instead of right panel */}
 
-          {showGroupList && (
-            <GroupList
-              groups={groups}
-              onClose={() => setShowGroupList(false)}
-              onGroupSelect={handleGroupSelect}
-              onGroupEdit={(group) => {
-                setSelectedGroup(group);
-                setShowGroupEditForm(true);
-                setShowGroupList(false);
-              }}
-            />
-          )}
+      {/* Group Management Modals */}
+      <GroupListModal
+        isOpen={showGroupList}
+        onClose={() => setShowGroupList(false)}
+        groups={groups}
+        onGroupSelect={handleGroupSelect}
+        onGroupEdit={(group) => {
+          setSelectedGroup(group);
+          setShowGroupEditForm(true);
+          setShowGroupList(false);
+        }}
+      />
 
-          {showGroupForm && (
-            <GroupForm
-              onClose={() => setShowGroupForm(false)}
-              onGroupCreated={handleGroupCreate}
-            />
-          )}
+      <GroupFormModal
+        isOpen={showGroupForm}
+        onClose={() => setShowGroupForm(false)}
+        onGroupCreated={handleGroupCreate}
+      />
 
-          {showGroupEditForm && selectedGroup && (
-            <GroupEditForm
-              group={selectedGroup}
-              onClose={() => setShowGroupEditForm(false)}
-              onGroupUpdated={(updatedGroup) => {
-                setGroups(prev => prev.map(g => g.id === updatedGroup.id ? updatedGroup : g));
-                setSelectedGroup(updatedGroup);
-              }}
-            />
-          )}
+      {selectedGroup && (
+        <GroupEditFormModal
+          isOpen={showGroupEditForm}
+          onClose={() => setShowGroupEditForm(false)}
+          group={selectedGroup}
+          onGroupUpdated={(updatedGroup) => {
+            setGroups(prev => prev.map(g => g.id === updatedGroup.id ? updatedGroup : g));
+            setSelectedGroup(updatedGroup);
+          }}
+        />
+      )}
 
-          {showEmailForm && (
-            <EmailForm
-              contacts={selectedContacts.length > 0
-                ? contacts.filter(c => selectedContacts.includes(c.id))
-                : filteredContacts
-              }
-              onClose={() => setShowEmailForm(false)}
-            />
-          )}
+      {/* Email Modals */}
+      <EmailFormModal
+        isOpen={showEmailForm}
+        onClose={() => setShowEmailForm(false)}
+        contacts={selectedContacts.length > 0
+          ? contacts.filter(c => selectedContacts.includes(c.id))
+          : filteredContacts
+        }
+        selectedContact={selectedContact}
+      />
 
-          {showEmailHistory && (
-            <EmailHistory
-              onClose={() => setShowEmailHistory(false)}
-            />
-          )}
+      <EmailHistoryModal
+        isOpen={showEmailHistory}
+        onClose={() => setShowEmailHistory(false)}
+      />
 
 
+      {/* User Settings Modal */}
+      <UserSettingsModal
+        isOpen={showUserSettings}
+        onClose={() => setShowUserSettings(false)}
+      />
 
-          {showUserSettings && (
-            <UserSettings
-              onClose={() => setShowUserSettings(false)}
-            />
-          )}
+      {/* Bulk Operations Modals */}
+      <BulkGroupAssignModal
+        isOpen={showBulkGroupAssign}
+        onClose={() => setShowBulkGroupAssign(false)}
+        contactIds={selectedContacts}
+        groups={groups}
+        onAssignmentComplete={() => {
+          // Refresh contacts to show updated group assignments
+          contactsApi.getContactsLegacy().then(setContacts);
+          setSelectedContacts([]);
+          setShowBulkGroupAssign(false);
+        }}
+      />
 
-          {showBulkGroupAssign && (
-            <BulkGroupAssign
-              contactIds={selectedContacts}
-              groups={groups}
-              onClose={() => setShowBulkGroupAssign(false)}
-              onAssignmentComplete={() => {
-                // Refresh contacts to show updated group assignments
-                contactsApi.getContactsLegacy().then(setContacts);
-                setSelectedContacts([]);
-              }}
-            />
-          )}
+      <BulkGroupRemoveModal
+        isOpen={showBulkGroupRemove}
+        onClose={() => setShowBulkGroupRemove(false)}
+        contactIds={selectedContacts}
+        groups={groups}
+        onRemovalComplete={() => {
+          // Refresh contacts to show updated group assignments
+          contactsApi.getContactsLegacy().then(setContacts);
+          setSelectedContacts([]);
+          setShowBulkGroupRemove(false);
+        }}
+      />
 
-          {showBulkGroupRemove && (
-            <BulkGroupRemove
-              contactIds={selectedContacts}
-              groups={groups}
-              onClose={() => setShowBulkGroupRemove(false)}
-              onRemovalComplete={() => {
-                // Refresh contacts to show updated group assignments
-                contactsApi.getContactsLegacy().then(setContacts);
-                setSelectedContacts([]);
-              }}
-            />
-          )}
+      {/* Group Contacts Manager Modal */}
+      <GroupContactsManagerModal
+        isOpen={showGroupContactsManager}
+        onClose={() => setShowGroupContactsManager(false)}
+        groups={groups}
+      />
 
-          {showGroupContactsManager && selectedGroup && (
-            <GroupContactsManager
-              group={selectedGroup}
-              contacts={contacts}
-              onClose={() => setShowGroupContactsManager(false)}
-              onGroupUpdated={(updatedGroup) => {
-                setGroups(prev => prev.map(g => g.id === updatedGroup.id ? updatedGroup : g));
-                setSelectedGroup(updatedGroup);
-              }}
-            />
-          )}
+      {/* Duplicate Detection Modal */}
+      <DuplicateDetectionModal
+        isOpen={showDuplicateDetection}
+        onClose={() => setShowDuplicateDetection(false)}
+        contacts={contacts}
+        onMergeContacts={(contactsToMerge) => {
+          setContactsToMerge(contactsToMerge);
+          setShowDuplicateDetection(false);
+          setShowMergeContacts(true);
+        }}
+      />
 
-          {showDuplicateDetection && (
-            <DuplicateDetectionPanel
-              contacts={contacts}
-              onMergeContacts={(contactsToMerge) => {
-                setContactsToMerge(contactsToMerge);
-                setShowDuplicateDetection(false);
-                setShowMergeContacts(true);
-              }}
-              onClose={() => setShowDuplicateDetection(false)}
-            />
-          )}
+      {/* Appearance Settings Modal */}
+      <AppearanceSettingsModal
+        isOpen={showAppearanceSettings}
+        onClose={() => setShowAppearanceSettings(false)}
+        onSettingsChange={updateAppearanceSettings}
+      />
 
-          {showAppearanceSettings && (
-            <AppearanceSettingsComponent
-              onClose={() => setShowAppearanceSettings(false)}
-              onSettingsChange={updateAppearanceSettings}
-            />
-          )}
-        </ResizableRightPanel>
+      {/* Import Modal */}
+      <ImportModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        onContactsImported={async (importedContacts) => {
+          // Refresh the entire contact list from server to avoid duplication issues
+          try {
+            // Small delay to ensure all imports are processed
+            await new Promise(resolve => setTimeout(resolve, 500));
+            const refreshedContacts = await contactsApi.getContactsLegacy();
+            setContacts(refreshedContacts);
+            console.log(`Successfully refreshed contact list after importing ${importedContacts.length} contacts`);
+          } catch (error) {
+            console.error('Error refreshing contacts after import:', error);
+            // Fallback to the previous approach if refresh fails
+            setContacts(prev => [...prev, ...importedContacts]);
+          }
+        }}
+      />
 
-      {/* Modals */}
+      {/* Other Modals */}
       {showGroupAssignModal && (
         <GroupAssignModal
           contactIds={selectedContacts}
