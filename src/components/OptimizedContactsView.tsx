@@ -19,6 +19,7 @@ interface OptimizedContactsViewProps {
   onAddToGroup?: (contact: Contact) => void;
   onViewDetails?: (contact: Contact) => void;
   searchQuery?: string;
+  groupId?: number;
 }
 
 const OptimizedContactsView: React.FC<OptimizedContactsViewProps> = ({
@@ -34,7 +35,8 @@ const OptimizedContactsView: React.FC<OptimizedContactsViewProps> = ({
   onSendEmail,
   onAddToGroup,
   onViewDetails,
-  searchQuery = ''
+  searchQuery = '',
+  groupId
 }) => {
   const [internalSearchQuery, setInternalSearchQuery] = useState('');
   const [sortField, setSortField] = useState('first_name');
@@ -426,6 +428,7 @@ const OptimizedContactsView: React.FC<OptimizedContactsViewProps> = ({
             containerHeight={containerHeight}
             enableCache={enableCache}
             showCacheStats={showCacheStats}
+            groupId={groupId}
             className="h-full"
           />
         ) : (
@@ -444,6 +447,7 @@ const OptimizedContactsView: React.FC<OptimizedContactsViewProps> = ({
             onSendEmail={onSendEmail}
             onAddToGroup={onAddToGroup}
             onViewDetails={onViewDetails}
+            groupId={groupId}
             className="h-full"
           />
         )}

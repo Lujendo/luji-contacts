@@ -15,12 +15,13 @@ export function createContactRoutes(db: DatabaseService, auth: AuthService, stor
   contacts.get('/', async (c) => {
     try {
       const user = getAuthenticatedUser(c);
-      const { search, sort, direction, limit, offset, page } = c.req.query();
+      const { search, sort, direction, limit, offset, page, group } = c.req.query();
 
       // Parse pagination parameters
       const parsedLimit = limit ? Math.min(parseInt(limit), 100) : 50; // Default 50, max 100
       const parsedOffset = offset ? parseInt(offset) : 0;
       const parsedPage = page ? parseInt(page) : 1;
+      const parsedGroupId = group ? parseInt(group) : undefined;
 
       // Calculate offset from page if provided
       const finalOffset = page ? (parsedPage - 1) * parsedLimit : parsedOffset;
@@ -31,7 +32,8 @@ export function createContactRoutes(db: DatabaseService, auth: AuthService, stor
         sort,
         direction,
         parsedLimit,
-        finalOffset
+        finalOffset,
+        parsedGroupId
       );
 
       // Optimize group loading - batch fetch all groups for all contacts at once

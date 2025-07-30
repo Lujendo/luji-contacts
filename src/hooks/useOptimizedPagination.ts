@@ -11,6 +11,7 @@ interface UseOptimizedPaginationOptions {
   enabled?: boolean;
   enableCache?: boolean;
   prefetchAdjacent?: boolean;
+  groupId?: number;
 }
 
 interface UseOptimizedPaginationResult {
@@ -45,7 +46,8 @@ export const useOptimizedPagination = (
     direction = '',
     enabled = true,
     enableCache = true,
-    prefetchAdjacent = true
+    prefetchAdjacent = true,
+    groupId
   } = options;
 
   // State management
@@ -71,10 +73,10 @@ export const useOptimizedPagination = (
   const hasNextPage = currentPage < totalPages;
   const hasPreviousPage = currentPage > 1;
 
-  // Reset to first page when search/sort changes
+  // Reset to first page when search/sort/group changes
   useEffect(() => {
     const hasSearchChanged = searchRef.current !== search;
-    
+
     if (hasSearchChanged) {
       searchRef.current = search;
       if (currentPage !== 1) {
@@ -84,7 +86,7 @@ export const useOptimizedPagination = (
         loadPage(1);
       }
     }
-  }, [search, sort, direction]);
+  }, [search, sort, direction, groupId]);
 
   // Load page data with caching and error handling
   const loadPage = useCallback(async (page: number, showLoading: boolean = true) => {
@@ -105,7 +107,8 @@ export const useOptimizedPagination = (
         limit: pageSize.toString(),
         search: search || undefined,
         sort: sort || undefined,
-        direction: direction || undefined
+        direction: direction || undefined,
+        group: groupId ? groupId.toString() : undefined
       };
 
       // Try cache first if enabled
@@ -155,7 +158,7 @@ export const useOptimizedPagination = (
         setLoading(false);
       }
     }
-  }, [pageSize, search, sort, direction, cache, currentPage]);
+  }, [pageSize, search, sort, direction, groupId, cache, currentPage]);
 
   // Prefetch adjacent pages for instant navigation
   const prefetchAdjacentPages = useCallback(async (centerPage: number) => {
@@ -187,7 +190,8 @@ export const useOptimizedPagination = (
           limit: pageSize.toString(),
           search: search || undefined,
           sort: sort || undefined,
-          direction: direction || undefined
+          direction: direction || undefined,
+          group: groupId ? groupId.toString() : undefined
         };
 
         // Only prefetch if not already cached
@@ -205,7 +209,7 @@ export const useOptimizedPagination = (
         }
       }
     }, 100);
-  }, [prefetchAdjacent, cache, totalPages, pageSize, search, sort, direction]);
+  }, [prefetchAdjacent, cache, totalPages, pageSize, search, sort, direction, groupId]);
 
   // Load contacts when page or dependencies change
   useEffect(() => {

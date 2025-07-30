@@ -18,6 +18,7 @@ interface InfiniteContactListProps {
   containerHeight?: number;
   enableCache?: boolean;
   showCacheStats?: boolean;
+  groupId?: number;
 }
 
 /**
@@ -38,7 +39,8 @@ const InfiniteContactList: React.FC<InfiniteContactListProps> = ({
   className = '',
   containerHeight = 600,
   enableCache = true,
-  showCacheStats = false
+  showCacheStats = false,
+  groupId
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -58,7 +60,8 @@ const InfiniteContactList: React.FC<InfiniteContactListProps> = ({
     sort,
     direction,
     enabled: true,
-    enableCache
+    enableCache,
+    groupId
   });
 
   // Intersection observer for infinite loading
@@ -71,10 +74,10 @@ const InfiniteContactList: React.FC<InfiniteContactListProps> = ({
     }, [hasMore, loading, loadMore, contacts.length])
   );
 
-  // Refresh when search/sort changes
+  // Refresh when search/sort/group changes
   useEffect(() => {
     refresh();
-  }, [search, sort, direction, refresh]);
+  }, [search, sort, direction, groupId, refresh]);
 
   // Sortable column header component
   const SortableHeader: React.FC<{

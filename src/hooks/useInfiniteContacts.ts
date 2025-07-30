@@ -10,6 +10,7 @@ interface UseInfiniteContactsOptions {
   direction?: string;
   enabled?: boolean;
   enableCache?: boolean;
+  groupId?: number;
 }
 
 interface UseInfiniteContactsResult {
@@ -33,7 +34,8 @@ export const useInfiniteContacts = (
     sort = '',
     direction = '',
     enabled = true,
-    enableCache = true
+    enableCache = true,
+    groupId
   } = options;
 
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -53,7 +55,7 @@ export const useInfiniteContacts = (
     return enableCache ? createContactsCache() : null;
   }, [enableCache]);
 
-  // Reset when search changes
+  // Reset when search or group changes
   useEffect(() => {
     const hasSearchChanged = searchRef.current !== search;
 
@@ -67,7 +69,7 @@ export const useInfiniteContacts = (
         loadContacts(1, true);
       }
     }
-  }, [search, sort, direction, enabled]);
+  }, [search, sort, direction, enabled, groupId]);
 
   // Initial load
   useEffect(() => {
@@ -92,7 +94,8 @@ export const useInfiniteContacts = (
         limit: limit.toString(),
         search: search || undefined,
         sort: sort || undefined,
-        direction: direction || undefined
+        direction: direction || undefined,
+        group: groupId ? groupId.toString() : undefined
       };
 
       // Try cache first if enabled
@@ -141,7 +144,7 @@ export const useInfiniteContacts = (
       setLoading(false);
       isLoadingRef.current = false;
     }
-  }, [limit, search, sort, direction, cache]);
+  }, [limit, search, sort, direction, groupId, cache]);
 
   const loadMore = useCallback(async () => {
     if (!hasMore || isLoadingRef.current) return;

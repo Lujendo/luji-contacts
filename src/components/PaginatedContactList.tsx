@@ -21,6 +21,7 @@ interface PaginatedContactListProps {
   onSendEmail?: (contact: Contact) => void;
   onAddToGroup?: (contact: Contact) => void;
   onViewDetails?: (contact: Contact) => void;
+  groupId?: number;
 }
 
 const PaginatedContactList: React.FC<PaginatedContactListProps> = ({
@@ -38,7 +39,8 @@ const PaginatedContactList: React.FC<PaginatedContactListProps> = ({
   onEditContact,
   onSendEmail,
   onAddToGroup,
-  onViewDetails
+  onViewDetails,
+  groupId
 }) => {
   // Page size options
   const pageSizeOptions = [10, 25, 50, 100];
@@ -69,7 +71,8 @@ const PaginatedContactList: React.FC<PaginatedContactListProps> = ({
     direction,
     enabled: true,
     enableCache,
-    prefetchAdjacent: true
+    prefetchAdjacent: true,
+    groupId
   });
 
   // Calculate display info

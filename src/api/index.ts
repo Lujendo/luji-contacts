@@ -149,6 +149,7 @@ export const contactsApi = {
     page?: string;
     limit?: string;
     offset?: string;
+    group?: string;
   }): Promise<ApiResponse<Contact[]>> {
     try {
       const response = await api.get<ApiResponse<Contact[]>>('/contacts', { params });

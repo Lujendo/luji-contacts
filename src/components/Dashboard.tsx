@@ -82,7 +82,6 @@ interface DashboardState {
   // Data
   contacts: Contact[];
   groups: Group[];
-  filteredContacts: Contact[];
   
   // UI state
   selectedContact: Contact | null;
@@ -125,7 +124,6 @@ const Dashboard: React.FC = () => {
   // Data states
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
-  const [filteredContacts, setFilteredContacts] = useState<Contact[]>([]);
   
   // Selection and UI states
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
@@ -175,84 +173,8 @@ const Dashboard: React.FC = () => {
     loadInitialData();
   }, [user]);
 
-  // Filter and sort contacts
-  useEffect(() => {
-    let filtered = [...contacts];
-
-    // Apply group filter first
-    if (activeGroup) {
-      // Filter contacts that belong to the active group
-      filtered = filtered.filter(contact =>
-        contact.groups?.some(group => group.id === activeGroup.id) || false
-      );
-    }
-
-    // Apply comprehensive search filter across ALL fields
-    if (searchTerm.trim()) {
-      const searchLower = searchTerm.toLowerCase();
-      filtered = filtered.filter(contact => {
-        // Helper function to safely check if a field contains the search term
-        const contains = (field?: string) => field?.toLowerCase().includes(searchLower) || false;
-
-        return (
-          // Core identity fields
-          contains(contact.first_name) ||
-          contains(contact.last_name) ||
-          contains(contact.nickname) ||
-          contains(`${contact.first_name || ''} ${contact.last_name || ''}`.trim()) ||
-
-          // Contact information
-          contains(contact.email) ||
-          contact.phone?.includes(searchTerm) ||
-
-          // Professional information
-          contains(contact.company) ||
-          contains(contact.job_title) ||
-          contains(contact.role) ||
-
-          // Address fields
-          contains(contact.address_street) ||
-          contains(contact.address_city) ||
-          contains(contact.address_state) ||
-          contains(contact.address_zip) ||
-          contains(contact.address_country) ||
-
-          // Social media and web presence
-          contains(contact.website) ||
-          contains(contact.facebook) ||
-          contains(contact.twitter) ||
-          contains(contact.linkedin) ||
-          contains(contact.instagram) ||
-          contains(contact.youtube) ||
-          contains(contact.tiktok) ||
-          contains(contact.snapchat) ||
-          contains(contact.discord) ||
-          contains(contact.spotify) ||
-          contains(contact.apple_music) ||
-          contains(contact.github) ||
-          contains(contact.behance) ||
-          contains(contact.dribbble) ||
-
-          // Notes field (most important for comprehensive search)
-          contains(contact.notes) ||
-
-          // Birthday field
-          contains(contact.birthday)
-        );
-      });
-    }
-
-    // Apply sorting
-    filtered.sort((a, b) => {
-      const aValue = a[sortConfig.field as keyof Contact] || '';
-      const bValue = b[sortConfig.field as keyof Contact] || '';
-      
-      const comparison = String(aValue).localeCompare(String(bValue));
-      return sortConfig.direction === 'asc' ? comparison : -comparison;
-    });
-
-    setFilteredContacts(filtered);
-  }, [contacts, searchTerm, sortConfig, activeGroup]);
+  // Note: Filtering is now handled server-side by the OptimizedContactsView component
+  // This local filtering logic has been removed in favor of server-side filtering for better performance
 
   // Event handlers
   const handleContactSelect: ContactEventHandler = useCallback((contact: Contact) => {
@@ -355,8 +277,8 @@ const Dashboard: React.FC = () => {
   }, []);
 
   const handleBulkSelection = useCallback((selected: boolean): void => {
-    setSelectedContacts(selected ? filteredContacts.map(c => c.id) : []);
-  }, [filteredContacts]);
+    setSelectedContacts(selected ? contacts.map(c => c.id) : []);
+  }, [contacts]);
 
   // Panel management functions
   const closeAllPanels = useCallback((): void => {
@@ -504,6 +426,7 @@ const Dashboard: React.FC = () => {
                 enableCache={true}
                 showCacheStats={process.env.NODE_ENV === 'development'}
                 searchQuery={searchTerm}
+                groupId={activeGroup?.id}
                 onEditContact={(contact) => {
                   setSelectedContact(contact);
                   setShowContactForm(true);
@@ -585,7 +508,7 @@ const Dashboard: React.FC = () => {
         onClose={() => setShowEmailForm(false)}
         contacts={selectedContacts.length > 0
           ? contacts.filter(c => selectedContacts.includes(c.id))
-          : filteredContacts
+          : contacts
         }
         selectedContact={selectedContact}
       />

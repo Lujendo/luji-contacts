@@ -294,13 +294,36 @@ export class DatabaseService {
     sort?: string,
     direction?: string,
     limit?: number,
-    offset?: number
+    offset?: number,
+    groupId?: number
   ): Promise<{ contacts: Contact[], total: number }> {
-    // Build base query for counting
-    let countQuery = 'SELECT COUNT(*) as total FROM contacts WHERE user_id = ?';
-    let query = 'SELECT * FROM contacts WHERE user_id = ?';
+    // Build base query for counting and selecting
+    let countQuery: string;
+    let query: string;
     const params: any[] = [userId];
     const countParams: any[] = [userId];
+
+    // If filtering by group, use JOIN with group_contacts table
+    if (groupId !== undefined && groupId !== null) {
+      countQuery = `
+        SELECT COUNT(DISTINCT c.id) as total
+        FROM contacts c
+        INNER JOIN group_contacts gc ON c.id = gc.contact_id
+        WHERE c.user_id = ? AND gc.group_id = ?
+      `;
+      query = `
+        SELECT DISTINCT c.*
+        FROM contacts c
+        INNER JOIN group_contacts gc ON c.id = gc.contact_id
+        WHERE c.user_id = ? AND gc.group_id = ?
+      `;
+      params.push(groupId);
+      countParams.push(groupId);
+    } else {
+      // Standard query without group filtering
+      countQuery = 'SELECT COUNT(*) as total FROM contacts WHERE user_id = ?';
+      query = 'SELECT * FROM contacts WHERE user_id = ?';
+    }
 
     // Add comprehensive search conditions across ALL contact fields
     if (search) {

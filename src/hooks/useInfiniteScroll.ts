@@ -9,6 +9,7 @@ interface UseInfiniteScrollOptions {
   direction?: string;
   pageSize?: number;
   enabled?: boolean;
+  groupId?: number;
 }
 
 interface UseInfiniteScrollResult {
@@ -27,7 +28,8 @@ export const useInfiniteScroll = (options: UseInfiniteScrollOptions): UseInfinit
     sort = 'first_name',
     direction = 'asc',
     pageSize = 50,
-    enabled = true
+    enabled = true,
+    groupId
   } = options;
 
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -42,6 +44,7 @@ export const useInfiniteScroll = (options: UseInfiniteScrollOptions): UseInfinit
   const searchRef = useRef(search);
   const sortRef = useRef(sort);
   const directionRef = useRef(direction);
+  const groupIdRef = useRef(groupId);
 
   // Load contacts function
   const loadContacts = useCallback(async (page: number, reset: boolean = false) => {
@@ -57,7 +60,8 @@ export const useInfiniteScroll = (options: UseInfiniteScrollOptions): UseInfinit
         limit: pageSize.toString(),
         search: search || undefined,
         sort: sort || undefined,
-        direction: direction || undefined
+        direction: direction || undefined,
+        group: groupId ? groupId.toString() : undefined
       };
 
       // Check cache first (only for first page to avoid complexity)
@@ -104,7 +108,7 @@ export const useInfiniteScroll = (options: UseInfiniteScrollOptions): UseInfinit
       setLoading(false);
       isLoadingRef.current = false;
     }
-  }, [search, sort, direction, pageSize, enabled]);
+  }, [search, sort, direction, pageSize, enabled, groupId]);
 
   // Load more function
   const loadMore = useCallback(() => {
@@ -120,27 +124,29 @@ export const useInfiniteScroll = (options: UseInfiniteScrollOptions): UseInfinit
     loadContacts(1, true);
   }, [loadContacts]);
 
-  // Reset when search/sort changes
+  // Reset when search/sort/group changes
   useEffect(() => {
     const searchChanged = searchRef.current !== search;
     const sortChanged = sortRef.current !== sort;
     const directionChanged = directionRef.current !== direction;
+    const groupChanged = groupIdRef.current !== groupId;
 
-    if (searchChanged || sortChanged || directionChanged) {
+    if (searchChanged || sortChanged || directionChanged || groupChanged) {
       searchRef.current = search;
       sortRef.current = sort;
       directionRef.current = direction;
+      groupIdRef.current = groupId;
 
       setCurrentPage(1);
       setHasMore(true);
       setContacts([]);
       contactsCache.clear(); // Clear cache when parameters change
-      
+
       if (enabled) {
         loadContacts(1, true);
       }
     }
-  }, [search, sort, direction, enabled, loadContacts]);
+  }, [search, sort, direction, groupId, enabled, loadContacts]);
 
   // Initial load
   useEffect(() => {

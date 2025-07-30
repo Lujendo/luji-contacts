@@ -10,6 +10,7 @@ interface UseSafeInfiniteContactsOptions {
   direction?: string;
   enabled?: boolean;
   enableCache?: boolean;
+  groupId?: number;
 }
 
 interface UseSafeInfiniteContactsResult {
@@ -40,7 +41,8 @@ export const useSafeInfiniteContacts = (
     sort = '',
     direction = '',
     enabled = true,
-    enableCache = true
+    enableCache = true,
+    groupId
   } = options;
 
   // State management
@@ -61,22 +63,22 @@ export const useSafeInfiniteContacts = (
     return enableCache ? createContactsCache() : null;
   }, [enableCache]);
 
-  // Reset when search/sort changes
+  // Reset when search/sort/group changes
   useEffect(() => {
     const hasSearchChanged = searchRef.current !== search;
-    
+
     if (hasSearchChanged) {
       searchRef.current = search;
       currentPageRef.current = 1;
       setContacts([]);
       setHasMore(true);
       setError(null);
-      
+
       if (enabled) {
         loadContacts(1, true);
       }
     }
-  }, [search, sort, direction, enabled]);
+  }, [search, sort, direction, enabled, groupId]);
 
   // Initial load
   useEffect(() => {
@@ -101,7 +103,8 @@ export const useSafeInfiniteContacts = (
         limit: limit.toString(),
         search: search || undefined,
         sort: sort || undefined,
-        direction: direction || undefined
+        direction: direction || undefined,
+        group: groupId ? groupId.toString() : undefined
       };
 
       // Try cache first if enabled
@@ -150,7 +153,7 @@ export const useSafeInfiniteContacts = (
       setLoading(false);
       isLoadingRef.current = false;
     }
-  }, [limit, search, sort, direction, cache]);
+  }, [limit, search, sort, direction, groupId, cache]);
 
   const loadMore = useCallback(async () => {
     if (!hasMore || isLoadingRef.current) {
