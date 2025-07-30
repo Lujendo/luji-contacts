@@ -49,19 +49,19 @@
 }
 
 .dark .text-gray-600 {
-  color: #9ca3af !important;
+  color: #d1d5db !important;
 }
 
 .dark .text-gray-500 {
-  color: #6b7280 !important;
+  color: #e5e7eb !important;
 }
 
 .dark .text-gray-400 {
-  color: #9ca3af !important;
+  color: #f3f4f6 !important;
 }
 
 .dark .text-gray-300 {
-  color: #d1d5db !important;
+  color: #f9fafb !important;
 }
 
 /* Additional text colors for dark mode */
@@ -95,19 +95,19 @@
 }
 
 .dark p {
-  color: #d1d5db !important;
+  color: #e5e7eb !important;
 }
 
 .dark label {
-  color: #f3f4f6 !important;
+  color: #f9fafb !important;
 }
 
 .dark span {
-  color: #d1d5db !important;
+  color: #e5e7eb !important;
 }
 
 .dark div {
-  color: #d1d5db;
+  color: #e5e7eb;
 }
 
 /* Form elements in dark mode */
@@ -269,7 +269,7 @@
 
 .dark body,
 .dark .main-content {
-  color: #d1d5db !important;
+  color: #e5e7eb !important;
 }
 
 /* IMPORTANT: Dark text on light backgrounds in dark mode */
@@ -380,6 +380,19 @@
 .dark .bg-blue-50 *,
 .dark .bg-blue-100 * {
   color: #1e40af !important;
+}
+
+/* Specific fix for contact name display in edit modal */
+.dark .bg-blue-50 .text-blue-900 {
+  color: #1e3a8a !important;
+}
+
+.dark .bg-blue-50 .text-blue-800 {
+  color: #1e40af !important;
+}
+
+.dark .bg-blue-50 .text-blue-600 {
+  color: #2563eb !important;
 }
 
 .dark .bg-green-50 *,
