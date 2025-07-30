@@ -133,25 +133,10 @@ const GroupForm: React.FC<GroupFormProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex justify-center items-center z-50">
-      <div className="relative bg-white rounded-lg shadow-xl p-6 w-96 max-w-md">
-        {/* Close button */}
-        <button
-          onClick={handleClose}
-          disabled={submitting}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 focus:outline-none disabled:cursor-not-allowed"
-          aria-label="Close"
-        >
-          <X size={20} />
-        </button>
+    <div className="p-6">
+      {/* Close button - removed since Modal handles this */}
 
-        {/* Header */}
-        <div className="mb-6">
-          <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-            <Users className="h-6 w-6 mr-2 text-indigo-600" />
-            Add New Group
-          </h2>
-        </div>
+
 
         {/* Error message */}
         {error && (
@@ -248,7 +233,6 @@ const GroupForm: React.FC<GroupFormProps> = ({
             </button>
           </div>
         </form>
-      </div>
     </div>
   );
 };

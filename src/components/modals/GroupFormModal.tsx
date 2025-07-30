@@ -19,7 +19,7 @@ const GroupFormModal: React.FC<GroupFormModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title="Create New Group"
-      size="md"
+      size="lg"
     >
       <GroupForm
         onClose={onClose}
