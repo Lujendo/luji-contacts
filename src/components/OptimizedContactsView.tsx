@@ -2,7 +2,7 @@ import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import { Contact } from '../types';
 import { Search, Filter, SortAsc, SortDesc, X, Loader2, Zap } from 'lucide-react';
 import InfiniteContactList from './InfiniteContactList';
-import SimpleContactList from './SimpleContactList';
+import PaginatedContactList from './PaginatedContactList';
 import { useDebounce } from '../hooks/useDebounce';
 
 interface OptimizedContactsViewProps {
@@ -34,6 +34,14 @@ const OptimizedContactsView: React.FC<OptimizedContactsViewProps> = ({
   const [isSearching, setIsSearching] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [isInfiniteScrollEnabled, setIsInfiniteScrollEnabled] = useState(() => {
+    // Try to get user preference from localStorage, fallback to prop
+    const saved = localStorage.getItem('contactsViewMode');
+    if (saved !== null) {
+      return saved === 'infinite';
+    }
+    return enableInfiniteScrolling;
+  });
   const containerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -310,21 +318,28 @@ const OptimizedContactsView: React.FC<OptimizedContactsViewProps> = ({
             <Filter className="w-5 h-5" />
           </button>
 
-          {/* Infinite Scrolling Toggle */}
-          <button
-            onClick={() => {
-              // This would need to be passed as a prop or managed at a higher level
-              console.log('Toggle infinite scrolling:', !enableInfiniteScrolling);
-            }}
-            className={`p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              enableInfiniteScrolling
-                ? 'bg-green-50 border-green-300 text-green-600'
-                : 'border-gray-300 hover:bg-gray-50 text-gray-600'
-            }`}
-            title={enableInfiniteScrolling ? 'Infinite Scrolling Enabled' : 'Simple List Mode'}
-          >
-            <Zap className="w-5 h-5" />
-          </button>
+          {/* View Mode Toggle */}
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => {
+                const newMode = !isInfiniteScrollEnabled;
+                setIsInfiniteScrollEnabled(newMode);
+                // Save user preference
+                localStorage.setItem('contactsViewMode', newMode ? 'infinite' : 'pagination');
+              }}
+              className={`flex items-center space-x-2 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
+                isInfiniteScrollEnabled
+                  ? 'bg-green-50 border-green-300 text-green-600 hover:bg-green-100'
+                  : 'bg-blue-50 border-blue-300 text-blue-600 hover:bg-blue-100'
+              }`}
+              title={isInfiniteScrollEnabled ? 'Infinite Scrolling Enabled - Click for Pagination' : 'Pagination Mode - Click for Infinite Scrolling'}
+            >
+              <Zap className={`w-4 h-4 ${isInfiniteScrollEnabled ? '' : 'opacity-50'}`} />
+              <span className="text-xs font-medium">
+                {isInfiniteScrollEnabled ? 'Infinite' : 'Pagination'}
+              </span>
+            </button>
+          </div>
 
           {/* Bulk Selection */}
           {onBulkSelection && (
@@ -386,7 +401,7 @@ const OptimizedContactsView: React.FC<OptimizedContactsViewProps> = ({
 
       {/* Contact List with Infinite Scrolling Toggle */}
       <div className="flex-1 overflow-hidden">
-        {enableInfiniteScrolling ? (
+        {isInfiniteScrollEnabled ? (
           <InfiniteContactList
             search={debouncedSearch}
             sort={sortField}
@@ -401,7 +416,7 @@ const OptimizedContactsView: React.FC<OptimizedContactsViewProps> = ({
             className="h-full"
           />
         ) : (
-          <SimpleContactList
+          <PaginatedContactList
             search={debouncedSearch}
             sort={sortField}
             direction={sortDirection}
