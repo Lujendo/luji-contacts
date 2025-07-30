@@ -147,16 +147,59 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     let filtered = [...contacts];
 
-    // Apply search filter
+    // Apply comprehensive search filter across ALL fields
     if (searchTerm.trim()) {
       const searchLower = searchTerm.toLowerCase();
-      filtered = filtered.filter(contact => 
-        contact.first_name?.toLowerCase().includes(searchLower) ||
-        contact.last_name?.toLowerCase().includes(searchLower) ||
-        contact.email?.toLowerCase().includes(searchLower) ||
-        contact.company?.toLowerCase().includes(searchLower) ||
-        contact.phone?.includes(searchTerm)
-      );
+      filtered = filtered.filter(contact => {
+        // Helper function to safely check if a field contains the search term
+        const contains = (field?: string) => field?.toLowerCase().includes(searchLower) || false;
+
+        return (
+          // Core identity fields
+          contains(contact.first_name) ||
+          contains(contact.last_name) ||
+          contains(contact.nickname) ||
+          contains(`${contact.first_name || ''} ${contact.last_name || ''}`.trim()) ||
+
+          // Contact information
+          contains(contact.email) ||
+          contact.phone?.includes(searchTerm) ||
+
+          // Professional information
+          contains(contact.company) ||
+          contains(contact.job_title) ||
+          contains(contact.role) ||
+
+          // Address fields
+          contains(contact.address_street) ||
+          contains(contact.address_city) ||
+          contains(contact.address_state) ||
+          contains(contact.address_zip) ||
+          contains(contact.address_country) ||
+
+          // Social media and web presence
+          contains(contact.website) ||
+          contains(contact.facebook) ||
+          contains(contact.twitter) ||
+          contains(contact.linkedin) ||
+          contains(contact.instagram) ||
+          contains(contact.youtube) ||
+          contains(contact.tiktok) ||
+          contains(contact.snapchat) ||
+          contains(contact.discord) ||
+          contains(contact.spotify) ||
+          contains(contact.apple_music) ||
+          contains(contact.github) ||
+          contains(contact.behance) ||
+          contains(contact.dribbble) ||
+
+          // Notes field (most important for comprehensive search)
+          contains(contact.notes) ||
+
+          // Birthday field
+          contains(contact.birthday)
+        );
+      });
     }
 
     // Apply sorting

@@ -302,45 +302,99 @@ export class DatabaseService {
     const params: any[] = [userId];
     const countParams: any[] = [userId];
 
-    // Add search conditions with optimized LIKE queries
+    // Add comprehensive search conditions across ALL contact fields
     if (search) {
       const searchTerm = search.trim();
       console.log('🔍 Database Search - Term:', searchTerm, 'Length:', searchTerm.length);
 
       if (searchTerm.length > 0) {
-        // Use more efficient search with proper indexing
+        // Comprehensive search across ALL text fields for maximum discoverability
         const searchCondition = ` AND (
+          -- Core identity fields
           first_name LIKE ? OR last_name LIKE ? OR nickname LIKE ? OR
           (first_name || ' ' || last_name) LIKE ? OR
-          email LIKE ? OR phone LIKE ? OR company LIKE ? OR
-          job_title LIKE ? OR notes LIKE ?
+
+          -- Contact information
+          email LIKE ? OR phone LIKE ? OR
+
+          -- Professional information
+          company LIKE ? OR job_title LIKE ? OR role LIKE ? OR
+
+          -- Address fields (complete address search)
+          address_street LIKE ? OR address_city LIKE ? OR
+          address_state LIKE ? OR address_zip LIKE ? OR address_country LIKE ? OR
+
+          -- Social media and web presence
+          website LIKE ? OR facebook LIKE ? OR twitter LIKE ? OR
+          linkedin LIKE ? OR instagram LIKE ? OR youtube LIKE ? OR
+          tiktok LIKE ? OR snapchat LIKE ? OR discord LIKE ? OR
+          spotify LIKE ? OR apple_music LIKE ? OR github LIKE ? OR
+          behance LIKE ? OR dribbble LIKE ? OR
+
+          -- Notes field (most important for comprehensive search)
+          notes LIKE ? OR
+
+          -- Birthday (for date-based searches)
+          birthday LIKE ?
         )`;
         query += searchCondition;
         countQuery += searchCondition;
 
-        // Optimize search parameters
-        // Use contains search for names to find partial matches (e.g., "Andrea" finds "John Andrea")
-        // Use prefix search for emails for better performance on indexed fields
-        const prefixSearch = `${searchTerm}%`;
-        const containsSearch = `%${searchTerm}%`;
+        // Optimize search parameters based on field type
+        const containsSearch = `%${searchTerm}%`;  // Most fields use contains search
+        const prefixSearch = `${searchTerm}%`;     // Email uses prefix for performance
 
         const searchParams = [
-          containsSearch,   // first_name contains (find Andrea anywhere in first name)
-          containsSearch,   // last_name contains (find Andrea anywhere in last name)
-          containsSearch,   // nickname contains (find Andrea anywhere in nickname)
-          containsSearch,   // full name contains
-          prefixSearch,     // email prefix (keep prefix for email efficiency)
-          containsSearch,   // phone contains
-          containsSearch,   // company contains (changed to find partial company names)
-          containsSearch,   // job_title contains (changed to find partial job titles)
-          containsSearch    // notes contains
+          // Core identity fields (contains search for partial name matching)
+          containsSearch,   // first_name
+          containsSearch,   // last_name
+          containsSearch,   // nickname
+          containsSearch,   // full name concatenation
+
+          // Contact information
+          prefixSearch,     // email (prefix for better performance on indexed field)
+          containsSearch,   // phone
+
+          // Professional information
+          containsSearch,   // company
+          containsSearch,   // job_title
+          containsSearch,   // role
+
+          // Address fields (all use contains for partial matching)
+          containsSearch,   // address_street
+          containsSearch,   // address_city
+          containsSearch,   // address_state
+          containsSearch,   // address_zip
+          containsSearch,   // address_country
+
+          // Social media and web presence (all use contains)
+          containsSearch,   // website
+          containsSearch,   // facebook
+          containsSearch,   // twitter
+          containsSearch,   // linkedin
+          containsSearch,   // instagram
+          containsSearch,   // youtube
+          containsSearch,   // tiktok
+          containsSearch,   // snapchat
+          containsSearch,   // discord
+          containsSearch,   // spotify
+          containsSearch,   // apple_music
+          containsSearch,   // github
+          containsSearch,   // behance
+          containsSearch,   // dribbble
+
+          // Notes field (most important for comprehensive search)
+          containsSearch,   // notes
+
+          // Birthday (for date searches like "1990" or "January")
+          containsSearch    // birthday
         ];
 
         params.push(...searchParams);
         countParams.push(...searchParams);
 
-        console.log('🔍 Database Search - Final query:', query);
-        console.log('🔍 Database Search - Params count:', searchParams.length);
+        console.log('🔍 Database Search - Comprehensive search across', searchParams.length, 'fields');
+        console.log('🔍 Database Search - Term:', searchTerm);
 
       }
     }
