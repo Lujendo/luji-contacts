@@ -57,6 +57,9 @@ export const useSafeInfiniteContacts = (
   const currentPageRef = useRef(1);
   const isLoadingRef = useRef(false);
   const searchRef = useRef(search);
+  const sortRef = useRef(sort);
+  const directionRef = useRef(direction);
+  const groupIdRef = useRef(groupId);
 
   // Create cache instance using factory (no global singleton)
   const cache = useMemo(() => {
@@ -66,9 +69,26 @@ export const useSafeInfiniteContacts = (
   // Reset when search/sort/group changes
   useEffect(() => {
     const hasSearchChanged = searchRef.current !== search;
+    const hasSortChanged = sortRef.current !== sort;
+    const hasDirectionChanged = directionRef.current !== direction;
+    const hasGroupChanged = groupIdRef.current !== groupId;
+    const hasParamsChanged = hasSearchChanged || hasSortChanged || hasDirectionChanged || hasGroupChanged;
 
-    if (hasSearchChanged) {
+    if (hasParamsChanged) {
+      console.log('Safe hook: Parameters changed, reloading contacts...', {
+        search: `${searchRef.current} -> ${search}`,
+        sort: `${sortRef.current} -> ${sort}`,
+        direction: `${directionRef.current} -> ${direction}`,
+        groupId: `${groupIdRef.current} -> ${groupId}`
+      });
+
+      // Update refs
       searchRef.current = search;
+      sortRef.current = sort;
+      directionRef.current = direction;
+      groupIdRef.current = groupId;
+
+      // Reset state
       currentPageRef.current = 1;
       setContacts([]);
       setHasMore(true);
@@ -106,6 +126,8 @@ export const useSafeInfiniteContacts = (
         direction: direction || undefined,
         group: groupId ? groupId.toString() : undefined
       };
+
+      console.log('Safe hook API call with params:', queryParams);
 
       // Try cache first if enabled
       let response: ApiResponse<Contact[]> | null = null;
