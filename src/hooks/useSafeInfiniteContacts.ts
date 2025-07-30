@@ -3,7 +3,7 @@ import { contactsApi } from '../api';
 import { Contact, PaginationInfo, ApiResponse } from '../types';
 import { createContactsCache } from '../utils/simpleCache';
 
-interface UseInfiniteContactsOptions {
+interface UseSafeInfiniteContactsOptions {
   limit?: number;
   search?: string;
   sort?: string;
@@ -12,7 +12,7 @@ interface UseInfiniteContactsOptions {
   enableCache?: boolean;
 }
 
-interface UseInfiniteContactsResult {
+interface UseSafeInfiniteContactsResult {
   contacts: Contact[];
   loading: boolean;
   error: string | null;
@@ -24,9 +24,16 @@ interface UseInfiniteContactsResult {
   cacheStats: () => any;
 }
 
-export const useInfiniteContacts = (
-  options: UseInfiniteContactsOptions = {}
-): UseInfiniteContactsResult => {
+/**
+ * Safe infinite contacts hook with optional caching
+ * - No circular dependencies
+ * - Lazy cache initialization
+ * - Fail-safe error handling
+ * - Clean separation of concerns
+ */
+export const useSafeInfiniteContacts = (
+  options: UseSafeInfiniteContactsOptions = {}
+): UseSafeInfiniteContactsResult => {
   const {
     limit = 50,
     search = '',
@@ -36,6 +43,7 @@ export const useInfiniteContacts = (
     enableCache = true
   } = options;
 
+  // State management
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,7 +51,7 @@ export const useInfiniteContacts = (
   const [total, setTotal] = useState(0);
   const [hasMore, setHasMore] = useState(true);
 
-  // Track current page and prevent duplicate requests
+  // Refs for tracking state
   const currentPageRef = useRef(1);
   const isLoadingRef = useRef(false);
   const searchRef = useRef(search);
@@ -53,16 +61,17 @@ export const useInfiniteContacts = (
     return enableCache ? createContactsCache() : null;
   }, [enableCache]);
 
-  // Reset when search changes
+  // Reset when search/sort changes
   useEffect(() => {
     const hasSearchChanged = searchRef.current !== search;
-
+    
     if (hasSearchChanged) {
       searchRef.current = search;
       currentPageRef.current = 1;
       setContacts([]);
       setHasMore(true);
       setError(null);
+      
       if (enabled) {
         loadContacts(1, true);
       }
@@ -97,7 +106,7 @@ export const useInfiniteContacts = (
 
       // Try cache first if enabled
       let response: ApiResponse<Contact[]> | null = null;
-
+      
       if (cache && !reset) {
         response = cache.get(queryParams);
         if (response) {
@@ -109,7 +118,7 @@ export const useInfiniteContacts = (
       if (!response) {
         console.log('Fetching from API for page', page);
         response = await contactsApi.getContacts(queryParams);
-
+        
         // Cache the response if cache is enabled
         if (cache && response.success) {
           cache.set(queryParams, response);
@@ -124,7 +133,7 @@ export const useInfiniteContacts = (
           const currentContacts = Array.isArray(prev) ? prev : [];
           return reset ? newContacts : [...currentContacts, ...newContacts];
         });
-
+        
         setPagination(paginationInfo || null);
         setTotal(response.total || 0);
         setHasMore(paginationInfo?.hasNext || false);
@@ -144,7 +153,9 @@ export const useInfiniteContacts = (
   }, [limit, search, sort, direction, cache]);
 
   const loadMore = useCallback(async () => {
-    if (!hasMore || isLoadingRef.current) return;
+    if (!hasMore || isLoadingRef.current) {
+      return;
+    }
     await loadContacts(currentPageRef.current + 1, false);
   }, [hasMore, loadContacts]);
 
@@ -153,7 +164,7 @@ export const useInfiniteContacts = (
     if (cache) {
       cache.clear();
     }
-
+    
     currentPageRef.current = 1;
     setHasMore(true);
     await loadContacts(1, true);
@@ -175,5 +186,3 @@ export const useInfiniteContacts = (
     cacheStats
   };
 };
-
-

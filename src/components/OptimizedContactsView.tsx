@@ -1,7 +1,8 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { Contact } from '../types';
-import { Search, Filter, SortAsc, SortDesc, X, Loader2 } from 'lucide-react';
-import EnhancedContactList from './EnhancedContactList';
+import { Search, Filter, SortAsc, SortDesc, X, Loader2, Zap } from 'lucide-react';
+import InfiniteContactList from './InfiniteContactList';
+import SimpleContactList from './SimpleContactList';
 import { useDebounce } from '../hooks/useDebounce';
 
 interface OptimizedContactsViewProps {
@@ -10,6 +11,9 @@ interface OptimizedContactsViewProps {
   onBulkSelection?: (selected: boolean) => void;
   selectedContacts?: number[];
   className?: string;
+  enableInfiniteScrolling?: boolean;
+  enableCache?: boolean;
+  showCacheStats?: boolean;
 }
 
 const OptimizedContactsView: React.FC<OptimizedContactsViewProps> = ({
@@ -17,7 +21,10 @@ const OptimizedContactsView: React.FC<OptimizedContactsViewProps> = ({
   onContactSelection,
   onBulkSelection,
   selectedContacts = [],
-  className = ''
+  className = '',
+  enableInfiniteScrolling = true,
+  enableCache = true,
+  showCacheStats = false
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortField, setSortField] = useState('first_name');
@@ -37,6 +44,7 @@ const OptimizedContactsView: React.FC<OptimizedContactsViewProps> = ({
     return 300; // Standard for longer queries
   }, [searchQuery.length]);
 
+  // Use debounced search for better performance
   const debouncedSearch = useDebounce(searchQuery, debounceDelay);
 
   // Load recent searches from localStorage
@@ -278,13 +286,29 @@ const OptimizedContactsView: React.FC<OptimizedContactsViewProps> = ({
           <button
             onClick={() => setShowFilters(!showFilters)}
             className={`p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              showFilters 
-                ? 'bg-blue-50 border-blue-300 text-blue-600' 
+              showFilters
+                ? 'bg-blue-50 border-blue-300 text-blue-600'
                 : 'border-gray-300 hover:bg-gray-50 text-gray-600'
             }`}
             title="Filters"
           >
             <Filter className="w-5 h-5" />
+          </button>
+
+          {/* Infinite Scrolling Toggle */}
+          <button
+            onClick={() => {
+              // This would need to be passed as a prop or managed at a higher level
+              console.log('Toggle infinite scrolling:', !enableInfiniteScrolling);
+            }}
+            className={`p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              enableInfiniteScrolling
+                ? 'bg-green-50 border-green-300 text-green-600'
+                : 'border-gray-300 hover:bg-gray-50 text-gray-600'
+            }`}
+            title={enableInfiniteScrolling ? 'Infinite Scrolling Enabled' : 'Simple List Mode'}
+          >
+            <Zap className="w-5 h-5" />
           </button>
 
           {/* Bulk Selection */}
@@ -345,19 +369,35 @@ const OptimizedContactsView: React.FC<OptimizedContactsViewProps> = ({
         )}
       </div>
 
-      {/* Enhanced Contact List with Infinite Scrolling */}
+      {/* Contact List with Infinite Scrolling Toggle */}
       <div className="flex-1 overflow-hidden">
-        <EnhancedContactList
-          search={debouncedSearch}
-          sort={sortField}
-          direction={sortDirection}
-          onContactClick={handleContactClick}
-          onContactSelect={onContactSelection ? handleContactSelectionChange : undefined}
-          onSortChange={handleSortChange}
-          selectedContacts={selectedContactsSet}
-          containerHeight={containerHeight}
-          className="h-full"
-        />
+        {enableInfiniteScrolling ? (
+          <InfiniteContactList
+            search={debouncedSearch}
+            sort={sortField}
+            direction={sortDirection}
+            onContactClick={handleContactClick}
+            onContactSelect={onContactSelection ? (contact, selected) => onContactSelection(contact.id, selected) : undefined}
+            onSortChange={handleSortChange}
+            selectedContacts={selectedContactsSet}
+            containerHeight={containerHeight}
+            enableCache={enableCache}
+            showCacheStats={showCacheStats}
+            className="h-full"
+          />
+        ) : (
+          <SimpleContactList
+            search={debouncedSearch}
+            sort={sortField}
+            direction={sortDirection}
+            onContactClick={handleContactClick}
+            onContactSelect={onContactSelection ? handleContactSelectionChange : undefined}
+            onSortChange={handleSortChange}
+            selectedContacts={selectedContactsSet}
+            containerHeight={containerHeight}
+            className="h-full"
+          />
+        )}
       </div>
 
       {/* Selection Summary */}

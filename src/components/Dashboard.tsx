@@ -404,13 +404,16 @@ const Dashboard: React.FC = () => {
               )}
             </div>
 
-            {/* Optimized Contact View */}
+            {/* Optimized Contact View with Infinite Scrolling */}
             <div className="flex-1 overflow-hidden">
               <OptimizedContactsView
                 onContactSelect={handleContactSelect}
                 onContactSelection={handleContactSelection}
                 onBulkSelection={handleBulkSelection}
                 selectedContacts={selectedContacts}
+                enableInfiniteScrolling={true}
+                enableCache={true}
+                showCacheStats={process.env.NODE_ENV === 'development'}
                 className="h-full"
               />
             </div>
