@@ -21,7 +21,7 @@ const GroupEditFormModal: React.FC<GroupEditFormModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title="Edit Group"
-      size="md"
+      size="lg"
     >
       <GroupEditForm
         group={group}

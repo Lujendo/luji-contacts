@@ -1294,19 +1294,28 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
                     style={{ minHeight: '200px' }}
                     modules={{
                       toolbar: [
-                        [{ 'header': [1, 2, 3, false] }],
+                        [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                        [{ 'font': [] }],
+                        [{ 'size': ['small', false, 'large', 'huge'] }],
                         ['bold', 'italic', 'underline', 'strike'],
                         [{ 'color': [] }, { 'background': [] }],
+                        [{ 'script': 'sub'}, { 'script': 'super' }],
                         [{ 'list': 'ordered'}, { 'list': 'bullet' }],
                         [{ 'indent': '-1'}, { 'indent': '+1' }],
-                        ['link', 'blockquote'],
+                        [{ 'direction': 'rtl' }],
+                        [{ 'align': [] }],
+                        ['link', 'image', 'blockquote', 'code-block'],
                         ['clean']
                       ],
                     }}
                     formats={[
-                      'header', 'bold', 'italic', 'underline', 'strike',
-                      'color', 'background', 'list', 'bullet', 'indent',
-                      'link', 'blockquote'
+                      'header', 'font', 'size',
+                      'bold', 'italic', 'underline', 'strike',
+                      'color', 'background',
+                      'script',
+                      'list', 'bullet', 'indent',
+                      'direction', 'align',
+                      'link', 'image', 'blockquote', 'code-block'
                     ]}
                   />
                 </div>

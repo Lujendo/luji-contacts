@@ -297,19 +297,28 @@ const ContactFormModal: React.FC<ContactFormModalProps> = ({
             style={{ minHeight: '150px' }}
             modules={{
               toolbar: [
-                [{ 'header': [1, 2, 3, false] }],
+                [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                [{ 'font': [] }],
+                [{ 'size': ['small', false, 'large', 'huge'] }],
                 ['bold', 'italic', 'underline', 'strike'],
                 [{ 'color': [] }, { 'background': [] }],
+                [{ 'script': 'sub'}, { 'script': 'super' }],
                 [{ 'list': 'ordered'}, { 'list': 'bullet' }],
                 [{ 'indent': '-1'}, { 'indent': '+1' }],
-                ['link', 'blockquote'],
+                [{ 'direction': 'rtl' }],
+                [{ 'align': [] }],
+                ['link', 'image', 'blockquote', 'code-block'],
                 ['clean']
               ],
             }}
             formats={[
-              'header', 'bold', 'italic', 'underline', 'strike',
-              'color', 'background', 'list', 'bullet', 'indent',
-              'link', 'blockquote'
+              'header', 'font', 'size',
+              'bold', 'italic', 'underline', 'strike',
+              'color', 'background',
+              'script',
+              'list', 'bullet', 'indent',
+              'direction', 'align',
+              'link', 'image', 'blockquote', 'code-block'
             ]}
           />
         </div>
@@ -598,13 +607,10 @@ const ContactFormModal: React.FC<ContactFormModalProps> = ({
 
   // Get contact display name for editing
   const getContactDisplayName = () => {
-    console.log('getContactDisplayName called:', { isEditing, contact });
     if (!contact) return 'No Contact Data';
     const firstName = contact.first_name || '';
     const lastName = contact.last_name || '';
     const email = contact.email || '';
-
-    console.log('Contact data:', { firstName, lastName, email });
 
     if (firstName && lastName) {
       return `${firstName} ${lastName}`;
@@ -644,10 +650,7 @@ const ContactFormModal: React.FC<ContactFormModalProps> = ({
                     {getContactDisplayName()}
                   </span>
                 </div>
-                {/* Debug info - remove after testing */}
-                <div className="text-xs text-gray-500 mt-1">
-                  Debug: {contact.first_name || 'No first'} | {contact.last_name || 'No last'} | {contact.email || 'No email'}
-                </div>
+
               </div>
             </div>
           </div>
