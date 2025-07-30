@@ -632,7 +632,8 @@ const Dashboard: React.FC = () => {
       <GroupContactsManagerModal
         isOpen={showGroupContactsManager}
         onClose={() => setShowGroupContactsManager(false)}
-        groups={groups}
+        selectedGroup={selectedGroup}
+        contacts={contacts}
       />
 
       {/* Duplicate Detection Modal */}

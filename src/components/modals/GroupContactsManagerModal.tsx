@@ -1,28 +1,35 @@
 import React from 'react';
 import Modal from '../ui/Modal';
 import GroupContactsManager from '../GroupContactsManager';
-import { Group } from '../../types';
+import { Group, Contact } from '../../types';
 
 interface GroupContactsManagerModalProps {
   isOpen: boolean;
   onClose: () => void;
-  groups: Group[];
+  selectedGroup: Group | null;
+  contacts: Contact[];
 }
 
 const GroupContactsManagerModal: React.FC<GroupContactsManagerModalProps> = ({
   isOpen,
   onClose,
-  groups
+  selectedGroup,
+  contacts
 }) => {
+  if (!selectedGroup) {
+    return null;
+  }
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Group Contacts Manager"
+      title={`Manage Group: ${selectedGroup.name}`}
       size="2xl"
     >
       <GroupContactsManager
-        groups={groups}
+        group={selectedGroup}
+        contacts={contacts}
         onClose={onClose}
       />
     </Modal>
