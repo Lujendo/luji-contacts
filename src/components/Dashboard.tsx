@@ -26,6 +26,8 @@ import UserSettings from './UserSettings';
 import BulkGroupAssign from './BulkGroupAssign';
 import BulkGroupRemove from './BulkGroupRemove';
 import GroupContactsManager from './GroupContactsManager';
+import MergeContactsModal from './MergeContactsModal';
+import DuplicateDetectionPanel from './DuplicateDetectionPanel';
 import ResizableRightPanel from './ResizableRightPanel';
 import ContactDetailPanel from './ContactDetailPanel';
 import GroupAssignModal from './GroupAssignModal';
@@ -56,6 +58,8 @@ interface DashboardState {
   showGroupContactsManager: boolean;
   showGroupAssignModal: boolean;
   showGroupRemoveModal: boolean;
+  showMergeContacts: boolean;
+  showDuplicateDetection: boolean;
   
   // Data
   contacts: Contact[];
@@ -92,6 +96,9 @@ const Dashboard: React.FC = () => {
   const [showGroupContactsManager, setShowGroupContactsManager] = useState<boolean>(false);
   const [showGroupAssignModal, setShowGroupAssignModal] = useState<boolean>(false);
   const [showGroupRemoveModal, setShowGroupRemoveModal] = useState<boolean>(false);
+  const [showMergeContacts, setShowMergeContacts] = useState<boolean>(false);
+  const [showDuplicateDetection, setShowDuplicateDetection] = useState<boolean>(false);
+  const [contactsToMerge, setContactsToMerge] = useState<Contact[]>([]);
 
   // Data states
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -314,6 +321,8 @@ const Dashboard: React.FC = () => {
     setShowGroupContactsManager(false);
     setShowGroupAssignModal(false);
     setShowGroupRemoveModal(false);
+    setShowMergeContacts(false);
+    setShowDuplicateDetection(false);
   }, []);
 
   const openPanel = useCallback((panelName: string): void => {
@@ -331,6 +340,9 @@ const Dashboard: React.FC = () => {
         break;
       case 'emailForm':
         setShowEmailForm(true);
+        break;
+      case 'duplicateDetection':
+        setShowDuplicateDetection(true);
         break;
       case 'emailHistory':
         setShowEmailHistory(true);
@@ -430,6 +442,14 @@ const Dashboard: React.FC = () => {
                     {selectedContacts.length} contact{selectedContacts.length !== 1 ? 's' : ''} selected
                   </span>
                   <div className="flex space-x-2">
+                    {selectedContacts.length === 2 && (
+                      <button
+                        onClick={() => setShowMergeContacts(true)}
+                        className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                      >
+                        Merge Contacts
+                      </button>
+                    )}
                     <button
                       onClick={() => openPanel('bulkGroupAssign')}
                       className="text-sm text-indigo-600 hover:text-indigo-800"
@@ -480,7 +500,8 @@ const Dashboard: React.FC = () => {
         showGroupList ||
         showGroupForm || showGroupEditForm || showEmailForm ||
         showEmailHistory || showUserSettings ||
-        showBulkGroupAssign || showBulkGroupRemove || showGroupContactsManager
+        showBulkGroupAssign || showBulkGroupRemove || showGroupContactsManager ||
+        showDuplicateDetection
       }>
 
           {showGroupList && (
@@ -575,6 +596,18 @@ const Dashboard: React.FC = () => {
               }}
             />
           )}
+
+          {showDuplicateDetection && (
+            <DuplicateDetectionPanel
+              contacts={contacts}
+              onMergeContacts={(contactsToMerge) => {
+                setContactsToMerge(contactsToMerge);
+                setShowDuplicateDetection(false);
+                setShowMergeContacts(true);
+              }}
+              onClose={() => setShowDuplicateDetection(false)}
+            />
+          )}
         </ResizableRightPanel>
 
       {/* Modals */}
@@ -635,6 +668,23 @@ const Dashboard: React.FC = () => {
         onContactCreated={handleContactCreate}
         groups={groups}
       />
+
+      {/* Merge Contacts Modal */}
+      {showMergeContacts && (
+        <MergeContactsModal
+          contacts={contactsToMerge.length > 0 ? contactsToMerge : contacts.filter(c => selectedContacts.includes(c.id))}
+          onClose={() => {
+            setShowMergeContacts(false);
+            setContactsToMerge([]);
+          }}
+          onMergeComplete={() => {
+            // Refresh contacts after merge
+            contactsApi.getContactsLegacy().then(setContacts);
+            setSelectedContacts([]);
+            setContactsToMerge([]);
+          }}
+        />
+      )}
     </div>
   );
 };
