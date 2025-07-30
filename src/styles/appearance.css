@@ -397,6 +397,131 @@
   color: #92400e !important;
 }
 
+/* Specific overrides for Modal components */
+.dark .modal-overlay .bg-white,
+.dark [role="dialog"] .bg-white,
+.dark .modal-content {
+  background-color: #ffffff !important;
+}
+
+.dark .modal-overlay .bg-white *,
+.dark [role="dialog"] .bg-white *,
+.dark .modal-content * {
+  color: #1f2937 !important;
+}
+
+/* Form labels in modals */
+.dark .modal-overlay label,
+.dark [role="dialog"] label,
+.dark .modal-content label {
+  color: #374151 !important;
+}
+
+/* Specific text color overrides for common classes in modals */
+.dark .modal-overlay .text-gray-700,
+.dark [role="dialog"] .text-gray-700,
+.dark .modal-content .text-gray-700 {
+  color: #374151 !important;
+}
+
+.dark .modal-overlay .text-gray-600,
+.dark [role="dialog"] .text-gray-600,
+.dark .modal-content .text-gray-600 {
+  color: #4b5563 !important;
+}
+
+.dark .modal-overlay .text-gray-500,
+.dark [role="dialog"] .text-gray-500,
+.dark .modal-content .text-gray-500 {
+  color: #6b7280 !important;
+}
+
+/* Input and form elements in modals */
+.dark .modal-overlay input,
+.dark [role="dialog"] input,
+.dark .modal-content input {
+  background-color: #f9fafb !important;
+  border-color: #d1d5db !important;
+  color: #111827 !important;
+}
+
+.dark .modal-overlay textarea,
+.dark [role="dialog"] textarea,
+.dark .modal-content textarea {
+  background-color: #f9fafb !important;
+  border-color: #d1d5db !important;
+  color: #111827 !important;
+}
+
+.dark .modal-overlay select,
+.dark [role="dialog"] select,
+.dark .modal-content select {
+  background-color: #f9fafb !important;
+  border-color: #d1d5db !important;
+  color: #111827 !important;
+}
+
+/* Specific Modal component styling */
+.dark .bg-white\/95 {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+}
+
+.dark .bg-white\/95 *,
+.dark .bg-white\/95 h1,
+.dark .bg-white\/95 h2,
+.dark .bg-white\/95 h3,
+.dark .bg-white\/95 h4,
+.dark .bg-white\/95 h5,
+.dark .bg-white\/95 h6,
+.dark .bg-white\/95 p,
+.dark .bg-white\/95 span,
+.dark .bg-white\/95 div,
+.dark .bg-white\/95 label {
+  color: #111827 !important;
+}
+
+/* Modal header gradient backgrounds */
+.dark .from-slate-50 {
+  --tw-gradient-from: #f8fafc !important;
+}
+
+.dark .to-blue-50 {
+  --tw-gradient-to: #eff6ff !important;
+}
+
+/* Force dark text on modal backgrounds */
+.dark .bg-white\/95 .text-gray-900,
+.dark .bg-white\/95 .text-gray-800,
+.dark .bg-white\/95 .text-gray-700,
+.dark .bg-white\/95 .text-gray-600,
+.dark .bg-white\/95 .text-gray-500 {
+  color: #111827 !important;
+}
+
+/* Ensure form elements in modals have proper styling */
+.dark .bg-white\/95 input,
+.dark .bg-white\/95 textarea,
+.dark .bg-white\/95 select {
+  background-color: #f9fafb !important;
+  border-color: #d1d5db !important;
+  color: #111827 !important;
+}
+
+.dark .bg-white\/95 input::placeholder,
+.dark .bg-white\/95 textarea::placeholder {
+  color: #6b7280 !important;
+}
+
+/* Button styling in modals */
+.dark .bg-white\/95 .bg-white {
+  background-color: #ffffff !important;
+  color: #374151 !important;
+}
+
+.dark .bg-white\/95 .text-white {
+  color: #ffffff !important;
+}
+
 /* No Animations */
 .no-animations * {
   animation-duration: 0s !important;
