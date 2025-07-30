@@ -18,6 +18,7 @@ interface OptimizedContactsViewProps {
   onSendEmail?: (contact: Contact) => void;
   onAddToGroup?: (contact: Contact) => void;
   onViewDetails?: (contact: Contact) => void;
+  searchQuery?: string;
 }
 
 const OptimizedContactsView: React.FC<OptimizedContactsViewProps> = ({
@@ -32,9 +33,10 @@ const OptimizedContactsView: React.FC<OptimizedContactsViewProps> = ({
   onEditContact,
   onSendEmail,
   onAddToGroup,
-  onViewDetails
+  onViewDetails,
+  searchQuery = ''
 }) => {
-  const [searchQuery, setSearchQuery] = useState('');
+  const [internalSearchQuery, setInternalSearchQuery] = useState('');
   const [sortField, setSortField] = useState('first_name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [showFilters, setShowFilters] = useState(false);
@@ -53,15 +55,18 @@ const OptimizedContactsView: React.FC<OptimizedContactsViewProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
+  // Use external search query if provided, otherwise use internal
+  const effectiveSearchQuery = searchQuery || internalSearchQuery;
+
   // Optimized debounce - much faster for better UX
   const debounceDelay = useMemo(() => {
-    if (searchQuery.length <= 2) return 100; // Very fast for short queries
-    if (searchQuery.length <= 5) return 150; // Fast for moderate queries
+    if (effectiveSearchQuery.length <= 2) return 100; // Very fast for short queries
+    if (effectiveSearchQuery.length <= 5) return 150; // Fast for moderate queries
     return 200; // Reduced from 300ms for better responsiveness
-  }, [searchQuery.length]);
+  }, [effectiveSearchQuery.length]);
 
   // Use debounced search for better performance
-  const debouncedSearch = useDebounce(searchQuery, debounceDelay);
+  const debouncedSearch = useDebounce(effectiveSearchQuery, debounceDelay);
 
   // Load recent searches from localStorage
   useEffect(() => {

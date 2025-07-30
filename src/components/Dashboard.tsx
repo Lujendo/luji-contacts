@@ -12,7 +12,7 @@ import {
 } from '../types';
 
 // Component imports
-// import FixedNavigation from './FixedNavigation'; // Replaced with ApplicationMenuBar
+import FixedNavigation from './FixedNavigation';
 import ContactFormModal from './ContactFormModal';
 import ContactTable from './ContactTable';
 import OptimizedContactsView from './OptimizedContactsView';
@@ -393,8 +393,16 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="flex h-screen bg-gray-100">
-      {/* Main Content Area - Full Width */}
-      <div className="flex-1 overflow-hidden">
+      {/* Fixed Navigation Sidebar */}
+      <FixedNavigation
+        user={user}
+        onLogout={handleLogout}
+        onOpenPanel={openPanel}
+        selectedContactsCount={selectedContacts.length}
+      />
+
+      {/* Main Content Area */}
+      <div className="flex-1 overflow-hidden ml-16">
         {/* Main Contact List */}
         <div className="h-full bg-white">
           <div className="h-full flex flex-col">
@@ -410,10 +418,12 @@ const Dashboard: React.FC = () => {
               onSortChange={(field, direction) => setSortConfig({ field, direction })}
               onViewModeChange={setViewMode}
               onFilterChange={() => {/* TODO: Implement filters */}}
+              onSearchChange={setSearchTerm}
               selectedContactsCount={selectedContacts.length}
               currentSort={sortConfig}
               currentViewMode={viewMode}
               totalContacts={contacts.length}
+              searchQuery={searchTerm}
             />
 
             {/* Optimized Contact View with Infinite Scrolling */}
@@ -426,6 +436,7 @@ const Dashboard: React.FC = () => {
                 enableInfiniteScrolling={true}
                 enableCache={true}
                 showCacheStats={process.env.NODE_ENV === 'development'}
+                searchQuery={searchTerm}
                 onEditContact={(contact) => {
                   setSelectedContact(contact);
                   setShowContactForm(true);

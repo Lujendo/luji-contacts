@@ -43,10 +43,12 @@ interface ApplicationMenuBarProps {
   onSortChange: (field: string, direction: string) => void;
   onViewModeChange: (mode: 'table' | 'grid' | 'list') => void;
   onFilterChange: (filters: any) => void;
+  onSearchChange: (search: string) => void;
   selectedContactsCount: number;
   currentSort: { field: string; direction: string };
   currentViewMode: 'table' | 'grid' | 'list';
   totalContacts: number;
+  searchQuery: string;
 }
 
 const DropdownMenu: React.FC<DropdownMenuProps> = ({ title, items, className = '' }) => {
@@ -134,34 +136,15 @@ const ApplicationMenuBar: React.FC<ApplicationMenuBarProps> = ({
   onSortChange,
   onViewModeChange,
   onFilterChange,
+  onSearchChange,
   selectedContactsCount,
   currentSort,
   currentViewMode,
-  totalContacts
+  totalContacts,
+  searchQuery
 }) => {
-  // File menu items
-  const fileMenuItems: DropdownItem[] = [
-    {
-      label: 'New Contact',
-      icon: Plus,
-      action: onNewContact,
-      shortcut: 'Ctrl+N'
-    },
-    {
-      label: 'Import Contacts',
-      icon: Upload,
-      action: onImport,
-      separator: true
-    },
-    {
-      label: 'Export Contacts',
-      icon: Download,
-      action: onExport
-    }
-  ];
-
-  // Edit menu items
-  const editMenuItems: DropdownItem[] = [
+  // Actions menu items (focused on extra functions)
+  const actionsMenuItems: DropdownItem[] = [
     {
       label: 'Find Duplicates',
       icon: Search,
@@ -186,24 +169,8 @@ const ApplicationMenuBar: React.FC<ApplicationMenuBarProps> = ({
     }
   ];
 
-  // View menu items
-  const viewMenuItems: DropdownItem[] = [
-    {
-      label: 'Table View',
-      icon: List,
-      action: () => onViewModeChange('table')
-    },
-    {
-      label: 'Grid View',
-      icon: Grid,
-      action: () => onViewModeChange('grid')
-    },
-    {
-      label: 'List View',
-      icon: Eye,
-      action: () => onViewModeChange('list'),
-      separator: true
-    },
+  // Sort menu items
+  const sortMenuItems: DropdownItem[] = [
     {
       label: 'Sort by Name',
       icon: currentSort.field === 'first_name' && currentSort.direction === 'asc' ? SortAsc : SortDesc,
@@ -222,65 +189,32 @@ const ApplicationMenuBar: React.FC<ApplicationMenuBarProps> = ({
     {
       label: 'Sort by Date Added',
       icon: currentSort.field === 'created_at' && currentSort.direction === 'asc' ? SortAsc : SortDesc,
-      action: () => onSortChange('created_at', currentSort.field === 'created_at' && currentSort.direction === 'asc' ? 'desc' : 'asc'),
-      separator: true
-    },
-    {
-      label: 'Show Filters',
-      icon: Filter,
-      action: () => {/* TODO: Implement filters */}
-    }
-  ];
-
-  // Tools menu items
-  const toolsMenuItems: DropdownItem[] = [
-    {
-      label: 'Manage Groups',
-      icon: Users,
-      action: onManageGroups
-    },
-    {
-      label: 'Find Duplicates',
-      icon: Search,
-      action: onFindDuplicates,
-      separator: true
-    },
-    {
-      label: 'Bulk Operations',
-      icon: MoreHorizontal,
-      action: () => {/* TODO: Implement bulk operations panel */},
-      disabled: selectedContactsCount === 0
-    }
-  ];
-
-  // Settings menu items
-  const settingsMenuItems: DropdownItem[] = [
-    {
-      label: 'Preferences',
-      icon: Settings,
-      action: onSettings
-    },
-    {
-      label: 'Import/Export Settings',
-      action: () => {/* TODO: Implement import/export settings */},
-      separator: true
-    },
-    {
-      label: 'About',
-      action: () => {/* TODO: Implement about dialog */}
+      action: () => onSortChange('created_at', currentSort.field === 'created_at' && currentSort.direction === 'asc' ? 'desc' : 'asc')
     }
   ];
 
   return (
     <div className="bg-white border-b border-gray-200 px-4 py-2">
       <div className="flex items-center justify-between">
-        {/* Menu Bar */}
-        <div className="flex items-center space-x-1">
-          <DropdownMenu title="File" items={fileMenuItems} />
-          <DropdownMenu title="Edit" items={editMenuItems} />
-          <DropdownMenu title="View" items={viewMenuItems} />
-          <DropdownMenu title="Tools" items={toolsMenuItems} />
-          <DropdownMenu title="Settings" items={settingsMenuItems} />
+        {/* Left side - Search and Menus */}
+        <div className="flex items-center space-x-4">
+          {/* Search Bar */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <input
+              type="text"
+              placeholder="Search contacts..."
+              value={searchQuery}
+              onChange={(e) => onSearchChange(e.target.value)}
+              className="w-64 pl-10 pr-4 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+            />
+          </div>
+
+          {/* Menu Bar - Extra Functions */}
+          <div className="flex items-center space-x-1">
+            <DropdownMenu title="Actions" items={actionsMenuItems} />
+            <DropdownMenu title="Sort" items={sortMenuItems} />
+          </div>
         </div>
 
         {/* Status Bar */}
