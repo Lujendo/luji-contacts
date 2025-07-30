@@ -12,7 +12,7 @@ import {
 } from '../types';
 
 // Component imports
-import FixedNavigation from './FixedNavigation';
+// import FixedNavigation from './FixedNavigation'; // Replaced with ApplicationMenuBar
 import ContactFormModal from './ContactFormModal';
 import ContactTable from './ContactTable';
 import OptimizedContactsView from './OptimizedContactsView';
@@ -29,6 +29,7 @@ import GroupContactsManager from './GroupContactsManager';
 import MergeContactsModal from './MergeContactsModal';
 import DuplicateDetectionPanel from './DuplicateDetectionPanel';
 import ResizableRightPanel from './ResizableRightPanel';
+import ApplicationMenuBar from './ApplicationMenuBar';
 import ContactDetailPanel from './ContactDetailPanel';
 import GroupAssignModal from './GroupAssignModal';
 import GroupRemoveModal from './GroupRemoveModal';
@@ -111,6 +112,7 @@ const Dashboard: React.FC = () => {
   const [selectedContacts, setSelectedContacts] = useState<number[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [sortConfig, setSortConfig] = useState<SortConfig>({ field: 'first_name', direction: 'asc' });
+  const [viewMode, setViewMode] = useState<'table' | 'grid' | 'list'>('table');
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -391,81 +393,28 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="flex h-screen bg-gray-100">
-      {/* Fixed Navigation */}
-      <FixedNavigation
-        user={user}
-        onLogout={handleLogout}
-        onOpenPanel={openPanel}
-        selectedContactsCount={selectedContacts.length}
-      />
-
-      {/* Main Content Area */}
-      <div className="flex-1 overflow-hidden ml-16">
+      {/* Main Content Area - Full Width */}
+      <div className="flex-1 overflow-hidden">
         {/* Main Contact List */}
         <div className="h-full bg-white">
           <div className="h-full flex flex-col">
-            {/* Search and Controls */}
-            <div className="p-4 bg-white border-b border-gray-200">
-              <div className="flex items-center space-x-4">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <input
-                    type="text"
-                    placeholder="Search contacts..."
-                    value={searchTerm}
-                    onChange={handleSearchChange}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                  />
-                  {searchTerm && (
-                    <button
-                      onClick={() => setSearchTerm('')}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  )}
-                </div>
-
-                <button
-                  onClick={() => handleSortChange('first_name')}
-                  className="flex items-center space-x-1 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 border border-gray-300 rounded-md hover:bg-gray-50"
-                >
-                  <ArrowUpDown className="h-4 w-4" />
-                  <span>Sort</span>
-                </button>
-              </div>
-
-              {/* Bulk Actions */}
-              {selectedContacts.length > 0 && (
-                <div className="mt-3 flex items-center justify-between bg-indigo-50 p-3 rounded-md">
-                  <span className="text-sm text-indigo-700">
-                    {selectedContacts.length} contact{selectedContacts.length !== 1 ? 's' : ''} selected
-                  </span>
-                  <div className="flex space-x-2">
-                    {selectedContacts.length === 2 && (
-                      <button
-                        onClick={() => setShowMergeContacts(true)}
-                        className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-                      >
-                        Merge Contacts
-                      </button>
-                    )}
-                    <button
-                      onClick={() => openPanel('bulkGroupAssign')}
-                      className="text-sm text-indigo-600 hover:text-indigo-800"
-                    >
-                      Assign to Group
-                    </button>
-                    <button
-                      onClick={() => openPanel('bulkGroupRemove')}
-                      className="text-sm text-indigo-600 hover:text-indigo-800"
-                    >
-                      Remove from Group
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
+            {/* Application Menu Bar */}
+            <ApplicationMenuBar
+              onNewContact={() => setShowContactForm(true)}
+              onFindDuplicates={() => setShowDuplicateDetection(true)}
+              onMergeSelected={() => setShowMergeContacts(true)}
+              onImport={() => openPanel('importExport')}
+              onExport={() => openPanel('importExport')}
+              onManageGroups={() => openPanel('groupContactsManager')}
+              onSettings={() => openPanel('userSettings')}
+              onSortChange={(field, direction) => setSortConfig({ field, direction })}
+              onViewModeChange={setViewMode}
+              onFilterChange={() => {/* TODO: Implement filters */}}
+              selectedContactsCount={selectedContacts.length}
+              currentSort={sortConfig}
+              currentViewMode={viewMode}
+              totalContacts={contacts.length}
+            />
 
             {/* Optimized Contact View with Infinite Scrolling */}
             <div className="flex-1 overflow-hidden">
@@ -477,6 +426,22 @@ const Dashboard: React.FC = () => {
                 enableInfiniteScrolling={true}
                 enableCache={true}
                 showCacheStats={process.env.NODE_ENV === 'development'}
+                onEditContact={(contact) => {
+                  setSelectedContact(contact);
+                  setShowContactForm(true);
+                }}
+                onSendEmail={(contact) => {
+                  setSelectedContact(contact);
+                  openPanel('emailForm');
+                }}
+                onAddToGroup={(contact) => {
+                  setSelectedContacts([contact.id]);
+                  openPanel('bulkGroupAssign');
+                }}
+                onViewDetails={(contact) => {
+                  setSelectedContact(contact);
+                  // TODO: Implement contact details view
+                }}
                 className="h-full"
               />
             </div>

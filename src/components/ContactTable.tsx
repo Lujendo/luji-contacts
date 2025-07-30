@@ -13,6 +13,7 @@ import {
     Briefcase
 } from 'lucide-react';
 import ProfileImage from './ui/ProfileImage';
+import ContactActionsMenu from './ContactActionsMenu';
 
 // Helper function to get contact initials
 const getContactInitials = (contact: Contact): string => {
@@ -48,6 +49,10 @@ interface ContactTableProps {
     highlightedGroupId?: number | null;
     onDoubleClickContact?: (contact: Contact) => void;
     onBulkSelection?: (selected: boolean) => void;
+    onEditContact?: (contact: Contact) => void;
+    onSendEmail?: (contact: Contact) => void;
+    onAddToGroup?: (contact: Contact) => void;
+    onViewDetails?: (contact: Contact) => void;
 }
 
 // Sort indicator component props
@@ -80,7 +85,11 @@ const ContactTable: React.FC<ContactTableProps> = ({
     sortLoading = false,
     highlightedGroupId,
     onDoubleClickContact,
-    onBulkSelection
+    onBulkSelection,
+    onEditContact,
+    onSendEmail,
+    onAddToGroup,
+    onViewDetails
 }) => {
     // Normalize selected contacts array
     const normalizedSelectedContacts = selectedContactIds.length > 0 ? selectedContactIds : selectedContacts;
@@ -258,11 +267,9 @@ const ContactTable: React.FC<ContactTableProps> = ({
                             </div>
                         </th>
 
-                        {onDelete && (
-                            <th scope="col" className="relative px-6 py-3">
-                                <span className="sr-only">Actions</span>
-                            </th>
-                        )}
+                        <th scope="col" className="relative px-6 py-3">
+                            <span className="sr-only">Actions</span>
+                        </th>
                     </tr>
                 </thead>
                 
@@ -401,17 +408,16 @@ const ContactTable: React.FC<ContactTableProps> = ({
                                 </td>
 
                                 {/* Actions */}
-                                {onDelete && (
-                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <button
-                                            onClick={(e) => handleDeleteClick(e, contact.id)}
-                                            className="text-red-600 hover:text-red-900 p-1 rounded-md hover:bg-red-50"
-                                            title="Delete contact"
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </button>
-                                    </td>
-                                )}
+                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <ContactActionsMenu
+                                        contact={contact}
+                                        onEdit={onEditContact}
+                                        onDelete={onDelete}
+                                        onSendEmail={onSendEmail}
+                                        onAddToGroup={onAddToGroup}
+                                        onViewDetails={onViewDetails}
+                                    />
+                                </td>
                             </tr>
                         );
                     })}

@@ -2,6 +2,7 @@ import React from 'react';
 import { Contact } from '../types';
 import { Phone, Mail, Building, MapPin } from 'lucide-react';
 import ProfileImage from './ui/ProfileImage';
+import ContactActionsMenu from './ContactActionsMenu';
 
 interface ContactListItemProps {
   contact: Contact;
@@ -10,6 +11,11 @@ interface ContactListItemProps {
   selected?: boolean;
   style?: React.CSSProperties;
   className?: string;
+  onEdit?: (contact: Contact) => void;
+  onDelete?: (contactId: number) => void;
+  onSendEmail?: (contact: Contact) => void;
+  onAddToGroup?: (contact: Contact) => void;
+  onViewDetails?: (contact: Contact) => void;
 }
 
 const ContactListItem: React.FC<ContactListItemProps> = ({
@@ -18,7 +24,12 @@ const ContactListItem: React.FC<ContactListItemProps> = ({
   onSelect,
   selected = false,
   style,
-  className = ''
+  className = '',
+  onEdit,
+  onDelete,
+  onSendEmail,
+  onAddToGroup,
+  onViewDetails
 }) => {
   const getInitials = (contact: Contact) => {
     // Use nickname if available, otherwise use first and last name
@@ -77,7 +88,7 @@ const ContactListItem: React.FC<ContactListItemProps> = ({
       )}
 
       {/* Name column with profile image */}
-      <div className={`${onSelect ? 'col-span-3' : 'col-span-4'} flex items-center min-w-0`}>
+      <div className={`${onSelect ? 'col-span-3' : 'col-span-3'} flex items-center min-w-0`}>
         <div className="flex-shrink-0 mr-3">
           <ProfileImage
             src={contact.profile_image_url}
@@ -150,7 +161,7 @@ const ContactListItem: React.FC<ContactListItemProps> = ({
       </div>
 
       {/* Role/Groups column */}
-      <div className="col-span-2 min-w-0">
+      <div className="col-span-1 min-w-0">
         {contact.role ? (
           <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 truncate">
             {contact.role}
@@ -172,6 +183,18 @@ const ContactListItem: React.FC<ContactListItemProps> = ({
         ) : (
           <span className="text-sm text-gray-400 truncate block">No role</span>
         )}
+      </div>
+
+      {/* Actions column */}
+      <div className="col-span-1 flex justify-end items-center">
+        <ContactActionsMenu
+          contact={contact}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          onSendEmail={onSendEmail}
+          onAddToGroup={onAddToGroup}
+          onViewDetails={onViewDetails}
+        />
       </div>
 
     </div>

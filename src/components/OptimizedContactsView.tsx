@@ -14,6 +14,10 @@ interface OptimizedContactsViewProps {
   enableInfiniteScrolling?: boolean;
   enableCache?: boolean;
   showCacheStats?: boolean;
+  onEditContact?: (contact: Contact) => void;
+  onSendEmail?: (contact: Contact) => void;
+  onAddToGroup?: (contact: Contact) => void;
+  onViewDetails?: (contact: Contact) => void;
 }
 
 const OptimizedContactsView: React.FC<OptimizedContactsViewProps> = ({
@@ -24,7 +28,11 @@ const OptimizedContactsView: React.FC<OptimizedContactsViewProps> = ({
   className = '',
   enableInfiniteScrolling = true,
   enableCache = true,
-  showCacheStats = false
+  showCacheStats = false,
+  onEditContact,
+  onSendEmail,
+  onAddToGroup,
+  onViewDetails
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortField, setSortField] = useState('first_name');
@@ -427,6 +435,10 @@ const OptimizedContactsView: React.FC<OptimizedContactsViewProps> = ({
             containerHeight={containerHeight}
             enableCache={enableCache}
             showCacheStats={showCacheStats}
+            onEditContact={onEditContact}
+            onSendEmail={onSendEmail}
+            onAddToGroup={onAddToGroup}
+            onViewDetails={onViewDetails}
             className="h-full"
           />
         )}
