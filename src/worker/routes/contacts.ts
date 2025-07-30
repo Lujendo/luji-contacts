@@ -11,6 +11,39 @@ export function createContactRoutes(db: DatabaseService, auth: AuthService, stor
   // Apply authentication middleware to all routes
   contacts.use('*', createAuthMiddleware(auth, db));
 
+  // Test endpoint for group filtering
+  contacts.get('/test-group/:groupId', async (c) => {
+    try {
+      const user = getAuthenticatedUser(c);
+      const groupId = parseInt(c.req.param('groupId'));
+
+      console.log('🧪 TEST: Group filtering test for group:', groupId, 'user:', user.id);
+
+      const result = await db.getContactsByUserId(
+        user.id,
+        undefined, // no search
+        'first_name', // sort by first name
+        'asc', // ascending
+        10, // limit to 10 for testing
+        0, // no offset
+        groupId // filter by group
+      );
+
+      console.log('🧪 TEST: Results -', result.contacts.length, 'contacts found');
+
+      return c.json({
+        success: true,
+        data: result.contacts,
+        total: result.total,
+        groupId: groupId,
+        message: `Found ${result.contacts.length} contacts in group ${groupId}`
+      });
+    } catch (error) {
+      console.error('🧪 TEST: Error in group filtering test:', error);
+      return c.json({ success: false, error: 'Test failed' }, 500);
+    }
+  });
+
   // Get all contacts with search, sorting, and pagination
   contacts.get('/', async (c) => {
     try {

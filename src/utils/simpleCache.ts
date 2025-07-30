@@ -55,7 +55,8 @@ class SafeContactsCache {
         sort: params.sort || 'first_name',
         direction: params.direction || 'asc',
         page: params.page || '1',
-        limit: params.limit || '50'
+        limit: params.limit || '50',
+        group: params.group || 'all' // Include group in cache key!
       };
 
       // Create sorted key for consistency
