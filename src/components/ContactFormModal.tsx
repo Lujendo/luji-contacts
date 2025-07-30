@@ -10,7 +10,9 @@ interface ContactFormModalProps {
   onClose: () => void;
   onContactCreated?: (contact: Contact) => void;
   onContactAdded?: (contact: Contact) => void;
+  onContactUpdated?: (contact: Contact) => void;
   groups?: Group[];
+  contact?: Contact; // Contact to edit (if provided, modal is in edit mode)
 }
 
 interface FormData {
@@ -40,8 +42,11 @@ const ContactFormModal: React.FC<ContactFormModalProps> = ({
   onClose,
   onContactCreated,
   onContactAdded,
-  groups = []
+  onContactUpdated,
+  groups = [],
+  contact
 }) => {
+  const isEditing = !!contact;
   const [formData, setFormData] = useState<FormData>({
     first_name: '',
     last_name: '',
@@ -296,34 +301,62 @@ const ContactFormModal: React.FC<ContactFormModalProps> = ({
     setActiveTab(tabId);
   };
 
-  // Reset form when modal opens
+  // Reset form when modal opens or populate with contact data when editing
   useEffect(() => {
     if (isOpen) {
-      setFormData({
-        first_name: '',
-        last_name: '',
-        nickname: '',
-        email: '',
-        phone: '',
-        company: '',
-        job_title: '',
-        website: '',
-        linkedin: '',
-        twitter: '',
-        facebook: '',
-        instagram: '',
-        birthday: '',
-        address_street: '',
-        address_city: '',
-        address_state: '',
-        address_zip: '',
-        address_country: '',
-        notes: ''
-      });
-      setSelectedGroups([]);
+      if (isEditing && contact) {
+        // Populate form with existing contact data
+        setFormData({
+          first_name: contact.first_name || '',
+          last_name: contact.last_name || '',
+          nickname: contact.nickname || '',
+          email: contact.email || '',
+          phone: contact.phone || '',
+          company: contact.company || '',
+          job_title: contact.job_title || '',
+          website: contact.website || '',
+          linkedin: contact.linkedin || '',
+          twitter: contact.twitter || '',
+          facebook: contact.facebook || '',
+          instagram: contact.instagram || '',
+          birthday: contact.birthday || '',
+          address_street: contact.address_street || '',
+          address_city: contact.address_city || '',
+          address_state: contact.address_state || '',
+          address_zip: contact.address_zip || '',
+          address_country: contact.address_country || '',
+          notes: contact.notes || ''
+        });
+        // TODO: Set selected groups based on contact's groups
+        setSelectedGroups([]);
+      } else {
+        // Reset form for new contact
+        setFormData({
+          first_name: '',
+          last_name: '',
+          nickname: '',
+          email: '',
+          phone: '',
+          company: '',
+          job_title: '',
+          website: '',
+          linkedin: '',
+          twitter: '',
+          facebook: '',
+          instagram: '',
+          birthday: '',
+          address_street: '',
+          address_city: '',
+          address_state: '',
+          address_zip: '',
+          address_country: '',
+          notes: ''
+        });
+        setSelectedGroups([]);
+      }
       setError('');
     }
-  }, [isOpen]);
+  }, [isOpen, isEditing, contact]);
 
   // Handle input changes
   const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -363,18 +396,27 @@ const ContactFormModal: React.FC<ContactFormModalProps> = ({
         group_ids: selectedGroups
       };
 
-      const newContact = await contactsApi.createContact(contactData);
+      let savedContact: Contact;
 
-      // Call the appropriate callback
-      if (onContactCreated) {
-        onContactCreated(newContact);
-      } else if (onContactAdded) {
-        onContactAdded(newContact);
+      if (isEditing && contact) {
+        // Update existing contact
+        savedContact = await contactsApi.updateContact(contact.id, contactData);
+        if (onContactUpdated) {
+          onContactUpdated(savedContact);
+        }
+      } else {
+        // Create new contact
+        savedContact = await contactsApi.createContact(contactData);
+        if (onContactCreated) {
+          onContactCreated(savedContact);
+        } else if (onContactAdded) {
+          onContactAdded(savedContact);
+        }
       }
 
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create contact');
+      setError(err instanceof Error ? err.message : (isEditing ? 'Failed to update contact' : 'Failed to create contact'));
     } finally {
       setIsSubmitting(false);
     }
@@ -531,15 +573,52 @@ const ContactFormModal: React.FC<ContactFormModalProps> = ({
     { id: 'notes', label: 'Notes', icon: <FileText size={16} />, content: <NotesTab /> }
   ];
 
+  // Get contact display name for editing
+  const getContactDisplayName = () => {
+    if (!isEditing || !contact) return '';
+    const firstName = contact.first_name || '';
+    const lastName = contact.last_name || '';
+    const email = contact.email || '';
+
+    if (firstName && lastName) {
+      return `${firstName} ${lastName}`;
+    } else if (firstName) {
+      return firstName;
+    } else if (lastName) {
+      return lastName;
+    } else if (email) {
+      return email;
+    } else {
+      return 'Contact';
+    }
+  };
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Create New Contact"
+      title={isEditing ? `Edit Contact` : "Create New Contact"}
       size="2xl"
       showCloseButton={true}
     >
       <form onSubmit={handleSubmit} className="flex flex-col h-[600px]">
+        {/* Contact Name Display for Editing */}
+        {isEditing && (
+          <div className="mx-6 mb-4 p-4 bg-blue-50 border border-blue-200 rounded-md">
+            <div className="flex items-center space-x-3">
+              <div className="flex-shrink-0">
+                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                  <User className="w-5 h-5 text-blue-600" />
+                </div>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-blue-900">Editing Contact</p>
+                <p className="text-lg font-semibold text-blue-800">{getContactDisplayName()}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Error Message */}
         {error && (
           <div className="mx-6 mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
@@ -572,7 +651,7 @@ const ContactFormModal: React.FC<ContactFormModalProps> = ({
             disabled={isSubmitting}
             className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
           >
-            {isSubmitting ? 'Creating...' : 'Create Contact'}
+            {isSubmitting ? (isEditing ? 'Updating...' : 'Creating...') : (isEditing ? 'Update Contact' : 'Create Contact')}
           </button>
         </div>
       </form>

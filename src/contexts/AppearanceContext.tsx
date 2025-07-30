@@ -83,11 +83,13 @@ export const AppearanceProvider: React.FC<AppearanceProviderProps> = ({ children
   // Apply theme to document
   useEffect(() => {
     const root = document.documentElement;
-    
+
     if (isDarkMode) {
       root.classList.add('dark');
+      console.log('Applied dark mode class');
     } else {
       root.classList.remove('dark');
+      console.log('Removed dark mode class');
     }
 
     // Apply other settings as CSS custom properties

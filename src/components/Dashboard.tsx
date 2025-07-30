@@ -48,7 +48,7 @@ import BulkGroupAssignModal from './modals/BulkGroupAssignModal';
 import BulkGroupRemoveModal from './modals/BulkGroupRemoveModal';
 import GroupContactsManagerModal from './modals/GroupContactsManagerModal';
 import DuplicateDetectionModal from './modals/DuplicateDetectionModal';
-import AppearanceSettingsModal from './modals/AppearanceSettingsModal';
+// import AppearanceSettingsModal from './modals/AppearanceSettingsModal'; // Now integrated into UserSettings
 
 // Icon imports
 import {
@@ -116,7 +116,7 @@ const Dashboard: React.FC = () => {
   const [showMergeContacts, setShowMergeContacts] = useState<boolean>(false);
   const [showDuplicateDetection, setShowDuplicateDetection] = useState<boolean>(false);
   const [contactsToMerge, setContactsToMerge] = useState<Contact[]>([]);
-  const [showAppearanceSettings, setShowAppearanceSettings] = useState<boolean>(false);
+  const [userSettingsTab, setUserSettingsTab] = useState<'profile' | 'email' | 'subscription' | 'security' | 'appearance'>('profile');
 
   // Use appearance context
   const { settings: appearanceSettings, updateSettings: updateAppearanceSettings } = useAppearance();
@@ -345,7 +345,7 @@ const Dashboard: React.FC = () => {
     setShowGroupRemoveModal(false);
     setShowMergeContacts(false);
     setShowDuplicateDetection(false);
-    setShowAppearanceSettings(false);
+    setUserSettingsTab('profile');
   }, []);
 
   const openPanel = useCallback((panelName: string): void => {
@@ -368,7 +368,8 @@ const Dashboard: React.FC = () => {
         setShowDuplicateDetection(true);
         break;
       case 'appearanceSettings':
-        setShowAppearanceSettings(true);
+        setShowUserSettings(true);
+        setUserSettingsTab('appearance');
         break;
       case 'emailHistory':
         setShowEmailHistory(true);
@@ -559,7 +560,11 @@ const Dashboard: React.FC = () => {
       {/* User Settings Modal */}
       <UserSettingsModal
         isOpen={showUserSettings}
-        onClose={() => setShowUserSettings(false)}
+        onClose={() => {
+          setShowUserSettings(false);
+          setUserSettingsTab('profile');
+        }}
+        initialTab={userSettingsTab}
       />
 
       {/* Bulk Operations Modals */}
@@ -608,12 +613,7 @@ const Dashboard: React.FC = () => {
         }}
       />
 
-      {/* Appearance Settings Modal */}
-      <AppearanceSettingsModal
-        isOpen={showAppearanceSettings}
-        onClose={() => setShowAppearanceSettings(false)}
-        onSettingsChange={updateAppearanceSettings}
-      />
+      {/* Appearance Settings now integrated into User Settings Modal */}
 
       {/* Import Modal */}
       <ImportModal
@@ -700,9 +700,18 @@ const Dashboard: React.FC = () => {
       {/* Contact Form Modal */}
       <ContactFormModal
         isOpen={showContactForm}
-        onClose={() => setShowContactForm(false)}
+        onClose={() => {
+          setShowContactForm(false);
+          setSelectedContact(null); // Clear selected contact when closing
+        }}
         onContactCreated={handleContactCreate}
+        onContactUpdated={(updatedContact) => {
+          // Update the contact in the list
+          setContacts(prev => prev.map(c => c.id === updatedContact.id ? updatedContact : c));
+          setSelectedContact(null);
+        }}
         groups={groups}
+        contact={selectedContact} // Pass the selected contact for editing
       />
 
       {/* Merge Contacts Modal */}

@@ -5,11 +5,13 @@ import UserSettings from '../UserSettings';
 interface UserSettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialTab?: 'profile' | 'email' | 'subscription' | 'security' | 'appearance';
 }
 
 const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
   isOpen,
-  onClose
+  onClose,
+  initialTab = 'profile'
 }) => {
   return (
     <Modal
@@ -18,7 +20,7 @@ const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
       title="User Settings"
       size="xl"
     >
-      <UserSettings onClose={onClose} />
+      <UserSettings onClose={onClose} initialTab={initialTab} />
     </Modal>
   );
 };
