@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, ChangeEvent, FormEvent } from "react";
+import React, { useState, useEffect, useRef, ChangeEvent } from "react";
 import { contactsApi } from '../api';
 import { Contact, Group, UpdateContactRequest } from '../types';
 import {
@@ -6,15 +6,11 @@ import {
   Save,
   X,
   Plus,
-  Search,
   Phone,
   Mail,
   User,
   Users,
-  Check,
   Trash2,
-  Filter,
-  ArrowUpDown,
   FileText,
   MapPin,
   Briefcase,
@@ -28,9 +24,29 @@ import {
   Upload
 } from "lucide-react";
 import SocialMediaSection from "./SocialMediaSection";
+import ProfileImage from './ui/ProfileImage';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 
 // Tab type definition
 type TabType = 'overview' | 'details' | 'address' | 'social' | 'notes' | 'groups' | 'activity';
+
+// Helper function to get contact initials
+const getContactInitials = (contact: Contact): string => {
+  const firstName = contact.first_name?.trim() || '';
+  const lastName = contact.last_name?.trim() || '';
+
+  if (firstName && lastName) {
+    return `${firstName[0]}${lastName[0]}`.toUpperCase();
+  } else if (firstName) {
+    return firstName[0].toUpperCase();
+  } else if (lastName) {
+    return lastName[0].toUpperCase();
+  } else if (contact.email) {
+    return contact.email[0].toUpperCase();
+  }
+  return 'U';
+};
 
 // Component props interface
 interface ContactDetailProps {
@@ -90,7 +106,6 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
   // State Management
   const [editMode, setEditMode] = useState<boolean>(false);
   const [editedContact, setEditedContact] = useState<Contact | null>(null);
-  const [contactId, setContactId] = useState<number | null>(null);
   const [error, setError] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [errors, setErrors] = useState<FormErrors>({});
@@ -111,16 +126,36 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
     }
   }, [error]);
 
-  // Initialize contact data
+  // Initialize contact data and fetch fresh details with groups
   useEffect(() => {
-    if (contact) {
-      setEditedContact({ ...contact });
-      setContactId(contact.id);
-      setProfileImage(prev => ({
-        ...prev,
-        preview: contact.profile_image_url || null
-      }));
-    }
+    const loadContactDetails = async () => {
+      if (contact) {
+        try {
+          // First set the basic contact data
+          setEditedContact({ ...contact });
+          setProfileImage(prev => ({
+            ...prev,
+            preview: contact.profile_image_url || null
+          }));
+
+          // If the contact doesn't have Groups data, fetch fresh details
+          if (!contact.Groups || contact.Groups.length === 0) {
+            console.log('🔄 Fetching fresh contact details with groups for contact:', contact.id);
+            const freshContact = await contactsApi.getContact(contact.id);
+
+            if (freshContact && freshContact.Groups) {
+              console.log('✅ Fresh contact loaded with groups:', freshContact.Groups);
+              setEditedContact(freshContact);
+            }
+          }
+        } catch (error) {
+          console.error('Error loading contact details:', error);
+          // Continue with the original contact data if fetch fails
+        }
+      }
+    };
+
+    loadContactDetails();
   }, [contact]);
 
   // Form validation
@@ -206,9 +241,9 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
       return;
     }
 
-    // Validate file size (5MB limit)
-    if (file.size > 5 * 1024 * 1024) {
-      setError('Image size must be less than 5MB');
+    // Validate file size (10MB limit - will be compressed automatically)
+    if (file.size > 10 * 1024 * 1024) {
+      setError('Image size must be less than 10MB');
       return;
     }
 
@@ -218,7 +253,8 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
       setProfileImage({
         file,
         preview: e.target?.result as string,
-        isUploading: false
+        isUploading: false,
+        progress: 0
       });
     };
     reader.readAsDataURL(file);
@@ -269,14 +305,37 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
 
       // Upload profile image if changed
       if (profileImage.file) {
-        setProfileImage(prev => ({ ...prev, isUploading: true }));
+        setProfileImage(prev => ({ ...prev, isUploading: true, progress: 0 }));
         try {
-          await contactsApi.uploadProfileImage(editedContact.id, profileImage.file);
+          const uploadResult = await contactsApi.uploadProfileImage(
+            editedContact.id,
+            profileImage.file,
+            (progress) => {
+              setProfileImage(prev => ({ ...prev, progress }));
+            }
+          );
+
+          // Update the contact with the new profile image URL
+          updatedContact.profile_image_url = uploadResult.profile_image_url;
+          setEditedContact(prev => ({
+            ...prev,
+            profile_image_url: uploadResult.profile_image_url
+          }));
+
+          // Update the local preview to show the uploaded image with cache busting
+          const imageUrlWithCacheBust = `${uploadResult.profile_image_url}?t=${Date.now()}`;
+          setProfileImage(prev => ({
+            ...prev,
+            preview: imageUrlWithCacheBust,
+            progress: 100,
+            file: null // Clear the file since it's now uploaded
+          }));
         } catch (imageError) {
           console.error('Error uploading profile image:', imageError);
+          setError('Failed to upload profile image. Please try again.');
           // Don't fail the entire operation for image upload errors
         }
-        setProfileImage(prev => ({ ...prev, isUploading: false }));
+        setProfileImage(prev => ({ ...prev, isUploading: false, progress: 0 }));
       }
 
       // Call the appropriate callback
@@ -484,6 +543,29 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
 
       {/* Tab Content */}
       <div className="flex-1 overflow-y-auto">
+        {/* Contact Name Header - Always visible when editing */}
+        {editMode && (
+          <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-6 py-3">
+            <div className="flex items-center space-x-3">
+              <div className="flex-shrink-0">
+                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                  <User className="w-4 h-4 text-blue-600" />
+                </div>
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm font-medium text-blue-900">Editing Contact:</span>
+                  <span className="text-base font-bold text-blue-800 bg-blue-100 px-2 py-1 rounded">
+                    {editedContact.nickname || (editedContact.first_name || editedContact.last_name)
+                      ? editedContact.nickname || `${editedContact.first_name || ''} ${editedContact.last_name || ''}`.trim()
+                      : 'Unnamed Contact'
+                    }
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         {activeTab === 'overview' && (
           <div className="p-6">
             {/* Profile Header */}
@@ -513,20 +595,29 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
                     )}
                   </div>
                 ) : (
-                  <div className="w-32 h-32 rounded-full bg-gradient-to-br from-indigo-100 to-indigo-200 flex items-center justify-center border-4 border-gray-200 shadow-lg">
-                    <User className="h-16 w-16 text-indigo-400" />
-                  </div>
+                  <ProfileImage
+                    src={editedContact.profile_image_url}
+                    alt={`${editedContact.first_name || ''} ${editedContact.last_name || ''}`.trim() || 'Contact'}
+                    size="xl"
+                    fallbackInitials={getContactInitials(editedContact)}
+                    showBorder={true}
+                  />
                 )}
               </div>
 
               <div className="flex-1">
                 <div className="mb-4">
                   <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                    {editedContact.first_name || editedContact.last_name
-                      ? `${editedContact.first_name || ''} ${editedContact.last_name || ''}`.trim()
+                    {editedContact.nickname || (editedContact.first_name || editedContact.last_name)
+                      ? editedContact.nickname || `${editedContact.first_name || ''} ${editedContact.last_name || ''}`.trim()
                       : 'Unnamed Contact'
                     }
                   </h1>
+                  {editedContact.nickname && (editedContact.first_name || editedContact.last_name) && (
+                    <p className="text-lg text-gray-500 mb-2">
+                      {`${editedContact.first_name || ''} ${editedContact.last_name || ''}`.trim()}
+                    </p>
+                  )}
                   {editedContact.job_title && (
                     <p className="text-xl text-gray-600 mb-1">{editedContact.job_title}</p>
                   )}
@@ -723,16 +814,16 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
               )}
 
               {/* Groups Summary */}
-              {editedContact.Groups && editedContact.Groups.length > 0 && (
+              {((editedContact.Groups && editedContact.Groups.length > 0) || (editedContact.groups && editedContact.groups.length > 0)) && (
                 <div className="bg-gray-50 rounded-lg p-4">
                   <div className="flex items-center justify-between mb-2">
                     <label className="text-sm font-medium text-gray-700 flex items-center">
                       <Users className="h-4 w-4 mr-2 text-indigo-500" />
-                      Groups ({editedContact.Groups.length})
+                      Groups ({(editedContact.Groups || editedContact.groups || []).length})
                     </label>
                   </div>
                   <div className="flex flex-wrap gap-1">
-                    {editedContact.Groups.slice(0, 3).map((group) => (
+                    {(editedContact.Groups || editedContact.groups || []).slice(0, 3).map((group) => (
                       <span
                         key={group.id}
                         className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800"
@@ -740,9 +831,9 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
                         {group.name}
                       </span>
                     ))}
-                    {editedContact.Groups.length > 3 && (
+                    {(editedContact.Groups || editedContact.groups || []).length > 3 && (
                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-                        +{editedContact.Groups.length - 3} more
+                        +{(editedContact.Groups || editedContact.groups || []).length - 3} more
                       </span>
                     )}
                   </div>
@@ -861,10 +952,15 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
                   Notes
                 </h3>
                 <div className="bg-gray-50 rounded-lg p-4">
-                  <p className="text-gray-700 text-sm line-clamp-3">
-                    {editedContact.notes}
-                  </p>
-                  {editedContact.notes.length > 150 && (
+                  <div
+                    className="prose prose-sm max-w-none text-gray-700 line-clamp-3"
+                    dangerouslySetInnerHTML={{
+                      __html: editedContact.notes.length > 200
+                        ? editedContact.notes.substring(0, 200) + '...'
+                        : editedContact.notes
+                    }}
+                  />
+                  {editedContact.notes.length > 200 && (
                     <button
                       onClick={() => setActiveTab('notes')}
                       className="mt-2 text-indigo-600 hover:text-indigo-800 text-sm font-medium"
@@ -922,6 +1018,28 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
                 )}
                 {errors.last_name && (
                   <p className="mt-1 text-sm text-red-600">{errors.last_name}</p>
+                )}
+              </div>
+
+              {/* Nickname / Artist Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Nickname / Artist Name
+                </label>
+                {editMode ? (
+                  <input
+                    type="text"
+                    name="nickname"
+                    value={editedContact.nickname || ''}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="Enter nickname or artist name"
+                  />
+                ) : (
+                  <p className="text-gray-900 py-2 px-3 bg-gray-50 rounded-md">{editedContact.nickname || 'Not provided'}</p>
+                )}
+                {errors.nickname && (
+                  <p className="mt-1 text-sm text-red-600">{errors.nickname}</p>
                 )}
               </div>
 
@@ -1206,19 +1324,53 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
                 Notes
               </label>
               {editMode ? (
-                <textarea
-                  name="notes"
-                  rows={8}
-                  value={editedContact.notes || ''}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                  placeholder="Add any additional notes about this contact..."
-                />
+                <div className="border border-gray-300 rounded-md">
+                  <ReactQuill
+                    value={editedContact.notes || ''}
+                    onChange={(value) => {
+                      setEditedContact(prev => ({
+                        ...prev,
+                        notes: value
+                      }));
+                    }}
+                    theme="snow"
+                    placeholder="Add any additional notes about this contact..."
+                    style={{ minHeight: '200px' }}
+                    modules={{
+                      toolbar: [
+                        [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                        [{ 'font': [] }],
+                        [{ 'size': ['small', false, 'large', 'huge'] }],
+                        ['bold', 'italic', 'underline', 'strike'],
+                        [{ 'color': [] }, { 'background': [] }],
+                        [{ 'script': 'sub'}, { 'script': 'super' }],
+                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                        [{ 'indent': '-1'}, { 'indent': '+1' }],
+                        [{ 'direction': 'rtl' }],
+                        [{ 'align': [] }],
+                        ['link', 'image', 'blockquote', 'code-block'],
+                        ['clean']
+                      ],
+                    }}
+                    formats={[
+                      'header', 'font', 'size',
+                      'bold', 'italic', 'underline', 'strike',
+                      'color', 'background',
+                      'script',
+                      'list', 'bullet', 'indent',
+                      'direction', 'align',
+                      'link', 'image', 'blockquote', 'code-block'
+                    ]}
+                  />
+                </div>
               ) : (
                 <div className="bg-gray-50 rounded-md p-4 min-h-[200px]">
-                  <p className="text-gray-900 whitespace-pre-wrap">
-                    {editedContact.notes || 'No notes available'}
-                  </p>
+                  <div
+                    className="prose prose-sm max-w-none text-gray-900"
+                    dangerouslySetInnerHTML={{
+                      __html: editedContact.notes || '<p class="text-gray-500 italic">No notes available</p>'
+                    }}
+                  />
                 </div>
               )}
             </div>
@@ -1248,12 +1400,20 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
               </div>
             )}
 
+            {/* Debug: Log group data */}
+            {console.log('🔍 ContactDetail Groups Debug:', {
+              'editedContact.Groups': editedContact.Groups,
+              'editedContact.groups': editedContact.groups,
+              'Groups length': editedContact.Groups?.length,
+              'groups length': editedContact.groups?.length
+            })}
+
             {/* Current Groups */}
-            {editedContact.Groups && editedContact.Groups.length > 0 ? (
+            {(editedContact.Groups && editedContact.Groups.length > 0) || (editedContact.groups && editedContact.groups.length > 0) ? (
               <div>
                 <h4 className="text-sm font-medium text-gray-900 mb-4">Current Groups</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {editedContact.Groups.map((group) => (
+                  {(editedContact.Groups || editedContact.groups || []).map((group) => (
                     <div
                       key={group.id}
                       className="bg-gradient-to-r from-indigo-50 to-indigo-100 border border-indigo-200 rounded-lg p-4 hover:shadow-md transition-shadow"
@@ -1379,7 +1539,7 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="text-center p-3 bg-indigo-50 rounded-lg">
                     <div className="text-2xl font-bold text-indigo-600">
-                      {editedContact.Groups?.length || 0}
+                      {(editedContact.Groups?.length || editedContact.groups?.length || 0)}
                     </div>
                     <div className="text-sm text-indigo-700">Groups</div>
                   </div>

@@ -100,6 +100,7 @@ export interface Contact {
   user_id: number;
   first_name?: string;
   last_name?: string;
+  nickname?: string;
   email?: string;
   phone?: string;
   address_street?: string;
@@ -243,16 +244,17 @@ export class DatabaseService {
     try {
       const result = await this.db.prepare(`
         INSERT INTO contacts (
-          user_id, first_name, last_name, email, phone, address_street, address_city,
+          user_id, first_name, last_name, nickname, email, phone, address_street, address_city,
           address_state, address_zip, address_country, birthday, website, facebook,
           twitter, linkedin, instagram, youtube, tiktok, snapchat, discord, spotify,
           apple_music, github, behance, dribbble, company, job_title, role, notes, profile_image_url
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         RETURNING *
       `).bind(
         contactData.user_id,
         contactData.first_name,
         contactData.last_name,
+        contactData.nickname,
         contactData.email,
         contactData.phone,
         contactData.address_street,
@@ -292,20 +294,143 @@ export class DatabaseService {
     }
   }
 
-  async getContactsByUserId(userId: number, search?: string, sort?: string, direction?: string): Promise<Contact[]> {
-    let query = 'SELECT * FROM contacts WHERE user_id = ?';
+  async getContactsByUserId(
+    userId: number,
+    search?: string,
+    sort?: string,
+    direction?: string,
+    limit?: number,
+    offset?: number,
+    groupId?: number
+  ): Promise<{ contacts: Contact[], total: number }> {
+    // Build base query for counting and selecting
+    let countQuery: string;
+    let query: string;
     const params: any[] = [userId];
+    const countParams: any[] = [userId];
 
-    if (search) {
-      query += ` AND (
-        first_name LIKE ? OR last_name LIKE ? OR email LIKE ? OR
-        phone LIKE ? OR notes LIKE ? OR company LIKE ? OR
-        job_title LIKE ? OR role LIKE ? OR address_city LIKE ? OR address_country LIKE ?
-      )`;
-      const searchParam = `%${search}%`;
-      params.push(searchParam, searchParam, searchParam, searchParam, searchParam, searchParam, searchParam, searchParam, searchParam, searchParam);
+    // If filtering by group, use JOIN with group_contacts table
+    if (groupId !== undefined && groupId !== null) {
+      console.log('🔍 Database: Filtering by group ID:', groupId, 'for user:', userId);
+      countQuery = `
+        SELECT COUNT(DISTINCT c.id) as total
+        FROM contacts c
+        INNER JOIN group_contacts gc ON c.id = gc.contact_id
+        WHERE c.user_id = ? AND gc.group_id = ?
+      `;
+      query = `
+        SELECT DISTINCT c.*
+        FROM contacts c
+        INNER JOIN group_contacts gc ON c.id = gc.contact_id
+        WHERE c.user_id = ? AND gc.group_id = ?
+      `;
+      params.push(groupId);
+      countParams.push(groupId);
+    } else {
+      console.log('🔍 Database: No group filtering, showing all contacts for user:', userId);
+      // Standard query without group filtering
+      countQuery = 'SELECT COUNT(*) as total FROM contacts WHERE user_id = ?';
+      query = 'SELECT * FROM contacts WHERE user_id = ?';
     }
 
+    // Add comprehensive search conditions across ALL contact fields
+    if (search) {
+      const searchTerm = search.trim();
+      console.log('🔍 Database Search - Term:', searchTerm, 'Length:', searchTerm.length);
+
+      if (searchTerm.length > 0) {
+        // Comprehensive search across ALL text fields for maximum discoverability
+        const searchCondition = ` AND (
+          -- Core identity fields
+          first_name LIKE ? OR last_name LIKE ? OR nickname LIKE ? OR
+          (first_name || ' ' || last_name) LIKE ? OR
+
+          -- Contact information
+          email LIKE ? OR phone LIKE ? OR
+
+          -- Professional information
+          company LIKE ? OR job_title LIKE ? OR role LIKE ? OR
+
+          -- Address fields (complete address search)
+          address_street LIKE ? OR address_city LIKE ? OR
+          address_state LIKE ? OR address_zip LIKE ? OR address_country LIKE ? OR
+
+          -- Social media and web presence
+          website LIKE ? OR facebook LIKE ? OR twitter LIKE ? OR
+          linkedin LIKE ? OR instagram LIKE ? OR youtube LIKE ? OR
+          tiktok LIKE ? OR snapchat LIKE ? OR discord LIKE ? OR
+          spotify LIKE ? OR apple_music LIKE ? OR github LIKE ? OR
+          behance LIKE ? OR dribbble LIKE ? OR
+
+          -- Notes field (most important for comprehensive search)
+          notes LIKE ? OR
+
+          -- Birthday (for date-based searches)
+          birthday LIKE ?
+        )`;
+        query += searchCondition;
+        countQuery += searchCondition;
+
+        // Optimize search parameters based on field type
+        const containsSearch = `%${searchTerm}%`;  // Most fields use contains search
+        const prefixSearch = `${searchTerm}%`;     // Email uses prefix for performance
+
+        const searchParams = [
+          // Core identity fields (contains search for partial name matching)
+          containsSearch,   // first_name
+          containsSearch,   // last_name
+          containsSearch,   // nickname
+          containsSearch,   // full name concatenation
+
+          // Contact information
+          prefixSearch,     // email (prefix for better performance on indexed field)
+          containsSearch,   // phone
+
+          // Professional information
+          containsSearch,   // company
+          containsSearch,   // job_title
+          containsSearch,   // role
+
+          // Address fields (all use contains for partial matching)
+          containsSearch,   // address_street
+          containsSearch,   // address_city
+          containsSearch,   // address_state
+          containsSearch,   // address_zip
+          containsSearch,   // address_country
+
+          // Social media and web presence (all use contains)
+          containsSearch,   // website
+          containsSearch,   // facebook
+          containsSearch,   // twitter
+          containsSearch,   // linkedin
+          containsSearch,   // instagram
+          containsSearch,   // youtube
+          containsSearch,   // tiktok
+          containsSearch,   // snapchat
+          containsSearch,   // discord
+          containsSearch,   // spotify
+          containsSearch,   // apple_music
+          containsSearch,   // github
+          containsSearch,   // behance
+          containsSearch,   // dribbble
+
+          // Notes field (most important for comprehensive search)
+          containsSearch,   // notes
+
+          // Birthday (for date searches like "1990" or "January")
+          containsSearch    // birthday
+        ];
+
+        params.push(...searchParams);
+        countParams.push(...searchParams);
+
+        console.log('🔍 Database Search - Comprehensive search across', searchParams.length, 'fields');
+        console.log('🔍 Database Search - Term:', searchTerm);
+
+      }
+    }
+
+    // Add sorting
     if (sort) {
       const validSorts = ['first_name', 'last_name', 'email', 'created_at', 'company', 'job_title', 'role'];
       if (validSorts.includes(sort)) {
@@ -316,7 +441,45 @@ export class DatabaseService {
       query += ' ORDER BY created_at DESC';
     }
 
-    return await this.db.prepare(query).bind(...params).all<Contact>().then(result => result.results || []);
+    // Add pagination
+    if (limit !== undefined) {
+      query += ` LIMIT ${limit}`;
+      if (offset !== undefined) {
+        query += ` OFFSET ${offset}`;
+      }
+    }
+
+    // Execute both queries
+    const [contactsResult, countResult] = await Promise.all([
+      this.db.prepare(query).bind(...params).all<Contact>(),
+      this.db.prepare(countQuery).bind(...countParams).first<{ total: number }>()
+    ]);
+
+    const contacts = contactsResult.results || [];
+    const total = countResult?.total || 0;
+
+    if (groupId !== undefined && groupId !== null) {
+      console.log('🔍 Group Filtering Results - Group ID:', groupId, 'Found:', contacts.length, 'contacts, Total:', total);
+      if (contacts.length > 0) {
+        console.log('🔍 Group Filtering - Sample contacts:', contacts.slice(0, 3).map(c => `${c.first_name} ${c.last_name}`));
+      }
+    } else {
+      console.log('🔍 Database Search - Results:', contacts.length, 'contacts found, total:', total);
+      if (search && contacts.length > 0) {
+        console.log('🔍 Database Search - First result:', contacts[0].first_name, contacts[0].last_name, contacts[0].nickname);
+      }
+    }
+
+    return {
+      contacts,
+      total
+    };
+  }
+
+  // Keep the old method for backward compatibility
+  async getContactsByUserIdLegacy(userId: number, search?: string, sort?: string, direction?: string): Promise<Contact[]> {
+    const result = await this.getContactsByUserId(userId, search, sort, direction);
+    return result.contacts;
   }
 
   async getContactById(id: number, userId: number): Promise<Contact | null> {
@@ -432,5 +595,52 @@ export class DatabaseService {
       WHERE gc.contact_id = ?
       ORDER BY g.name
     `).bind(contactId).all<Group>().then(result => result.results || []);
+  }
+
+  // Batch get groups for multiple contacts (performance optimization)
+  async getBatchGroupsByContactIds(contactIds: number[]): Promise<Map<number, Group[]>> {
+    try {
+      if (contactIds.length === 0) {
+        return new Map();
+      }
+
+      // Create placeholders for the IN clause
+      const placeholders = contactIds.map(() => '?').join(',');
+
+      const query = `
+        SELECT
+          gc.contact_id,
+          g.id, g.name, g.description, g.color, g.created_at, g.updated_at
+        FROM groups g
+        JOIN group_contacts gc ON g.id = gc.group_id
+        WHERE gc.contact_id IN (${placeholders})
+        ORDER BY gc.contact_id, g.name
+      `;
+
+      const result = await this.db.prepare(query).bind(...contactIds).all();
+      const rows = result.results as (Group & { contact_id: number })[];
+
+      // Group the results by contact_id
+      const groupsByContact = new Map<number, Group[]>();
+
+      // Initialize all contact IDs with empty arrays
+      contactIds.forEach(id => {
+        groupsByContact.set(id, []);
+      });
+
+      // Populate the groups for each contact
+      rows.forEach(row => {
+        const { contact_id, ...group } = row;
+        const existingGroups = groupsByContact.get(contact_id) || [];
+        existingGroups.push(group);
+        groupsByContact.set(contact_id, existingGroups);
+      });
+
+      return groupsByContact;
+    } catch (error) {
+      console.error('Error batch getting groups for contacts:', error);
+      // Return empty map on error to prevent breaking the API
+      return new Map();
+    }
   }
 }

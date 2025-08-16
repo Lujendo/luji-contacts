@@ -2,28 +2,53 @@ import React from 'react';
 import { User } from '../types';
 import {
   Mail,
-  UserCircle,
   LogOut,
   ArrowUpDown,
   History,
   Settings,
   Users,
   Plus,
-  Send
+  Send,
+  Search,
+  Palette
 } from 'lucide-react';
+import ProfileImage from './ui/ProfileImage';
+
+// Helper function to get user initials
+const getUserInitials = (user: User | null): string => {
+  if (!user) return 'U';
+
+  const username = user.username?.trim() || '';
+  const email = user.email?.trim() || '';
+
+  if (username) {
+    const parts = username.split(' ');
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    }
+    return username[0].toUpperCase();
+  } else if (email) {
+    return email[0].toUpperCase();
+  }
+  return 'U';
+};
 
 // Component props interface
 interface FixedNavigationProps {
   user: User | null;
   onLogout: () => void;
   onOpenPanel: (panelName: string) => void;
+  onToggleGroupsSidebar?: () => void;
+  isGroupsSidebarExpanded?: boolean;
   selectedContactsCount?: number;
 }
 
-const FixedNavigation: React.FC<FixedNavigationProps> = ({ 
-  user, 
-  onLogout, 
+const FixedNavigation: React.FC<FixedNavigationProps> = ({
+  user,
+  onLogout,
   onOpenPanel,
+  onToggleGroupsSidebar,
+  isGroupsSidebarExpanded = false,
   selectedContactsCount = 0
 }) => {
   return (
@@ -52,8 +77,12 @@ const FixedNavigation: React.FC<FixedNavigationProps> = ({
         {/* Groups */}
         <div className="relative group">
           <button
-            onClick={() => onOpenPanel('groupList')}
-            className="w-12 h-12 flex items-center justify-center rounded-lg text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+            onClick={onToggleGroupsSidebar}
+            className={`w-12 h-12 flex items-center justify-center rounded-lg transition-colors ${
+              isGroupsSidebarExpanded
+                ? 'text-indigo-600 bg-indigo-50'
+                : 'text-gray-600 hover:text-indigo-600 hover:bg-indigo-50'
+            }`}
           >
             <Users className="h-6 w-6" />
           </button>
@@ -96,6 +125,20 @@ const FixedNavigation: React.FC<FixedNavigationProps> = ({
           </div>
         </div>
 
+        {/* Find Duplicates */}
+        <div className="relative group">
+          <button
+            onClick={() => onOpenPanel('duplicateDetection')}
+            className="w-12 h-12 flex items-center justify-center rounded-lg text-gray-600 hover:text-orange-600 hover:bg-orange-50 transition-colors"
+          >
+            <Search className="h-6 w-6" />
+          </button>
+          <div className="absolute left-16 top-1/2 transform -translate-y-1/2 bg-gray-900 text-white text-sm px-2 py-1 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50">
+            Find Duplicates
+            <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45"></div>
+          </div>
+        </div>
+
         {/* Import/Export */}
         <div className="relative group">
           <button
@@ -127,21 +170,32 @@ const FixedNavigation: React.FC<FixedNavigationProps> = ({
           </div>
         </div>
 
+        {/* Appearance Settings */}
+        <div className="relative group">
+          <button
+            onClick={() => onOpenPanel('appearanceSettings')}
+            className="w-12 h-12 flex items-center justify-center rounded-lg text-gray-600 hover:text-purple-600 hover:bg-purple-50 transition-colors"
+          >
+            <Palette className="h-6 w-6" />
+          </button>
+          <div className="absolute left-16 top-1/2 transform -translate-y-1/2 bg-gray-900 text-white text-sm px-2 py-1 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50">
+            Appearance
+            <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45"></div>
+          </div>
+        </div>
+
         {/* User Profile */}
         <div className="relative group">
           <button
             className="w-12 h-12 flex items-center justify-center rounded-lg text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
             title={user?.username || 'User Profile'}
           >
-            {user?.profile_image_url ? (
-              <img
-                src={user.profile_image_url}
-                alt="Profile"
-                className="w-8 h-8 rounded-full object-cover"
-              />
-            ) : (
-              <UserCircle className="h-8 w-8" />
-            )}
+            <ProfileImage
+              src={user?.profile_image_url}
+              alt={user?.username || 'User Profile'}
+              size="sm"
+              fallbackInitials={getUserInitials(user)}
+            />
           </button>
 
           {/* User dropdown menu */}

@@ -61,6 +61,7 @@ const ContactForm: React.FC<ContactFormProps> = ({
   const [formData, setFormData] = useState<CreateContactRequest>({
     first_name: initialData?.first_name || '',
     last_name: initialData?.last_name || '',
+    nickname: initialData?.nickname || '',
     email: initialData?.email || '',
     phone: initialData?.phone || '',
     birthday: initialData?.birthday || '',
@@ -172,9 +173,9 @@ const ContactForm: React.FC<ContactFormProps> = ({
       return;
     }
 
-    // Validate file size (5MB limit)
-    if (file.size > 5 * 1024 * 1024) {
-      setErrors(prev => ({ ...prev, image: 'Image size must be less than 5MB' }));
+    // Validate file size (10MB limit - will be compressed automatically)
+    if (file.size > 10 * 1024 * 1024) {
+      setErrors(prev => ({ ...prev, image: 'Image size must be less than 10MB' }));
       return;
     }
 
@@ -184,7 +185,8 @@ const ContactForm: React.FC<ContactFormProps> = ({
       setProfileImage({
         file,
         preview: e.target?.result as string,
-        isUploading: false
+        isUploading: false,
+        progress: 0
       });
     };
     reader.readAsDataURL(file);
@@ -217,14 +219,33 @@ const ContactForm: React.FC<ContactFormProps> = ({
 
       // Upload profile image if selected
       if (profileImage.file && newContact.id) {
-        setProfileImage(prev => ({ ...prev, isUploading: true }));
+        setProfileImage(prev => ({ ...prev, isUploading: true, progress: 0 }));
         try {
-          await contactsApi.uploadProfileImage(newContact.id, profileImage.file);
+          const uploadResult = await contactsApi.uploadProfileImage(
+            newContact.id,
+            profileImage.file,
+            (progress) => {
+              setProfileImage(prev => ({ ...prev, progress }));
+            }
+          );
+
+          // Update the contact with the new profile image URL
+          newContact.profile_image_url = uploadResult.profile_image_url;
+
+          // Update the local preview to show the uploaded image with cache busting
+          const imageUrlWithCacheBust = `${uploadResult.profile_image_url}?t=${Date.now()}`;
+          setProfileImage(prev => ({
+            ...prev,
+            preview: imageUrlWithCacheBust,
+            progress: 100,
+            file: null // Clear the file since it's now uploaded
+          }));
         } catch (imageError) {
           console.error('Error uploading profile image:', imageError);
+          setErrors(prev => ({ ...prev, image: 'Failed to upload profile image. Please try again.' }));
           // Don't fail the entire operation for image upload errors
         }
-        setProfileImage(prev => ({ ...prev, isUploading: false }));
+        setProfileImage(prev => ({ ...prev, isUploading: false, progress: 0 }));
       }
 
       // Call the appropriate callback

@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS contacts (
   user_id INTEGER NOT NULL,
   first_name TEXT,
   last_name TEXT,
+  nickname TEXT,
   email TEXT,
   phone TEXT,
   address_street TEXT,
@@ -113,6 +114,26 @@ CREATE TABLE IF NOT EXISTS email_history (
 CREATE INDEX IF NOT EXISTS idx_contacts_user_id ON contacts(user_id);
 CREATE INDEX IF NOT EXISTS idx_contacts_email ON contacts(email);
 CREATE INDEX IF NOT EXISTS idx_contacts_name ON contacts(first_name, last_name);
+CREATE INDEX IF NOT EXISTS idx_contacts_phone ON contacts(phone);
+CREATE INDEX IF NOT EXISTS idx_contacts_company ON contacts(company);
+CREATE INDEX IF NOT EXISTS idx_contacts_created_at ON contacts(created_at);
+CREATE INDEX IF NOT EXISTS idx_contacts_updated_at ON contacts(updated_at);
+
+-- Composite indexes for common queries
+CREATE INDEX IF NOT EXISTS idx_contacts_user_created ON contacts(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_contacts_user_name ON contacts(user_id, first_name, last_name);
+CREATE INDEX IF NOT EXISTS idx_contacts_user_company ON contacts(user_id, company);
+
+-- Enhanced indexes for comprehensive search functionality
+CREATE INDEX IF NOT EXISTS idx_contacts_notes ON contacts(notes);
+CREATE INDEX IF NOT EXISTS idx_contacts_address ON contacts(address_city, address_state, address_country);
+CREATE INDEX IF NOT EXISTS idx_contacts_social ON contacts(website, linkedin, twitter);
+CREATE INDEX IF NOT EXISTS idx_contacts_professional ON contacts(company, job_title, role);
+
+-- Full-text search support (expanded for comprehensive search)
+CREATE INDEX IF NOT EXISTS idx_contacts_search_core ON contacts(user_id, first_name, last_name, email, phone, company, job_title);
+CREATE INDEX IF NOT EXISTS idx_contacts_search_extended ON contacts(user_id, notes, address_city, address_state, role);
+
 CREATE INDEX IF NOT EXISTS idx_groups_user_id ON groups(user_id);
 CREATE INDEX IF NOT EXISTS idx_group_contacts_group_id ON group_contacts(group_id);
 CREATE INDEX IF NOT EXISTS idx_group_contacts_contact_id ON group_contacts(contact_id);

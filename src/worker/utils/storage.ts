@@ -12,16 +12,48 @@ export class StorageService {
 
   // Upload profile image
   async uploadProfileImage(file: File, userId: number, contactId?: number): Promise<string> {
-    const prefix = contactId ? `contacts/${contactId}/` : `users/${userId}/`;
-    const fileName = this.generateFileName(file.name, prefix);
-    
-    await this.bucket.put(fileName, file.stream(), {
-      httpMetadata: {
-        contentType: file.type,
-      },
-    });
+    try {
+      const prefix = contactId ? `contacts/${contactId}/` : `users/${userId}/`;
+      const fileName = this.generateFileName(file.name, prefix);
 
-    return fileName;
+      // Add retry logic for R2 uploads
+      let lastError: Error | null = null;
+      const maxRetries = 3;
+
+      for (let attempt = 0; attempt < maxRetries; attempt++) {
+        try {
+          await this.bucket.put(fileName, file.stream(), {
+            httpMetadata: {
+              contentType: file.type,
+              cacheControl: 'public, max-age=31536000', // 1 year cache
+            },
+            customMetadata: {
+              uploadedBy: userId.toString(),
+              uploadedAt: new Date().toISOString(),
+              originalName: file.name,
+              fileSize: file.size.toString(),
+            },
+          });
+
+          return fileName;
+        } catch (error) {
+          lastError = error as Error;
+          console.warn(`R2 upload attempt ${attempt + 1} failed:`, error);
+
+          // Wait before retrying (exponential backoff)
+          if (attempt < maxRetries - 1) {
+            await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+          }
+        }
+      }
+
+      // If all retries failed, throw the last error
+      throw new Error(`Failed to upload file after ${maxRetries} attempts: ${lastError?.message}`);
+
+    } catch (error) {
+      console.error('Profile image upload error:', error);
+      throw new Error(`File upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
   // Upload CSV file for import

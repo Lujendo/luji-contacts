@@ -11,40 +11,103 @@ export function createContactRoutes(db: DatabaseService, auth: AuthService, stor
   // Apply authentication middleware to all routes
   contacts.use('*', createAuthMiddleware(auth, db));
 
-  // Get all contacts with search and sorting
+  // Test endpoint for group filtering
+  contacts.get('/test-group/:groupId', async (c) => {
+    try {
+      const user = getAuthenticatedUser(c);
+      const groupId = parseInt(c.req.param('groupId'));
+
+      console.log('🧪 TEST: Group filtering test for group:', groupId, 'user:', user.id);
+
+      const result = await db.getContactsByUserId(
+        user.id,
+        undefined, // no search
+        'first_name', // sort by first name
+        'asc', // ascending
+        10, // limit to 10 for testing
+        0, // no offset
+        groupId // filter by group
+      );
+
+      console.log('🧪 TEST: Results -', result.contacts.length, 'contacts found');
+
+      return c.json({
+        success: true,
+        data: result.contacts,
+        total: result.total,
+        groupId: groupId,
+        message: `Found ${result.contacts.length} contacts in group ${groupId}`
+      });
+    } catch (error) {
+      console.error('🧪 TEST: Error in group filtering test:', error);
+      return c.json({ success: false, error: 'Test failed' }, 500);
+    }
+  });
+
+  // Get all contacts with search, sorting, and pagination
   contacts.get('/', async (c) => {
     try {
       const user = getAuthenticatedUser(c);
-      const { search, sort, direction } = c.req.query();
+      const { search, sort, direction, limit, offset, page, group } = c.req.query();
 
-      const contactList = await db.getContactsByUserId(
+      // Parse pagination parameters
+      const parsedLimit = limit ? Math.min(parseInt(limit), 100) : 50; // Default 50, max 100
+      const parsedOffset = offset ? parseInt(offset) : 0;
+      const parsedPage = page ? parseInt(page) : 1;
+      const parsedGroupId = group ? parseInt(group) : undefined;
+
+      // Calculate offset from page if provided
+      const finalOffset = page ? (parsedPage - 1) * parsedLimit : parsedOffset;
+
+      console.log('📡 API: Contacts request - User:', user.id, 'Group:', parsedGroupId, 'Search:', search, 'Page:', parsedPage);
+
+      const result = await db.getContactsByUserId(
         user.id,
         search,
         sort,
-        direction
+        direction,
+        parsedLimit,
+        finalOffset,
+        parsedGroupId
       );
 
-      // Get groups for each contact (if needed)
+      // Optimize group loading - batch fetch all groups for all contacts at once
       const storage = new StorageService(c.env.STORAGE);
-      const contactsWithGroups = await Promise.all(
-        contactList.map(async (contact) => {
-          const groups = await db.getGroupsByContactId(contact.id);
-          return {
-            ...contact,
-            profile_image_url: contact.profile_image_url ? (
-              contact.profile_image_url.startsWith('/api/files/')
-                ? contact.profile_image_url
-                : storage.getPublicUrl(contact.profile_image_url)
-            ) : contact.profile_image_url,
-            Groups: groups.map(g => ({ id: g.id, name: g.name })), // Use uppercase Groups for frontend compatibility
-            groups: groups.map(g => ({ id: g.id, name: g.name }))  // Keep lowercase for backward compatibility
-          };
-        })
-      );
+      const contactIds = result.contacts.map(c => c.id);
+
+      // Batch fetch all groups for all contacts in one query
+      const allContactGroups = contactIds.length > 0
+        ? await db.getBatchGroupsByContactIds(contactIds)
+        : new Map();
+
+      const contactsWithGroups = result.contacts.map((contact) => {
+        const groups = allContactGroups.get(contact.id) || [];
+        return {
+          ...contact,
+          profile_image_url: contact.profile_image_url ? (
+            contact.profile_image_url.startsWith('/api/files/')
+              ? contact.profile_image_url
+              : `/api/files/${contact.profile_image_url}`
+          ) : contact.profile_image_url,
+          Groups: groups.map(g => ({ id: g.id, name: g.name })), // Use uppercase Groups for frontend compatibility
+          groups: groups.map(g => ({ id: g.id, name: g.name }))  // Keep lowercase for backward compatibility
+        };
+      });
+
+      const totalPages = Math.ceil(result.total / parsedLimit);
+      const currentPage = Math.floor(finalOffset / parsedLimit) + 1;
 
       const response: ApiResponse = {
         data: contactsWithGroups,
-        total: contactsWithGroups.length,
+        total: result.total,
+        pagination: {
+          limit: parsedLimit,
+          offset: finalOffset,
+          page: currentPage,
+          totalPages: totalPages,
+          hasNext: currentPage < totalPages,
+          hasPrev: currentPage > 1
+        },
         success: true
       };
 
@@ -83,7 +146,7 @@ export function createContactRoutes(db: DatabaseService, auth: AuthService, stor
         profile_image_url: contact.profile_image_url ? (
           contact.profile_image_url.startsWith('/api/files/')
             ? contact.profile_image_url
-            : storage.getPublicUrl(contact.profile_image_url)
+            : `/api/files/${contact.profile_image_url}`
         ) : contact.profile_image_url,
         Groups: groups.map(g => ({ id: g.id, name: g.name })), // Use uppercase Groups for frontend compatibility
         groups: groups.map(g => ({ id: g.id, name: g.name }))  // Keep lowercase for backward compatibility
@@ -117,10 +180,10 @@ export function createContactRoutes(db: DatabaseService, auth: AuthService, stor
 
       // Check contact limit
       if (user.contact_limit && user.contact_limit > 0) {
-        const existingContacts = await db.getContactsByUserId(user.id);
+        const existingContacts = await db.getContactsByUserIdLegacy(user.id);
         if (existingContacts.length >= user.contact_limit) {
-          return c.json({ 
-            error: `Contact limit reached. Maximum ${user.contact_limit} contacts allowed.` 
+          return c.json({
+            error: `Contact limit reached. Maximum ${user.contact_limit} contacts allowed.`
           }, 403);
         }
       }
@@ -129,6 +192,7 @@ export function createContactRoutes(db: DatabaseService, auth: AuthService, stor
         user_id: user.id,
         first_name: body.first_name?.trim() || '',
         last_name: body.last_name?.trim() || '',
+        nickname: body.nickname?.trim() || '',
         email: body.email?.toLowerCase().trim() || '',
         phone: body.phone?.trim() || '',
         address_street: body.address_street?.trim() || '',
@@ -207,7 +271,7 @@ export function createContactRoutes(db: DatabaseService, auth: AuthService, stor
       
       // Only update provided fields
       const allowedFields = [
-        'first_name', 'last_name', 'email', 'phone', 'address_street',
+        'first_name', 'last_name', 'nickname', 'email', 'phone', 'address_street',
         'address_city', 'address_state', 'address_zip', 'address_country',
         'birthday', 'website', 'facebook', 'twitter', 'linkedin',
         'instagram', 'youtube', 'tiktok', 'snapchat', 'discord', 'spotify',
@@ -237,7 +301,7 @@ export function createContactRoutes(db: DatabaseService, auth: AuthService, stor
         profile_image_url: updatedContact.profile_image_url ? (
           updatedContact.profile_image_url.startsWith('/api/files/')
             ? updatedContact.profile_image_url
-            : storage.getPublicUrl(updatedContact.profile_image_url)
+            : `/api/files/${updatedContact.profile_image_url}`
         ) : updatedContact.profile_image_url,
         Groups: groups.map(g => ({ id: g.id, name: g.name })), // Use uppercase Groups for frontend compatibility
         groups: groups.map(g => ({ id: g.id, name: g.name }))  // Keep lowercase for backward compatibility

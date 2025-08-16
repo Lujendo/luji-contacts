@@ -13,22 +13,43 @@ import {
 
 // Component imports
 import FixedNavigation from './FixedNavigation';
-import ContactForm from './ContactForm';
+import ContactFormModal from './ContactFormModal';
 import ContactTable from './ContactTable';
+import OptimizedContactsView from './OptimizedContactsView';
 import GroupList from './GroupList';
 import GroupForm from './GroupForm';
 import GroupEditForm from './GroupEditForm';
 import EmailForm from './EmailForm';
 import EmailHistory from './EmailHistory';
-import DashboardImportExport from './DashboardImportExport';
+import ImportModal from './ImportModal';
 import UserSettings from './UserSettings';
 import BulkGroupAssign from './BulkGroupAssign';
 import BulkGroupRemove from './BulkGroupRemove';
 import GroupContactsManager from './GroupContactsManager';
-import ResizableRightPanel from './ResizableRightPanel';
+import MergeContactsModal from './MergeContactsModal';
+// import DuplicateDetectionPanel from './DuplicateDetectionPanel'; // Now using modal
+// import ResizableRightPanel from './ResizableRightPanel'; // Replaced with modals
+import ApplicationMenuBar from './ApplicationMenuBar';
 import ContactDetailPanel from './ContactDetailPanel';
 import GroupAssignModal from './GroupAssignModal';
 import GroupRemoveModal from './GroupRemoveModal';
+import Header from './Header';
+import Footer from './Footer';
+import { useAppearance } from '../contexts/AppearanceContext';
+
+// Modal imports
+import UserSettingsModal from './modals/UserSettingsModal';
+import GroupListModal from './modals/GroupListModal';
+import GroupsSidebar from './GroupsSidebar';
+import GroupFormModal from './modals/GroupFormModal';
+import GroupEditFormModal from './modals/GroupEditFormModal';
+import EmailFormModal from './modals/EmailFormModal';
+import EmailHistoryModal from './modals/EmailHistoryModal';
+import BulkGroupAssignModal from './modals/BulkGroupAssignModal';
+import BulkGroupRemoveModal from './modals/BulkGroupRemoveModal';
+import GroupContactsManagerModal from './modals/GroupContactsManagerModal';
+import DuplicateDetectionModal from './modals/DuplicateDetectionModal';
+// import AppearanceSettingsModal from './modals/AppearanceSettingsModal'; // Now integrated into UserSettings
 
 // Icon imports
 import {
@@ -43,23 +64,26 @@ interface DashboardState {
   // Panel visibility
   showContactForm: boolean;
   showContactDetail: boolean;
-  showGroupList: boolean;
   showGroupForm: boolean;
   showGroupEditForm: boolean;
   showEmailForm: boolean;
   showEmailHistory: boolean;
-  showImportExport: boolean;
+  showImportModal: boolean;
   showUserSettings: boolean;
   showBulkGroupAssign: boolean;
   showBulkGroupRemove: boolean;
   showGroupContactsManager: boolean;
   showGroupAssignModal: boolean;
   showGroupRemoveModal: boolean;
+
+  // UI state
+  isGroupsSidebarCollapsed: boolean;
+  showMergeContacts: boolean;
+  showDuplicateDetection: boolean;
   
   // Data
   contacts: Contact[];
   groups: Group[];
-  filteredContacts: Contact[];
   
   // UI state
   selectedContact: Contact | null;
@@ -79,12 +103,11 @@ const Dashboard: React.FC = () => {
   // Panel visibility states
   const [showContactForm, setShowContactForm] = useState<boolean>(false);
   const [showContactDetail, setShowContactDetail] = useState<boolean>(false);
-  const [showGroupList, setShowGroupList] = useState<boolean>(false);
   const [showGroupForm, setShowGroupForm] = useState<boolean>(false);
   const [showGroupEditForm, setShowGroupEditForm] = useState<boolean>(false);
   const [showEmailForm, setShowEmailForm] = useState<boolean>(false);
   const [showEmailHistory, setShowEmailHistory] = useState<boolean>(false);
-  const [showImportExport, setShowImportExport] = useState<boolean>(false);
+  const [showImportModal, setShowImportModal] = useState<boolean>(false);
   const [showUserSettings, setShowUserSettings] = useState<boolean>(false);
   const [showBulkGroupAssign, setShowBulkGroupAssign] = useState<boolean>(false);
   const [showBulkGroupRemove, setShowBulkGroupRemove] = useState<boolean>(false);
@@ -92,17 +115,29 @@ const Dashboard: React.FC = () => {
   const [showGroupAssignModal, setShowGroupAssignModal] = useState<boolean>(false);
   const [showGroupRemoveModal, setShowGroupRemoveModal] = useState<boolean>(false);
 
+  // UI states
+  const [isGroupsSidebarCollapsed, setIsGroupsSidebarCollapsed] = useState<boolean>(true);
+  const [showMergeContacts, setShowMergeContacts] = useState<boolean>(false);
+  const [showDuplicateDetection, setShowDuplicateDetection] = useState<boolean>(false);
+  const [contactsToMerge, setContactsToMerge] = useState<Contact[]>([]);
+  const [userSettingsTab, setUserSettingsTab] = useState<'profile' | 'email' | 'subscription' | 'security' | 'appearance'>('profile');
+
+  // Use appearance context
+  const { settings: appearanceSettings, updateSettings: updateAppearanceSettings } = useAppearance();
+
   // Data states
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
-  const [filteredContacts, setFilteredContacts] = useState<Contact[]>([]);
   
   // Selection and UI states
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
   const [selectedContacts, setSelectedContacts] = useState<number[]>([]);
+  const [activeGroup, setActiveGroup] = useState<Group | null>(null);
+  const [highlightedGroupId, setHighlightedGroupId] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [sortConfig, setSortConfig] = useState<SortConfig>({ field: 'first_name', direction: 'asc' });
+  const [viewMode, setViewMode] = useState<'table' | 'grid' | 'list'>('table');
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -125,10 +160,10 @@ const Dashboard: React.FC = () => {
       
       try {
         const [contactsData, groupsData] = await Promise.all([
-          contactsApi.getContacts(),
+          contactsApi.getContactsLegacy(),
           groupsApi.getGroups()
         ]);
-        
+
         setContacts(contactsData);
         setGroups(groupsData);
       } catch (error) {
@@ -142,33 +177,8 @@ const Dashboard: React.FC = () => {
     loadInitialData();
   }, [user]);
 
-  // Filter and sort contacts
-  useEffect(() => {
-    let filtered = [...contacts];
-
-    // Apply search filter
-    if (searchTerm.trim()) {
-      const searchLower = searchTerm.toLowerCase();
-      filtered = filtered.filter(contact => 
-        contact.first_name?.toLowerCase().includes(searchLower) ||
-        contact.last_name?.toLowerCase().includes(searchLower) ||
-        contact.email?.toLowerCase().includes(searchLower) ||
-        contact.company?.toLowerCase().includes(searchLower) ||
-        contact.phone?.includes(searchTerm)
-      );
-    }
-
-    // Apply sorting
-    filtered.sort((a, b) => {
-      const aValue = a[sortConfig.field as keyof Contact] || '';
-      const bValue = b[sortConfig.field as keyof Contact] || '';
-      
-      const comparison = String(aValue).localeCompare(String(bValue));
-      return sortConfig.direction === 'asc' ? comparison : -comparison;
-    });
-
-    setFilteredContacts(filtered);
-  }, [contacts, searchTerm, sortConfig]);
+  // Note: Filtering is now handled server-side by the OptimizedContactsView component
+  // This local filtering logic has been removed in favor of server-side filtering for better performance
 
   // Event handlers
   const handleContactSelect: ContactEventHandler = useCallback((contact: Contact) => {
@@ -177,9 +187,56 @@ const Dashboard: React.FC = () => {
   }, []);
 
   const handleGroupSelect: GroupEventHandler = useCallback((group: Group) => {
+    console.log('handleGroupSelect called with group:', group);
+    if (!group) {
+      console.error('handleGroupSelect: group is null or undefined');
+      return;
+    }
     setSelectedGroup(group);
     setShowGroupContactsManager(true);
   }, []);
+
+  const handleGroupHighlight = useCallback((groupId: number) => {
+    const group = groups.find(g => g.id === groupId);
+    if (group) {
+      // If clicking the same group that's already active, toggle it off
+      if (activeGroup?.id === groupId) {
+        setActiveGroup(null);
+        setHighlightedGroupId(null);
+        console.log('Clearing group filter');
+      } else {
+        setActiveGroup(group);
+        setHighlightedGroupId(groupId);
+        console.log('Filtering by group:', group.name, `(${group.contact_count || 0} contacts)`);
+      }
+    }
+  }, [groups, activeGroup]);
+
+  const handleShowAllContacts = useCallback(() => {
+    setActiveGroup(null);
+    setHighlightedGroupId(null);
+    console.log('Showing all contacts');
+  }, []);
+
+  // New group sidebar handlers
+  const handleGroupsSidebarToggle = useCallback(() => {
+    setIsGroupsSidebarCollapsed(prev => !prev);
+  }, []);
+
+  const handleGroupDelete = useCallback(async (groupId: number) => {
+    try {
+      await groupsApi.deleteGroup(groupId);
+      setGroups(prev => prev.filter(g => g.id !== groupId));
+
+      // Clear active group if it was deleted
+      if (activeGroup?.id === groupId) {
+        setActiveGroup(null);
+        setHighlightedGroupId(null);
+      }
+    } catch (error) {
+      console.error('Error deleting group:', error);
+    }
+  }, [activeGroup]);
 
   const handleContactUpdate = useCallback(async (updatedContact: Contact): Promise<void> => {
     try {
@@ -251,25 +308,27 @@ const Dashboard: React.FC = () => {
   }, []);
 
   const handleBulkSelection = useCallback((selected: boolean): void => {
-    setSelectedContacts(selected ? filteredContacts.map(c => c.id) : []);
-  }, [filteredContacts]);
+    setSelectedContacts(selected ? contacts.map(c => c.id) : []);
+  }, [contacts]);
 
   // Panel management functions
   const closeAllPanels = useCallback((): void => {
     setShowContactForm(false);
     setShowContactDetail(false);
-    setShowGroupList(false);
     setShowGroupForm(false);
     setShowGroupEditForm(false);
     setShowEmailForm(false);
     setShowEmailHistory(false);
-    setShowImportExport(false);
+    setShowImportModal(false);
     setShowUserSettings(false);
     setShowBulkGroupAssign(false);
     setShowBulkGroupRemove(false);
     setShowGroupContactsManager(false);
     setShowGroupAssignModal(false);
     setShowGroupRemoveModal(false);
+    setShowMergeContacts(false);
+    setShowDuplicateDetection(false);
+    setUserSettingsTab('profile');
   }, []);
 
   const openPanel = useCallback((panelName: string): void => {
@@ -279,20 +338,24 @@ const Dashboard: React.FC = () => {
       case 'contactForm':
         setShowContactForm(true);
         break;
-      case 'groupList':
-        setShowGroupList(true);
-        break;
       case 'groupForm':
         setShowGroupForm(true);
         break;
       case 'emailForm':
         setShowEmailForm(true);
         break;
+      case 'duplicateDetection':
+        setShowDuplicateDetection(true);
+        break;
+      case 'appearanceSettings':
+        setShowUserSettings(true);
+        setUserSettingsTab('appearance');
+        break;
       case 'emailHistory':
         setShowEmailHistory(true);
         break;
       case 'importExport':
-        setShowImportExport(true);
+        setShowImportModal(true);
         break;
       case 'userSettings':
         setShowUserSettings(true);
@@ -334,85 +397,101 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-    <div className="flex h-screen bg-gray-100">
-      {/* Fixed Navigation */}
+    <div className="flex flex-col h-screen bg-gray-100">
+      {/* Header */}
+      {appearanceSettings.showHeader && (
+        <Header
+          user={user}
+          onSettingsClick={() => openPanel('appearanceSettings')}
+          onProfileClick={() => openPanel('userSettings')}
+        />
+      )}
+
+      {/* Fixed Navigation Sidebar - Positioned absolutely */}
       <FixedNavigation
         user={user}
         onLogout={handleLogout}
         onOpenPanel={openPanel}
+        onToggleGroupsSidebar={handleGroupsSidebarToggle}
+        isGroupsSidebarExpanded={!isGroupsSidebarCollapsed}
         selectedContactsCount={selectedContacts.length}
       />
 
-      {/* Main Content Area */}
-      <div className="flex-1 overflow-hidden ml-16">
+      {/* Main Content with Groups Sidebar - Takes remaining space, offset by fixed nav */}
+      <div className="flex flex-1 min-h-0 overflow-hidden ml-16">
+        {/* Groups Sidebar */}
+        <GroupsSidebar
+          groups={groups}
+          activeGroup={activeGroup}
+          highlightedGroupId={highlightedGroupId}
+          onGroupClick={handleGroupHighlight}
+          onGroupEdit={(group) => {
+            setSelectedGroup(group);
+            setShowGroupContactsManager(true);
+          }}
+          onGroupDelete={handleGroupDelete}
+          onAddNewGroup={() => setShowGroupForm(true)}
+          onShowAll={handleShowAllContacts}
+          isCollapsed={isGroupsSidebarCollapsed}
+          onToggleCollapse={handleGroupsSidebarToggle}
+        />
+
+        {/* Main Content Area */}
+        <div className="flex-1 overflow-hidden">
         {/* Main Contact List */}
         <div className="h-full bg-white">
           <div className="h-full flex flex-col">
-            {/* Search and Controls */}
-            <div className="p-4 bg-white border-b border-gray-200">
-              <div className="flex items-center space-x-4">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <input
-                    type="text"
-                    placeholder="Search contacts..."
-                    value={searchTerm}
-                    onChange={handleSearchChange}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                  />
-                  {searchTerm && (
-                    <button
-                      onClick={() => setSearchTerm('')}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  )}
-                </div>
+            {/* Application Menu Bar */}
+            <ApplicationMenuBar
+              onNewContact={() => setShowContactForm(true)}
+              onFindDuplicates={() => setShowDuplicateDetection(true)}
+              onMergeSelected={() => setShowMergeContacts(true)}
+              onImport={() => openPanel('importExport')}
+              onExport={() => openPanel('importExport')}
+              onManageGroups={() => {/* Groups now managed via sidebar */}}
+              onSettings={() => openPanel('userSettings')}
+              onSortChange={(field, direction) => setSortConfig({ field, direction })}
+              onViewModeChange={setViewMode}
+              onFilterChange={() => {/* TODO: Implement filters */}}
+              onSearchChange={setSearchTerm}
+              selectedContactsCount={selectedContacts.length}
+              currentSort={sortConfig}
+              currentViewMode={viewMode}
+              totalContacts={contacts.length}
+              searchQuery={searchTerm}
+            />
 
-                <button
-                  onClick={() => handleSortChange('first_name')}
-                  className="flex items-center space-x-1 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 border border-gray-300 rounded-md hover:bg-gray-50"
-                >
-                  <ArrowUpDown className="h-4 w-4" />
-                  <span>Sort</span>
-                </button>
-              </div>
-
-              {/* Bulk Actions */}
-              {selectedContacts.length > 0 && (
-                <div className="mt-3 flex items-center justify-between bg-indigo-50 p-3 rounded-md">
-                  <span className="text-sm text-indigo-700">
-                    {selectedContacts.length} contact{selectedContacts.length !== 1 ? 's' : ''} selected
-                  </span>
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => openPanel('bulkGroupAssign')}
-                      className="text-sm text-indigo-600 hover:text-indigo-800"
-                    >
-                      Assign to Group
-                    </button>
-                    <button
-                      onClick={() => openPanel('bulkGroupRemove')}
-                      className="text-sm text-indigo-600 hover:text-indigo-800"
-                    >
-                      Remove from Group
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Contact Table */}
-            <div className="flex-1 overflow-auto">
-              <ContactTable
-                contacts={filteredContacts}
-                selectedContacts={selectedContacts}
-                onSelectContact={handleContactSelect}
+            {/* Optimized Contact View with Infinite Scrolling */}
+            <div className="flex-1 overflow-hidden">
+              <OptimizedContactsView
+                onContactSelect={handleContactSelect}
                 onContactSelection={handleContactSelection}
                 onBulkSelection={handleBulkSelection}
-                sortConfig={sortConfig}
-                onSortChange={handleSortChange}
+                selectedContacts={selectedContacts}
+                enableInfiniteScrolling={true}
+                enableCache={true}
+                showCacheStats={process.env.NODE_ENV === 'development'}
+                searchQuery={searchTerm}
+                groupId={activeGroup?.id}
+                activeGroupName={activeGroup?.name}
+                onClearGroupFilter={handleShowAllContacts}
+                onEditContact={(contact) => {
+                  setSelectedContact(contact);
+                  setShowContactForm(true);
+                }}
+                onSendEmail={(contact) => {
+                  setSelectedContact(contact);
+                  openPanel('emailForm');
+                }}
+                onAddToGroup={(contact) => {
+                  setSelectedContacts([contact.id]);
+                  openPanel('bulkGroupAssign');
+                }}
+                onViewDetails={(contact) => {
+                  setSelectedContact(contact);
+                  // TODO: Implement contact details view
+                }}
+                className="h-full"
               />
             </div>
           </div>
@@ -430,130 +509,130 @@ const Dashboard: React.FC = () => {
         />
       )}
 
-      {/* Right Panel - Forms Only (No Contact Details) */}
-      <ResizableRightPanel isVisible={
-        showContactForm || showGroupList ||
-        showGroupForm || showGroupEditForm || showEmailForm ||
-        showEmailHistory || showImportExport || showUserSettings ||
-        showBulkGroupAssign || showBulkGroupRemove || showGroupContactsManager
-      }>
-          {showContactForm && (
-            <ContactForm
-              onClose={() => setShowContactForm(false)}
-              onContactCreated={handleContactCreate}
-              groups={groups}
-            />
-          )}
+      {/* Utility Modals - Now using beautiful modal dialogs instead of right panel */}
 
-          {showGroupList && (
-            <GroupList
-              groups={groups}
-              onClose={() => setShowGroupList(false)}
-              onGroupSelect={handleGroupSelect}
-              onGroupEdit={(group) => {
-                setSelectedGroup(group);
-                setShowGroupEditForm(true);
-                setShowGroupList(false);
-              }}
-            />
-          )}
+      <GroupFormModal
+        isOpen={showGroupForm}
+        onClose={() => setShowGroupForm(false)}
+        onGroupCreated={handleGroupCreate}
+      />
 
-          {showGroupForm && (
-            <GroupForm
-              onClose={() => setShowGroupForm(false)}
-              onGroupCreated={handleGroupCreate}
-            />
-          )}
+      {selectedGroup && (
+        <GroupEditFormModal
+          isOpen={showGroupEditForm}
+          onClose={() => setShowGroupEditForm(false)}
+          group={selectedGroup}
+          onGroupUpdated={(updatedGroup) => {
+            setGroups(prev => prev.map(g => g.id === updatedGroup.id ? updatedGroup : g));
+            setSelectedGroup(updatedGroup);
+          }}
+        />
+      )}
 
-          {showGroupEditForm && selectedGroup && (
-            <GroupEditForm
-              group={selectedGroup}
-              onClose={() => setShowGroupEditForm(false)}
-              onGroupUpdated={(updatedGroup) => {
-                setGroups(prev => prev.map(g => g.id === updatedGroup.id ? updatedGroup : g));
-                setSelectedGroup(updatedGroup);
-              }}
-            />
-          )}
+      {/* Email Modals */}
+      <EmailFormModal
+        isOpen={showEmailForm}
+        onClose={() => setShowEmailForm(false)}
+        contacts={selectedContacts.length > 0
+          ? contacts.filter(c => selectedContacts.includes(c.id))
+          : contacts
+        }
+        selectedContact={selectedContact}
+      />
 
-          {showEmailForm && (
-            <EmailForm
-              contacts={selectedContacts.length > 0
-                ? contacts.filter(c => selectedContacts.includes(c.id))
-                : filteredContacts
-              }
-              onClose={() => setShowEmailForm(false)}
-            />
-          )}
+      <EmailHistoryModal
+        isOpen={showEmailHistory}
+        onClose={() => setShowEmailHistory(false)}
+      />
 
-          {showEmailHistory && (
-            <EmailHistory
-              onClose={() => setShowEmailHistory(false)}
-            />
-          )}
 
-          {showImportExport && (
-            <DashboardImportExport
-              onClose={() => setShowImportExport(false)}
-              onContactsImported={(importedContacts) => {
-                setContacts(prev => [...prev, ...importedContacts]);
-              }}
-            />
-          )}
+      {/* User Settings Modal */}
+      <UserSettingsModal
+        isOpen={showUserSettings}
+        onClose={() => {
+          setShowUserSettings(false);
+          setUserSettingsTab('profile');
+        }}
+        initialTab={userSettingsTab}
+      />
 
-          {showUserSettings && (
-            <UserSettings
-              onClose={() => setShowUserSettings(false)}
-            />
-          )}
+      {/* Bulk Operations Modals */}
+      <BulkGroupAssignModal
+        isOpen={showBulkGroupAssign}
+        onClose={() => setShowBulkGroupAssign(false)}
+        contactIds={selectedContacts}
+        groups={groups}
+        onAssignmentComplete={() => {
+          // Refresh contacts to show updated group assignments
+          contactsApi.getContactsLegacy().then(setContacts);
+          setSelectedContacts([]);
+          setShowBulkGroupAssign(false);
+        }}
+      />
 
-          {showBulkGroupAssign && (
-            <BulkGroupAssign
-              contactIds={selectedContacts}
-              groups={groups}
-              onClose={() => setShowBulkGroupAssign(false)}
-              onAssignmentComplete={() => {
-                // Refresh contacts to show updated group assignments
-                contactsApi.getContacts().then(setContacts);
-                setSelectedContacts([]);
-              }}
-            />
-          )}
+      <BulkGroupRemoveModal
+        isOpen={showBulkGroupRemove}
+        onClose={() => setShowBulkGroupRemove(false)}
+        contactIds={selectedContacts}
+        groups={groups}
+        onRemovalComplete={() => {
+          // Refresh contacts to show updated group assignments
+          contactsApi.getContactsLegacy().then(setContacts);
+          setSelectedContacts([]);
+          setShowBulkGroupRemove(false);
+        }}
+      />
 
-          {showBulkGroupRemove && (
-            <BulkGroupRemove
-              contactIds={selectedContacts}
-              groups={groups}
-              onClose={() => setShowBulkGroupRemove(false)}
-              onRemovalComplete={() => {
-                // Refresh contacts to show updated group assignments
-                contactsApi.getContacts().then(setContacts);
-                setSelectedContacts([]);
-              }}
-            />
-          )}
+      {/* Group Contacts Manager Modal */}
+      <GroupContactsManagerModal
+        isOpen={showGroupContactsManager}
+        onClose={() => setShowGroupContactsManager(false)}
+        selectedGroup={selectedGroup}
+        contacts={contacts}
+      />
 
-          {showGroupContactsManager && selectedGroup && (
-            <GroupContactsManager
-              group={selectedGroup}
-              contacts={contacts}
-              onClose={() => setShowGroupContactsManager(false)}
-              onGroupUpdated={(updatedGroup) => {
-                setGroups(prev => prev.map(g => g.id === updatedGroup.id ? updatedGroup : g));
-                setSelectedGroup(updatedGroup);
-              }}
-            />
-          )}
-        </ResizableRightPanel>
+      {/* Duplicate Detection Modal */}
+      <DuplicateDetectionModal
+        isOpen={showDuplicateDetection}
+        onClose={() => setShowDuplicateDetection(false)}
+        contacts={contacts}
+        onMergeContacts={(contactsToMerge) => {
+          setContactsToMerge(contactsToMerge);
+          setShowDuplicateDetection(false);
+          setShowMergeContacts(true);
+        }}
+      />
 
-      {/* Modals */}
+      {/* Appearance Settings now integrated into User Settings Modal */}
+
+      {/* Import Modal */}
+      <ImportModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        onContactsImported={async (importedContacts) => {
+          // Refresh the entire contact list from server to avoid duplication issues
+          try {
+            // Small delay to ensure all imports are processed
+            await new Promise(resolve => setTimeout(resolve, 500));
+            const refreshedContacts = await contactsApi.getContactsLegacy();
+            setContacts(refreshedContacts);
+            console.log(`Successfully refreshed contact list after importing ${importedContacts.length} contacts`);
+          } catch (error) {
+            console.error('Error refreshing contacts after import:', error);
+            // Fallback to the previous approach if refresh fails
+            setContacts(prev => [...prev, ...importedContacts]);
+          }
+        }}
+      />
+
+      {/* Other Modals */}
       {showGroupAssignModal && (
         <GroupAssignModal
           contactIds={selectedContacts}
           groups={groups}
           onClose={() => setShowGroupAssignModal(false)}
           onAssignmentComplete={() => {
-            contactsApi.getContacts().then(setContacts);
+            contactsApi.getContactsLegacy().then(setContacts);
             setSelectedContacts([]);
             setShowGroupAssignModal(false);
           }}
@@ -570,9 +649,74 @@ const Dashboard: React.FC = () => {
           }}
           onClose={() => setShowGroupRemoveModal(false)}
           onRemovalComplete={() => {
-            contactsApi.getContacts().then(setContacts);
+            contactsApi.getContactsLegacy().then(setContacts);
             setSelectedContacts([]);
             setShowGroupRemoveModal(false);
+          }}
+        />
+      )}
+
+      {/* Import Modal */}
+      <ImportModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        onContactsImported={async (importedContacts) => {
+          // Refresh the entire contact list from server to avoid duplication issues
+          try {
+            // Small delay to ensure all imports are processed
+            await new Promise(resolve => setTimeout(resolve, 500));
+            const refreshedContacts = await contactsApi.getContactsLegacy();
+            setContacts(refreshedContacts);
+            console.log(`Successfully refreshed contact list after importing ${importedContacts.length} contacts`);
+          } catch (error) {
+            console.error('Error refreshing contacts after import:', error);
+            // Fallback to the previous approach if refresh fails
+            setContacts(prev => [...prev, ...importedContacts]);
+          }
+        }}
+      />
+      </div>
+
+      {/* Footer - Always at bottom */}
+      {appearanceSettings.showFooter && (
+        <Footer
+          onPrivacyClick={() => {/* TODO: Handle privacy page */}}
+          onTermsClick={() => {/* TODO: Handle terms page */}}
+          onAboutClick={() => {/* TODO: Handle about page */}}
+          onSupportClick={() => {/* TODO: Handle support page */}}
+        />
+      )}
+
+      {/* Contact Form Modal */}
+      <ContactFormModal
+        isOpen={showContactForm}
+        onClose={() => {
+          setShowContactForm(false);
+          setSelectedContact(null); // Clear selected contact when closing
+        }}
+        onContactCreated={handleContactCreate}
+        onContactUpdated={(updatedContact) => {
+          // Update the contact in the list
+          setContacts(prev => prev.map(c => c.id === updatedContact.id ? updatedContact : c));
+          setSelectedContact(null);
+        }}
+        groups={groups}
+        contact={selectedContact} // Pass the selected contact for editing
+      />
+
+      {/* Merge Contacts Modal */}
+      {showMergeContacts && (
+        <MergeContactsModal
+          contacts={contactsToMerge.length > 0 ? contactsToMerge : contacts.filter(c => selectedContacts.includes(c.id))}
+          onClose={() => {
+            setShowMergeContacts(false);
+            setContactsToMerge([]);
+          }}
+          onMergeComplete={() => {
+            // Refresh contacts after merge
+            contactsApi.getContactsLegacy().then(setContacts);
+            setSelectedContacts([]);
+            setContactsToMerge([]);
           }}
         />
       )}

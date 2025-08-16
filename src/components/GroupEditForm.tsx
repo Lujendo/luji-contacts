@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, FormEvent, ChangeEvent } from 'react';
 import { Group, UpdateGroupRequest } from '../types';
-import { contactsApi } from '../api';
+import { groupsApi } from '../api';
 import { X, Save, Loader, Users, Check } from 'lucide-react';
 
 // Component props interface
@@ -110,7 +110,7 @@ const GroupEditForm: React.FC<GroupEditFormProps> = ({
 
     try {
       // Update the group
-      const updatedGroup = await contactsApi.updateGroup(group.id, {
+      const updatedGroup = await groupsApi.updateGroup(group.id, {
         name: editedGroup.name.trim(),
         description: editedGroup.description?.trim() || ''
       });
@@ -143,26 +143,16 @@ const GroupEditForm: React.FC<GroupEditFormProps> = ({
   const hasChanges = editedGroup.name !== group.name || editedGroup.description !== (group.description || '');
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex justify-center items-center z-50">
-      <div className="relative bg-white rounded-lg shadow-xl p-6 w-full max-w-md m-4">
-        {/* Close button */}
-        <button
-          onClick={handleClose}
-          disabled={submitting}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 focus:outline-none disabled:cursor-not-allowed"
-          aria-label="Close"
-        >
-          <X size={20} />
-        </button>
+    <div className="p-6">
+      {/* Close button - removed since Modal handles this */}
 
-        {/* Header */}
-        <div className="mb-6">
-          <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-            <Users className="h-6 w-6 mr-2 text-indigo-600" />
-            Edit Group
-          </h2>
-          <p className="text-sm text-gray-500 mt-1">
-            Editing: {group.name}
+        {/* Group Info */}
+        <div className="mb-6 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-sm font-medium text-blue-900">
+            Editing: <span className="font-bold">{group.name}</span>
+          </p>
+          <p className="text-xs text-blue-700 mt-1">
+            Group ID: {group.id} • {group.contact_count || 0} contacts
           </p>
         </div>
 
@@ -232,20 +222,14 @@ const GroupEditForm: React.FC<GroupEditFormProps> = ({
             </p>
           </div>
 
-          {/* Group Info */}
-          <div className="bg-gray-50 rounded-md p-3">
-            <p className="text-xs text-gray-600">
-              <strong>Group ID:</strong> {group.id}
-            </p>
-            <p className="text-xs text-gray-600">
-              <strong>Contacts:</strong> {group.contact_count || 0}
-            </p>
-            {group.created_at && (
+          {/* Additional Group Info */}
+          {group.created_at && (
+            <div className="bg-gray-50 rounded-md p-3">
               <p className="text-xs text-gray-600">
                 <strong>Created:</strong> {new Date(group.created_at).toLocaleDateString()}
               </p>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Action buttons */}
           <div className="flex justify-end space-x-3 pt-4">
@@ -276,7 +260,6 @@ const GroupEditForm: React.FC<GroupEditFormProps> = ({
             </button>
           </div>
         </form>
-      </div>
     </div>
   );
 };

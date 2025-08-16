@@ -5,11 +5,21 @@
 // API Response Types
 // ============================================================================
 
+export interface PaginationInfo {
+  limit: number;
+  offset: number;
+  page: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+}
+
 export interface ApiResponse<T = any> {
   data?: T;
   message?: string;
   success?: boolean;
   total?: number;
+  pagination?: PaginationInfo;
 }
 
 export interface ApiError {
@@ -70,6 +80,7 @@ export interface Contact {
   user_id: number;
   first_name?: string;
   last_name?: string;
+  nickname?: string;
   email?: string;
   phone?: string;
   address_street?: string;
@@ -107,6 +118,7 @@ export interface Contact {
 export interface CreateContactRequest {
   first_name?: string;
   last_name?: string;
+  nickname?: string;
   email?: string;
   phone?: string;
   address_street?: string;

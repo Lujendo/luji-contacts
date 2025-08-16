@@ -3,6 +3,7 @@ import { cors } from 'hono/cors';
 import { DatabaseService } from './utils/database';
 import { AuthService } from './utils/auth';
 import { StorageService } from './utils/storage';
+import { DatabaseMigrations } from './utils/migrations';
 import { createUserRoutes } from './routes/users';
 import { createContactRoutes } from './routes/contacts';
 import { createGroupRoutes } from './routes/groups';
@@ -25,12 +26,46 @@ app.get("/api/health", (c) => c.json({
   service: "luji-contacts"
 }));
 
+// Manual migration endpoint
+app.post("/api/migrate", async (c) => {
+  try {
+    const migrations = new DatabaseMigrations(c.env.DB);
+    await migrations.runMigrations();
+
+    const hasNickname = await migrations.checkNicknameColumn();
+
+    return c.json({
+      status: "success",
+      message: "Migrations completed",
+      nickname_column_exists: hasNickname,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Migration error:', error);
+    return c.json({
+      status: "error",
+      message: "Migration failed",
+      error: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString()
+    }, 500);
+  }
+});
+
 // Initialize services and mount routes
 app.all('/api/*', async (c) => {
   // Initialize services
   const db = new DatabaseService(c.env.DB);
   const auth = new AuthService(c.env.JWT_SECRET || 'default-secret-key');
   const storage = new StorageService(c.env.STORAGE);
+
+  // Run database migrations on first request
+  try {
+    const migrations = new DatabaseMigrations(c.env.DB);
+    await migrations.runMigrations();
+  } catch (error) {
+    console.error('Migration error:', error);
+    // Continue anyway - migrations are not critical for basic functionality
+  }
 
   // Route to appropriate handler
   const path = c.req.path;

@@ -1,0 +1,668 @@
+/* Appearance Settings CSS */
+
+/* Dark Mode Styles */
+.dark {
+  color-scheme: dark;
+  color: #f9fafb !important;
+}
+
+.dark body {
+  background-color: #111827 !important;
+  color: #f9fafb !important;
+}
+
+.dark #root {
+  background-color: #111827 !important;
+  color: #f9fafb !important;
+}
+
+.dark * {
+  border-color: #374151;
+}
+
+.dark .bg-white {
+  background-color: #1f2937;
+}
+
+.dark .bg-gray-50 {
+  background-color: #111827;
+}
+
+.dark .bg-gray-100 {
+  background-color: #1f2937;
+}
+
+.dark .bg-gray-200 {
+  background-color: #374151;
+}
+
+.dark .text-gray-900 {
+  color: #f9fafb !important;
+}
+
+.dark .text-gray-800 {
+  color: #f3f4f6 !important;
+}
+
+.dark .text-gray-700 {
+  color: #d1d5db !important;
+}
+
+.dark .text-gray-600 {
+  color: #d1d5db !important;
+}
+
+.dark .text-gray-500 {
+  color: #e5e7eb !important;
+}
+
+.dark .text-gray-400 {
+  color: #f3f4f6 !important;
+}
+
+.dark .text-gray-300 {
+  color: #f9fafb !important;
+}
+
+/* Additional text colors for dark mode */
+.dark .text-black {
+  color: #f9fafb !important;
+}
+
+.dark .text-white {
+  color: #f9fafb !important;
+}
+
+.dark .border-gray-200 {
+  border-color: #374151;
+}
+
+.dark .border-gray-300 {
+  border-color: #4b5563;
+}
+
+.dark .hover\:bg-gray-50:hover {
+  background-color: #374151;
+}
+
+.dark .hover\:bg-gray-100:hover {
+  background-color: #4b5563;
+}
+
+/* Additional dark mode text styling */
+.dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
+  color: #f9fafb !important;
+}
+
+.dark p {
+  color: #e5e7eb !important;
+}
+
+.dark label {
+  color: #f9fafb !important;
+}
+
+.dark span {
+  color: #e5e7eb !important;
+}
+
+.dark div {
+  color: #e5e7eb;
+}
+
+/* Form elements in dark mode */
+.dark input {
+  background-color: #374151 !important;
+  border-color: #4b5563 !important;
+  color: #f9fafb !important;
+}
+
+.dark input::placeholder {
+  color: #9ca3af !important;
+}
+
+.dark textarea {
+  background-color: #374151 !important;
+  border-color: #4b5563 !important;
+  color: #f9fafb !important;
+}
+
+.dark select {
+  background-color: #374151 !important;
+  border-color: #4b5563 !important;
+  color: #f9fafb !important;
+}
+
+/* Button text in dark mode */
+.dark button {
+  color: #f9fafb;
+}
+
+.dark .text-blue-600 {
+  color: #60a5fa !important;
+}
+
+.dark .text-blue-700 {
+  color: #3b82f6 !important;
+}
+
+.dark .text-blue-800 {
+  color: #2563eb !important;
+}
+
+.dark .text-blue-900 {
+  color: #1d4ed8 !important;
+}
+
+/* Compact Mode */
+.compact-mode {
+  --spacing-unit: 0.75;
+}
+
+.compact-mode .p-4 {
+  padding: calc(1rem * var(--spacing-unit));
+}
+
+.compact-mode .p-6 {
+  padding: calc(1.5rem * var(--spacing-unit));
+}
+
+.compact-mode .py-2 {
+  padding-top: calc(0.5rem * var(--spacing-unit));
+  padding-bottom: calc(0.5rem * var(--spacing-unit));
+}
+
+.compact-mode .py-3 {
+  padding-top: calc(0.75rem * var(--spacing-unit));
+  padding-bottom: calc(0.75rem * var(--spacing-unit));
+}
+
+.compact-mode .space-y-4 > * + * {
+  margin-top: calc(1rem * var(--spacing-unit));
+}
+
+.compact-mode .space-y-6 > * + * {
+  margin-top: calc(1.5rem * var(--spacing-unit));
+}
+
+.compact-mode .h-16 {
+  height: calc(4rem * var(--spacing-unit));
+}
+
+/* High Contrast Mode */
+.high-contrast {
+  --contrast-multiplier: 1.5;
+}
+
+.high-contrast .text-gray-600 {
+  color: #374151;
+}
+
+.high-contrast .text-gray-500 {
+  color: #4b5563;
+}
+
+.high-contrast .border-gray-200 {
+  border-color: #6b7280;
+}
+
+.high-contrast .border-gray-300 {
+  border-color: #4b5563;
+}
+
+.high-contrast .bg-gray-50 {
+  background-color: #f3f4f6;
+}
+
+.high-contrast .bg-gray-100 {
+  background-color: #e5e7eb;
+}
+
+/* Dark mode high contrast */
+.dark.high-contrast .text-gray-400 {
+  color: #9ca3af;
+}
+
+.dark.high-contrast .text-gray-500 {
+  color: #d1d5db;
+}
+
+.dark.high-contrast .border-gray-200 {
+  border-color: #6b7280;
+}
+
+/* Modal and card content in dark mode */
+.dark .modal-content,
+.dark .card-content,
+.dark .panel-content {
+  background-color: #1f2937 !important;
+  color: #f9fafb !important;
+}
+
+/* Table content in dark mode */
+.dark table {
+  background-color: #1f2937 !important;
+  color: #f9fafb !important;
+}
+
+.dark th {
+  background-color: #374151 !important;
+  color: #f9fafb !important;
+}
+
+.dark td {
+  color: #d1d5db !important;
+  border-color: #4b5563 !important;
+}
+
+/* Navigation and sidebar in dark mode */
+.dark .sidebar,
+.dark .navigation {
+  background-color: #111827 !important;
+  color: #f9fafb !important;
+}
+
+/* Ensure all text is visible in dark mode */
+.dark * {
+  color: inherit;
+}
+
+.dark body,
+.dark .main-content {
+  color: #e5e7eb !important;
+}
+
+/* IMPORTANT: Dark text on light backgrounds in dark mode */
+.dark .bg-white *,
+.dark .bg-gray-50 *,
+.dark .bg-gray-100 * {
+  color: #1f2937 !important;
+}
+
+.dark .bg-white h1,
+.dark .bg-white h2,
+.dark .bg-white h3,
+.dark .bg-white h4,
+.dark .bg-white h5,
+.dark .bg-white h6 {
+  color: #111827 !important;
+}
+
+.dark .bg-white p,
+.dark .bg-white span,
+.dark .bg-white div,
+.dark .bg-white label {
+  color: #374151 !important;
+}
+
+/* Light background cards and modals need dark text */
+.dark .bg-white .text-gray-900 {
+  color: #111827 !important;
+}
+
+.dark .bg-white .text-gray-800 {
+  color: #1f2937 !important;
+}
+
+.dark .bg-white .text-gray-700 {
+  color: #374151 !important;
+}
+
+.dark .bg-white .text-gray-600 {
+  color: #4b5563 !important;
+}
+
+.dark .bg-white .text-gray-500 {
+  color: #6b7280 !important;
+}
+
+/* Form elements on light backgrounds */
+.dark .bg-white input,
+.dark .bg-white textarea,
+.dark .bg-white select {
+  background-color: #f9fafb !important;
+  border-color: #d1d5db !important;
+  color: #111827 !important;
+}
+
+.dark .bg-white input::placeholder {
+  color: #6b7280 !important;
+}
+
+/* Modal and card content with light backgrounds */
+.dark .modal-content.bg-white,
+.dark .card-content.bg-white,
+.dark .panel-content.bg-white {
+  color: #111827 !important;
+}
+
+/* Table content on light backgrounds */
+.dark .bg-white table {
+  color: #111827 !important;
+}
+
+.dark .bg-white th {
+  color: #111827 !important;
+}
+
+.dark .bg-white td {
+  color: #374151 !important;
+}
+
+/* Button text on light backgrounds */
+.dark .bg-white button {
+  color: #111827 !important;
+}
+
+/* Blue text colors on light backgrounds in dark mode */
+.dark .bg-white .text-blue-600 {
+  color: #2563eb !important;
+}
+
+.dark .bg-white .text-blue-700 {
+  color: #1d4ed8 !important;
+}
+
+.dark .bg-white .text-blue-800 {
+  color: #1e40af !important;
+}
+
+.dark .bg-white .text-blue-900 {
+  color: #1e3a8a !important;
+}
+
+/* Specific overrides for common light background scenarios */
+.dark .bg-gray-50 *,
+.dark .bg-gray-100 * {
+  color: #374151 !important;
+}
+
+.dark .bg-blue-50 *,
+.dark .bg-blue-100 * {
+  color: #1e40af !important;
+}
+
+/* Specific fix for contact name display in edit modal */
+.dark .bg-blue-50 .text-blue-900 {
+  color: #1e3a8a !important;
+}
+
+.dark .bg-blue-50 .text-blue-800 {
+  color: #1e40af !important;
+}
+
+.dark .bg-blue-50 .text-blue-600 {
+  color: #2563eb !important;
+}
+
+.dark .bg-green-50 *,
+.dark .bg-green-100 * {
+  color: #065f46 !important;
+}
+
+.dark .bg-red-50 *,
+.dark .bg-red-100 * {
+  color: #991b1b !important;
+}
+
+.dark .bg-yellow-50 *,
+.dark .bg-yellow-100 * {
+  color: #92400e !important;
+}
+
+/* Specific overrides for Modal components */
+.dark .modal-overlay .bg-white,
+.dark [role="dialog"] .bg-white,
+.dark .modal-content {
+  background-color: #ffffff !important;
+}
+
+.dark .modal-overlay .bg-white *,
+.dark [role="dialog"] .bg-white *,
+.dark .modal-content * {
+  color: #1f2937 !important;
+}
+
+/* Form labels in modals */
+.dark .modal-overlay label,
+.dark [role="dialog"] label,
+.dark .modal-content label {
+  color: #374151 !important;
+}
+
+/* Specific text color overrides for common classes in modals */
+.dark .modal-overlay .text-gray-700,
+.dark [role="dialog"] .text-gray-700,
+.dark .modal-content .text-gray-700 {
+  color: #374151 !important;
+}
+
+.dark .modal-overlay .text-gray-600,
+.dark [role="dialog"] .text-gray-600,
+.dark .modal-content .text-gray-600 {
+  color: #4b5563 !important;
+}
+
+.dark .modal-overlay .text-gray-500,
+.dark [role="dialog"] .text-gray-500,
+.dark .modal-content .text-gray-500 {
+  color: #6b7280 !important;
+}
+
+/* Input and form elements in modals */
+.dark .modal-overlay input,
+.dark [role="dialog"] input,
+.dark .modal-content input {
+  background-color: #f9fafb !important;
+  border-color: #d1d5db !important;
+  color: #111827 !important;
+}
+
+.dark .modal-overlay textarea,
+.dark [role="dialog"] textarea,
+.dark .modal-content textarea {
+  background-color: #f9fafb !important;
+  border-color: #d1d5db !important;
+  color: #111827 !important;
+}
+
+.dark .modal-overlay select,
+.dark [role="dialog"] select,
+.dark .modal-content select {
+  background-color: #f9fafb !important;
+  border-color: #d1d5db !important;
+  color: #111827 !important;
+}
+
+/* Specific Modal component styling */
+.dark .bg-white\/95 {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+}
+
+.dark .bg-white\/95 *,
+.dark .bg-white\/95 h1,
+.dark .bg-white\/95 h2,
+.dark .bg-white\/95 h3,
+.dark .bg-white\/95 h4,
+.dark .bg-white\/95 h5,
+.dark .bg-white\/95 h6,
+.dark .bg-white\/95 p,
+.dark .bg-white\/95 span,
+.dark .bg-white\/95 div,
+.dark .bg-white\/95 label {
+  color: #111827 !important;
+}
+
+/* Modal header gradient backgrounds */
+.dark .from-slate-50 {
+  --tw-gradient-from: #f8fafc !important;
+}
+
+.dark .to-blue-50 {
+  --tw-gradient-to: #eff6ff !important;
+}
+
+/* Force dark text on modal backgrounds */
+.dark .bg-white\/95 .text-gray-900,
+.dark .bg-white\/95 .text-gray-800,
+.dark .bg-white\/95 .text-gray-700,
+.dark .bg-white\/95 .text-gray-600,
+.dark .bg-white\/95 .text-gray-500 {
+  color: #111827 !important;
+}
+
+/* Ensure form elements in modals have proper styling */
+.dark .bg-white\/95 input,
+.dark .bg-white\/95 textarea,
+.dark .bg-white\/95 select {
+  background-color: #f9fafb !important;
+  border-color: #d1d5db !important;
+  color: #111827 !important;
+}
+
+.dark .bg-white\/95 input::placeholder,
+.dark .bg-white\/95 textarea::placeholder {
+  color: #6b7280 !important;
+}
+
+/* Button styling in modals */
+.dark .bg-white\/95 .bg-white {
+  background-color: #ffffff !important;
+  color: #374151 !important;
+}
+
+.dark .bg-white\/95 .text-white {
+  color: #ffffff !important;
+}
+
+/* No Animations */
+.no-animations * {
+  animation-duration: 0s !important;
+  animation-delay: 0s !important;
+  transition-duration: 0s !important;
+  transition-delay: 0s !important;
+}
+
+/* Font Size Variations */
+.text-size-small {
+  font-size: 14px;
+}
+
+.text-size-medium {
+  font-size: 16px;
+}
+
+.text-size-large {
+  font-size: 18px;
+}
+
+/* Accent Color Support */
+:root {
+  --accent-color: #3b82f6;
+  --accent-color-hover: #2563eb;
+  --accent-color-light: #dbeafe;
+}
+
+.bg-accent {
+  background-color: var(--accent-color);
+}
+
+.bg-accent:hover {
+  background-color: var(--accent-color-hover);
+}
+
+.text-accent {
+  color: var(--accent-color);
+}
+
+.border-accent {
+  border-color: var(--accent-color);
+}
+
+.bg-accent-light {
+  background-color: var(--accent-color-light);
+}
+
+/* Sidebar Position */
+.sidebar-right .fixed-nav {
+  right: 0;
+  left: auto;
+}
+
+.sidebar-right .main-content {
+  margin-left: 0;
+  margin-right: 4rem;
+}
+
+/* Responsive adjustments for appearance settings */
+@media (max-width: 768px) {
+  .compact-mode {
+    --spacing-unit: 0.5;
+  }
+  
+  .high-contrast .text-gray-600 {
+    color: #1f2937;
+  }
+}
+
+/* Focus styles for accessibility */
+.high-contrast *:focus {
+  outline: 3px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  .dark {
+    color-scheme: light;
+  }
+  
+  .dark body {
+    background-color: white;
+    color: black;
+  }
+}
+
+/* Smooth transitions when not disabled */
+:root:not(.no-animations) * {
+  transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+/* Custom scrollbar for dark mode */
+.dark ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: #374151;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #6b7280;
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* Loading states for dark mode */
+.dark .animate-pulse {
+  animation: pulse-dark 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse-dark {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}

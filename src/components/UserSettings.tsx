@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { authApi } from '../api';
 import { useAuth } from '../context/AuthContext';
 import { User, UserFormData } from '../types';
-import { 
-  Settings, 
-  Mail, 
-  User as UserIcon,  
-  Moon, 
-  Sun, 
+import {
+  Settings,
+  Mail,
+  User as UserIcon,
+  Moon,
+  Sun,
   Save,
   Loader,
   X,
@@ -18,12 +18,23 @@ import {
   AlertCircle,
   Clock,
   Plus,
+  Palette,
+  Monitor,
+  Eye,
+  EyeOff,
+  Layout,
+  Zap,
+  RotateCcw,
+  Check
 } from 'lucide-react';
+import { useAppearance } from '../contexts/AppearanceContext';
+import { AppearanceSettings } from './AppearanceSettings';
+import Modal from './ui/Modal';
 
 // Component props interface
 interface UserSettingsProps {
   onClose: () => void;
-  initialTab?: 'profile' | 'email' | 'subscription' | 'security';
+  initialTab?: 'profile' | 'email' | 'subscription' | 'security' | 'appearance';
 }
 
 // Settings state interface
@@ -77,6 +88,7 @@ interface FormErrors {
 
 const UserSettings: React.FC<UserSettingsProps> = ({ onClose, initialTab = 'profile' }) => {
   const { user } = useAuth();
+  const { settings: appearanceSettings, updateSettings: updateAppearanceSettings } = useAppearance();
   const [activeTab, setActiveTab] = useState<string>(initialTab);
   const [loading, setLoading] = useState<boolean>(false);
   const [testing, setTesting] = useState<boolean>(false);
@@ -310,31 +322,24 @@ const UserSettings: React.FC<UserSettingsProps> = ({ onClose, initialTab = 'prof
   // Tab configuration
   const tabs = [
     { id: 'profile', label: 'Profile', icon: UserIcon },
+    { id: 'appearance', label: 'Appearance', icon: Palette },
     { id: 'email', label: 'Email', icon: Mail },
     { id: 'subscription', label: 'Subscription', icon: CreditCard },
     { id: 'security', label: 'Security', icon: Shield }
   ];
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-            <Settings className="h-6 w-6 mr-2" />
-            Settings
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-          >
-            <X className="h-6 w-6" />
-          </button>
-        </div>
+    <Modal
+      isOpen={true}
+      onClose={onClose}
+      title="Settings"
+      size="2xl"
+      showCloseButton={true}
+    >
 
-        <div className="flex h-[calc(90vh-120px)]">
-          {/* Sidebar */}
-          <div className="w-64 bg-gray-50 border-r border-gray-200">
+      <div className="flex h-[600px]">
+        {/* Sidebar */}
+        <div className="w-64 bg-gray-50 border-r border-gray-200">
             <nav className="p-4 space-y-2">
               {tabs.map((tab) => {
                 const Icon = tab.icon;
@@ -356,8 +361,8 @@ const UserSettings: React.FC<UserSettingsProps> = ({ onClose, initialTab = 'prof
             </nav>
           </div>
 
-          {/* Main Content */}
-          <div className="flex-1 overflow-y-auto">
+        {/* Main Content */}
+        <div className="flex-1 overflow-y-auto">
             {/* Messages */}
             {error && (
               <div className="m-6 p-4 bg-red-50 border border-red-200 rounded-md">
@@ -557,6 +562,206 @@ const UserSettings: React.FC<UserSettingsProps> = ({ onClose, initialTab = 'prof
               </div>
             )}
 
+            {/* Appearance Tab */}
+            {activeTab === 'appearance' && (
+              <div className="p-6">
+                <h3 className="text-lg font-medium text-gray-900 mb-6">Appearance Settings</h3>
+                <p className="text-sm text-gray-600 mb-8">
+                  Customize the look and feel of your contact manager
+                </p>
+
+                <div className="space-y-8">
+                  {/* Theme Settings */}
+                  <div>
+                    <h4 className="text-base font-medium text-gray-900 mb-4">Theme</h4>
+                    <div className="grid grid-cols-3 gap-3">
+                      {[
+                        { key: 'light', label: 'Light', icon: Sun },
+                        { key: 'dark', label: 'Dark', icon: Moon },
+                        { key: 'system', label: 'System', icon: Monitor }
+                      ].map(({ key, label, icon: Icon }) => (
+                        <button
+                          key={key}
+                          onClick={() => updateAppearanceSettings({ theme: key as any })}
+                          className={`p-4 border rounded-lg flex flex-col items-center space-y-2 transition-colors ${
+                            appearanceSettings.theme === key
+                              ? 'border-blue-500 bg-blue-50 text-blue-700'
+                              : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          <Icon className="w-6 h-6" />
+                          <span className="text-sm font-medium">{label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Layout Settings */}
+                  <div>
+                    <h4 className="text-base font-medium text-gray-900 mb-4">Layout</h4>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <Eye className="w-5 h-5 text-gray-400" />
+                          <div>
+                            <label className="text-sm font-medium text-gray-900">Show Header</label>
+                            <p className="text-xs text-gray-500">Display the application header with branding</p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => updateAppearanceSettings({ showHeader: !appearanceSettings.showHeader })}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                            appearanceSettings.showHeader ? 'bg-blue-600' : 'bg-gray-200'
+                          }`}
+                        >
+                          <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                              appearanceSettings.showHeader ? 'translate-x-6' : 'translate-x-1'
+                            }`}
+                          />
+                        </button>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <EyeOff className="w-5 h-5 text-gray-400" />
+                          <div>
+                            <label className="text-sm font-medium text-gray-900">Show Footer</label>
+                            <p className="text-xs text-gray-500">Display footer with links and information</p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => updateAppearanceSettings({ showFooter: !appearanceSettings.showFooter })}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                            appearanceSettings.showFooter ? 'bg-blue-600' : 'bg-gray-200'
+                          }`}
+                        >
+                          <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                              appearanceSettings.showFooter ? 'translate-x-6' : 'translate-x-1'
+                            }`}
+                          />
+                        </button>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <Layout className="w-5 h-5 text-gray-400" />
+                          <div>
+                            <label className="text-sm font-medium text-gray-900">Compact Mode</label>
+                            <p className="text-xs text-gray-500">Reduce spacing for more content</p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => updateAppearanceSettings({ compactMode: !appearanceSettings.compactMode })}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                            appearanceSettings.compactMode ? 'bg-blue-600' : 'bg-gray-200'
+                          }`}
+                        >
+                          <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                              appearanceSettings.compactMode ? 'translate-x-6' : 'translate-x-1'
+                            }`}
+                          />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Performance Settings */}
+                  <div>
+                    <h4 className="text-base font-medium text-gray-900 mb-4">Performance</h4>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <Zap className="w-5 h-5 text-gray-400" />
+                          <div>
+                            <label className="text-sm font-medium text-gray-900">Enable Animations</label>
+                            <p className="text-xs text-gray-500">Smooth transitions and animations</p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => updateAppearanceSettings({ animationsEnabled: !appearanceSettings.animationsEnabled })}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                            appearanceSettings.animationsEnabled ? 'bg-blue-600' : 'bg-gray-200'
+                          }`}
+                        >
+                          <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                              appearanceSettings.animationsEnabled ? 'translate-x-6' : 'translate-x-1'
+                            }`}
+                          />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Accent Color */}
+                  <div>
+                    <h4 className="text-base font-medium text-gray-900 mb-4">Accent Color</h4>
+                    <div className="grid grid-cols-5 gap-3">
+                      {[
+                        { name: 'Blue', value: '#3B82F6' },
+                        { name: 'Indigo', value: '#6366F1' },
+                        { name: 'Purple', value: '#8B5CF6' },
+                        { name: 'Pink', value: '#EC4899' },
+                        { name: 'Red', value: '#EF4444' },
+                        { name: 'Orange', value: '#F97316' },
+                        { name: 'Yellow', value: '#EAB308' },
+                        { name: 'Green', value: '#10B981' },
+                        { name: 'Teal', value: '#14B8A6' },
+                        { name: 'Cyan', value: '#06B6D4' }
+                      ].map(({ name, value }) => (
+                        <button
+                          key={value}
+                          onClick={() => updateAppearanceSettings({ accentColor: value })}
+                          className={`w-12 h-12 rounded-lg border-2 transition-all ${
+                            appearanceSettings.accentColor === value
+                              ? 'border-gray-400 scale-110'
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                          style={{ backgroundColor: value }}
+                          title={name}
+                        >
+                          {appearanceSettings.accentColor === value && (
+                            <Check className="w-6 h-6 text-white mx-auto" />
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Font Size */}
+                  <div>
+                    <h4 className="text-base font-medium text-gray-900 mb-4">Font Size</h4>
+                    <div className="grid grid-cols-3 gap-3">
+                      {[
+                        { key: 'small', label: 'Small' },
+                        { key: 'medium', label: 'Medium' },
+                        { key: 'large', label: 'Large' }
+                      ].map(({ key, label }) => (
+                        <button
+                          key={key}
+                          onClick={() => updateAppearanceSettings({ fontSize: key as any })}
+                          className={`p-3 border rounded-lg text-center transition-colors ${
+                            appearanceSettings.fontSize === key
+                              ? 'border-blue-500 bg-blue-50 text-blue-700'
+                              : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          <span className={`font-medium ${
+                            key === 'small' ? 'text-sm' : key === 'large' ? 'text-lg' : 'text-base'
+                          }`}>
+                            {label}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Email Tab */}
             {activeTab === 'email' && (
               <div className="p-6">
@@ -742,10 +947,9 @@ const UserSettings: React.FC<UserSettingsProps> = ({ onClose, initialTab = 'prof
                 </div>
               </div>
             )}
-          </div>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 };
 
