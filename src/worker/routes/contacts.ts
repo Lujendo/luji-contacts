@@ -158,7 +158,9 @@ export function createContactRoutes(db: DatabaseService, auth: AuthService, stor
         profile_image_url: body.profile_image_url || ''
       };
 
+      console.log('Creating contact with data:', JSON.stringify(contactData, null, 2));
       const contact = await db.createContact(contactData);
+      console.log('Contact created successfully:', contact.id);
 
       const response: ApiResponse = {
         data: contact,
@@ -170,6 +172,7 @@ export function createContactRoutes(db: DatabaseService, auth: AuthService, stor
 
     } catch (error) {
       console.error('Create contact error:', error);
+      console.error('Contact data that failed:', JSON.stringify(contactData, null, 2));
       return c.json({
         error: 'Internal server error',
         details: error instanceof Error ? error.message : 'Unknown error',

@@ -240,51 +240,56 @@ export class DatabaseService {
 
   // Contact operations
   async createContact(contactData: Omit<Contact, 'id' | 'created_at' | 'updated_at'>): Promise<Contact> {
-    const result = await this.db.prepare(`
-      INSERT INTO contacts (
-        user_id, first_name, last_name, email, phone, address_street, address_city,
-        address_state, address_zip, address_country, birthday, website, facebook,
-        twitter, linkedin, instagram, youtube, tiktok, snapchat, discord, spotify,
-        apple_music, github, behance, dribbble, company, job_title, role, notes, profile_image_url
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      RETURNING *
-    `).bind(
-      contactData.user_id,
-      contactData.first_name,
-      contactData.last_name,
-      contactData.email,
-      contactData.phone,
-      contactData.address_street,
-      contactData.address_city,
-      contactData.address_state,
-      contactData.address_zip,
-      contactData.address_country,
-      contactData.birthday,
-      contactData.website,
-      contactData.facebook,
-      contactData.twitter,
-      contactData.linkedin,
-      contactData.instagram,
-      contactData.youtube,
-      contactData.tiktok,
-      contactData.snapchat,
-      contactData.discord,
-      contactData.spotify,
-      contactData.apple_music,
-      contactData.github,
-      contactData.behance,
-      contactData.dribbble,
-      contactData.company,
-      contactData.job_title,
-      contactData.role,
-      contactData.notes,
-      contactData.profile_image_url
-    ).first<Contact>();
+    try {
+      const result = await this.db.prepare(`
+        INSERT INTO contacts (
+          user_id, first_name, last_name, email, phone, address_street, address_city,
+          address_state, address_zip, address_country, birthday, website, facebook,
+          twitter, linkedin, instagram, youtube, tiktok, snapchat, discord, spotify,
+          apple_music, github, behance, dribbble, company, job_title, role, notes, profile_image_url
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        RETURNING *
+      `).bind(
+        contactData.user_id,
+        contactData.first_name,
+        contactData.last_name,
+        contactData.email,
+        contactData.phone,
+        contactData.address_street,
+        contactData.address_city,
+        contactData.address_state,
+        contactData.address_zip,
+        contactData.address_country,
+        contactData.birthday,
+        contactData.website,
+        contactData.facebook,
+        contactData.twitter,
+        contactData.linkedin,
+        contactData.instagram,
+        contactData.youtube,
+        contactData.tiktok,
+        contactData.snapchat,
+        contactData.discord,
+        contactData.spotify,
+        contactData.apple_music,
+        contactData.github,
+        contactData.behance,
+        contactData.dribbble,
+        contactData.company,
+        contactData.job_title,
+        contactData.role,
+        contactData.notes,
+        contactData.profile_image_url
+      ).first<Contact>();
 
-    if (!result) {
-      throw new Error('Failed to create contact');
+      if (!result) {
+        throw new Error('Failed to create contact');
+      }
+      return result;
+    } catch (error) {
+      console.error('Database createContact error:', error);
+      throw new Error(`Failed to create contact: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
-    return result;
   }
 
   async getContactsByUserId(userId: number, search?: string, sort?: string, direction?: string): Promise<Contact[]> {
@@ -328,7 +333,7 @@ export class DatabaseService {
     const values = fields.map(field => (contactData as any)[field]);
 
     const result = await this.db.prepare(`
-      UPDATE contacts SET ${setClause}, updated_at = CURRENT_TIMESTAMP 
+      UPDATE contacts SET ${setClause}, updated_at = CURRENT_TIMESTAMP
       WHERE id = ? AND user_id = ?
       RETURNING *
     `).bind(...values, id, userId).first<Contact>();
@@ -373,7 +378,7 @@ export class DatabaseService {
 
   async updateGroup(id: number, userId: number, groupData: Partial<Group>): Promise<Group | null> {
     const result = await this.db.prepare(`
-      UPDATE groups SET name = ?, description = ?, updated_at = CURRENT_TIMESTAMP 
+      UPDATE groups SET name = ?, description = ?, updated_at = CURRENT_TIMESTAMP
       WHERE id = ? AND user_id = ?
       RETURNING *
     `).bind(groupData.name, groupData.description, id, userId).first<Group>();
