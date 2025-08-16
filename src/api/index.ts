@@ -23,6 +23,9 @@ import {
 // API Configuration
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://luji-contacts.info-eac.workers.dev';
 
+// Request deduplication to prevent duplicate submissions
+const pendingRequests = new Map<string, Promise<any>>();
+
 // Create axios instance with default configuration
 const createApiInstance = (): AxiosInstance => {
   const instance = axios.create({
@@ -180,8 +183,30 @@ export const contactsApi = {
 
   async createContact(contactData: CreateContactRequest): Promise<Contact> {
     try {
-      const response = await api.post<ApiResponse<Contact>>('/contacts', contactData);
-      return extractData(response);
+      // Create a unique key for this request to prevent duplicates
+      const requestKey = `createContact:${JSON.stringify(contactData)}`;
+
+      // Check if this exact request is already pending
+      if (pendingRequests.has(requestKey)) {
+        console.log('Duplicate contact creation request detected, returning existing promise');
+        return await pendingRequests.get(requestKey);
+      }
+
+      // Create the request promise
+      const requestPromise = api.post<ApiResponse<Contact>>('/contacts', contactData)
+        .then(response => {
+          console.log('Contact creation API response:', response.data);
+          return extractData(response);
+        })
+        .finally(() => {
+          // Remove from pending requests when done
+          pendingRequests.delete(requestKey);
+        });
+
+      // Store the promise to prevent duplicates
+      pendingRequests.set(requestKey, requestPromise);
+
+      return await requestPromise;
     } catch (error) {
       handleApiError(error);
     }

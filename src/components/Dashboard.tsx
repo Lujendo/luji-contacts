@@ -263,8 +263,21 @@ const Dashboard: React.FC = () => {
 
   const handleContactCreate = useCallback(async (contactData: Contact): Promise<void> => {
     try {
+      console.log('Dashboard: Creating contact with data:', contactData);
       const newContact = await contactsApi.createContact(contactData);
-      setContacts(prev => [...prev, newContact]);
+      console.log('Dashboard: Contact created successfully:', newContact.id);
+
+      // Update contacts list
+      setContacts(prev => {
+        // Check if contact already exists to prevent duplicates
+        const exists = prev.some(c => c.id === newContact.id);
+        if (exists) {
+          console.log('Contact already exists in list, not adding duplicate');
+          return prev;
+        }
+        return [...prev, newContact];
+      });
+
       setShowContactForm(false);
     } catch (error) {
       console.error('Error creating contact:', error);

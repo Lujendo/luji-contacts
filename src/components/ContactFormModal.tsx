@@ -413,6 +413,12 @@ const ContactFormModal: React.FC<ContactFormModalProps> = ({
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
+    // Prevent multiple submissions
+    if (isSubmitting) {
+      console.log('Form already submitting, ignoring duplicate submission');
+      return;
+    }
+
     // Basic validation
     if (!formData.first_name.trim() && !formData.last_name.trim() && !formData.email.trim()) {
       setError('Please provide at least a first name, last name, or email address');
@@ -432,13 +438,18 @@ const ContactFormModal: React.FC<ContactFormModalProps> = ({
 
       if (isEditing && contact) {
         // Update existing contact
+        console.log('Updating contact:', contact.id);
         savedContact = await contactsApi.updateContact(contact.id, contactData);
         if (onContactUpdated) {
           onContactUpdated(savedContact);
         }
       } else {
         // Create new contact
+        console.log('Creating new contact with data:', contactData);
         savedContact = await contactsApi.createContact(contactData);
+        console.log('Contact created successfully:', savedContact.id);
+
+        // Only call one callback to prevent duplicates
         if (onContactCreated) {
           onContactCreated(savedContact);
         } else if (onContactAdded) {
@@ -448,6 +459,7 @@ const ContactFormModal: React.FC<ContactFormModalProps> = ({
 
       onClose();
     } catch (err) {
+      console.error('Form submission error:', err);
       setError(err instanceof Error ? err.message : (isEditing ? 'Failed to update contact' : 'Failed to create contact'));
     } finally {
       setIsSubmitting(false);

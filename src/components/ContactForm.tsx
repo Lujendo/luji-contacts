@@ -41,6 +41,7 @@ interface ProfileImageState {
   file: File | null;
   preview: string | null;
   isUploading: boolean;
+  progress: number;
 }
 
 const ContactForm: React.FC<ContactFormProps> = ({
@@ -87,7 +88,8 @@ const ContactForm: React.FC<ContactFormProps> = ({
   const [profileImage, setProfileImage] = useState<ProfileImageState>({
     file: null,
     preview: initialData?.profile_image_url || null,
-    isUploading: false
+    isUploading: false,
+    progress: 0
   });
   const [selectedGroups, setSelectedGroups] = useState<number[]>([]);
   const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
@@ -204,9 +206,13 @@ const ContactForm: React.FC<ContactFormProps> = ({
   // Handle form submission
   const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
-    
-    if (isSubmitting.current || isSubmittingForm) return;
-    
+
+    // Prevent multiple submissions
+    if (isSubmitting.current || isSubmittingForm) {
+      console.log('Form already submitting, ignoring duplicate submission');
+      return;
+    }
+
     if (!validateForm()) return;
 
     isSubmitting.current = true;
@@ -215,7 +221,9 @@ const ContactForm: React.FC<ContactFormProps> = ({
 
     try {
       // Create the contact
+      console.log('Creating contact with data:', formData);
       const newContact = await contactsApi.createContact(formData);
+      console.log('Contact created successfully:', newContact.id);
 
       // Upload profile image if selected
       if (profileImage.file && newContact.id) {
@@ -280,7 +288,8 @@ const ContactForm: React.FC<ContactFormProps> = ({
     setProfileImage({
       file: null,
       preview: null,
-      isUploading: false
+      isUploading: false,
+      progress: 0
     });
     if (fileInputRef.current) {
       fileInputRef.current.value = '';

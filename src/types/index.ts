@@ -43,6 +43,7 @@ export interface User {
   role: UserRole;
   contact_limit?: number;
   is_email_enabled?: boolean;
+  profile_image_url?: string;
   created_at?: string;
   updated_at?: string;
   password?: string; // Only used server-side

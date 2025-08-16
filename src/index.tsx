@@ -9,8 +9,14 @@ if (!rootElement) {
 }
 
 const root = ReactDOM.createRoot(rootElement);
-root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
+
+// Only use StrictMode in development to prevent duplicate submissions in production
+if (import.meta.env.DEV) {
+  root.render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>
+  );
+} else {
+  root.render(<App />);
+}

@@ -91,6 +91,7 @@ export interface User {
   role: 'admin' | 'user' | 'subscriber';
   contact_limit?: number;
   is_email_enabled?: boolean;
+  profile_image_url?: string;
   created_at?: string;
   updated_at?: string;
 }
