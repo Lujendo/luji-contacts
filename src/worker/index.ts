@@ -10,6 +10,7 @@ import { createGroupRoutes } from './routes/groups';
 import { createImportExportRoutes } from './routes/import-export';
 import { createEmailRoutes } from './routes/emails';
 import { createEmailAccountRoutes } from './routes/emailAccounts';
+import { createRobustEmailRoutes } from './routes/robustEmails';
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -106,6 +107,12 @@ app.all('/api/*', async (c) => {
     const emailAccountRoutes = createEmailAccountRoutes(db, auth);
     const newReq = new Request(c.req.raw.url.replace('/api/email-accounts', ''), c.req.raw);
     return emailAccountRoutes.fetch(newReq, c.env, c.executionCtx);
+  }
+
+  if (path.startsWith('/api/robust-emails')) {
+    const robustEmailRoutes = createRobustEmailRoutes(db, auth);
+    const newReq = new Request(c.req.raw.url.replace('/api/robust-emails', ''), c.req.raw);
+    return robustEmailRoutes.fetch(newReq, c.env, c.executionCtx);
   }
 
   if (path.startsWith('/api/files/')) {
