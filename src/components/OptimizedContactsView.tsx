@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { Contact } from '../types';
-import { Search, Filter, SortAsc, SortDesc, X, Loader2, Zap } from 'lucide-react';
+import { Filter, SortAsc, SortDesc, Loader2, Zap, Users } from 'lucide-react';
 import InfiniteContactList from './InfiniteContactList';
 import PaginatedContactList from './PaginatedContactList';
 import { useDebounce } from '../hooks/useDebounce';
@@ -42,14 +42,10 @@ const OptimizedContactsView: React.FC<OptimizedContactsViewProps> = ({
   activeGroupName,
   onClearGroupFilter
 }) => {
-  const [internalSearchQuery, setInternalSearchQuery] = useState('');
   const [sortField, setSortField] = useState('first_name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [showFilters, setShowFilters] = useState(false);
   const [containerHeight, setContainerHeight] = useState(600);
-  const [isSearching, setIsSearching] = useState(false);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [isInfiniteScrollEnabled, setIsInfiniteScrollEnabled] = useState(() => {
     // Try to get user preference from localStorage, fallback to prop
     const saved = localStorage.getItem('contactsViewMode');
@@ -59,10 +55,9 @@ const OptimizedContactsView: React.FC<OptimizedContactsViewProps> = ({
     return enableInfiniteScrolling;
   });
   const containerRef = useRef<HTMLDivElement>(null);
-  const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Use external search query if provided, otherwise use internal
-  const effectiveSearchQuery = searchQuery || internalSearchQuery;
+  // Use the external search query from props - no internal search state needed
+  const effectiveSearchQuery = searchQuery;
 
   // Optimized debounce - much faster for better UX
   const debounceDelay = useMemo(() => {
@@ -73,18 +68,6 @@ const OptimizedContactsView: React.FC<OptimizedContactsViewProps> = ({
 
   // Use debounced search for better performance
   const debouncedSearch = useDebounce(effectiveSearchQuery, debounceDelay);
-
-  // Load recent searches from localStorage
-  useEffect(() => {
-    const saved = localStorage.getItem('recentContactSearches');
-    if (saved) {
-      try {
-        setRecentSearches(JSON.parse(saved));
-      } catch (error) {
-        console.warn('Failed to load recent searches:', error);
-      }
-    }
-  }, []);
 
   // Calculate container height dynamically
   useEffect(() => {
@@ -123,83 +106,10 @@ const OptimizedContactsView: React.FC<OptimizedContactsViewProps> = ({
     onContactSelection?.(contact.id, selected);
   }, [onContactSelection]);
 
-  // Save search to recent searches
-  const saveRecentSearch = useCallback((query: string) => {
-    if (query.trim().length < 2) return;
-
-    const updated = [query, ...recentSearches.filter(s => s !== query)].slice(0, 5);
-    setRecentSearches(updated);
-    localStorage.setItem('recentContactSearches', JSON.stringify(updated));
-  }, [recentSearches]);
-
-  // Handle search input changes with loading state
-  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-
-    setSearchQuery(value);
-    if (value !== debouncedSearch) {
-      setIsSearching(true);
-    }
-    setShowSuggestions(value.length > 0);
-  }, [debouncedSearch, searchQuery]);
-
-  // Handle search input focus
-  const handleSearchFocus = useCallback(() => {
-    if (searchQuery.length > 0 || recentSearches.length > 0) {
-      setShowSuggestions(true);
-    }
-  }, [searchQuery, recentSearches]);
-
-  // Handle search input blur (with delay to allow clicking suggestions)
-  const handleSearchBlur = useCallback(() => {
-    setTimeout(() => setShowSuggestions(false), 150);
-  }, []);
-
-  // Apply suggestion
-  const applySuggestion = useCallback((suggestion: string) => {
-    setSearchQuery(suggestion);
-    setShowSuggestions(false);
-    saveRecentSearch(suggestion);
-    searchInputRef.current?.blur();
-  }, [saveRecentSearch]);
-
-  // Clear search function
-  const clearSearch = useCallback(() => {
-    setSearchQuery('');
-    setIsSearching(false);
-    setShowSuggestions(false);
-    searchInputRef.current?.focus();
-  }, []);
-
-  // Track when search is complete and save to recent searches
-  useEffect(() => {
-
-    if (searchQuery === debouncedSearch) {
-      setIsSearching(false);
-      // Save non-empty searches to recent searches
-      if (debouncedSearch.trim().length >= 2) {
-        saveRecentSearch(debouncedSearch.trim());
-      }
-    }
-  }, [searchQuery, debouncedSearch, saveRecentSearch]);
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Ctrl/Cmd + K to focus search
-      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-        e.preventDefault();
-        searchInputRef.current?.focus();
-      }
-      // Escape to clear search
-      if (e.key === 'Escape' && searchQuery) {
-        clearSearch();
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [searchQuery, clearSearch]);
+  // Get total count and loading state from the appropriate list component
+  // These will be managed by the child components (InfiniteContactList/PaginatedContactList)
+  const total = 0; // Placeholder - actual count comes from child components
+  const loading = false; // Placeholder - actual loading state comes from child components
 
   const sortOptions = [
     { value: 'first_name', label: 'First Name' },
@@ -211,142 +121,62 @@ const OptimizedContactsView: React.FC<OptimizedContactsViewProps> = ({
 
   return (
     <div ref={containerRef} className={`flex flex-col h-full ${className}`}>
-      {/* Search and Filter Bar */}
+      {/* Group Filter Header (if active) */}
+      {activeGroupName && (
+        <div className="flex-shrink-0 p-4 bg-blue-50 border-b border-blue-200">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <Users className="w-5 h-5 text-blue-600 mr-2" />
+              <span className="text-blue-800 font-medium">
+                Showing contacts in "{activeGroupName}"
+              </span>
+            </div>
+            <button
+              onClick={onClearGroupFilter}
+              className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+            >
+              Show All Contacts
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Contact List Header */}
       <div className="flex-shrink-0 p-4 bg-white border-b border-gray-200">
-        <div className="flex items-center space-x-4">
-          {/* Enhanced Search Input */}
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input
-              ref={searchInputRef}
-              type="text"
-              placeholder="Search across all fields: names, notes, address, social media... (Ctrl+K)"
-              value={searchQuery}
-              onChange={handleSearchChange}
-              onFocus={handleSearchFocus}
-              onBlur={handleSearchBlur}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && searchQuery.trim()) {
-                  saveRecentSearch(searchQuery.trim());
-                  setShowSuggestions(false);
-                }
-              }}
-              className="w-full pl-10 pr-12 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-
-            {/* Right side icons */}
-            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center space-x-1">
-              {/* Loading indicator */}
-              {isSearching && (
-                <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
-              )}
-
-              {/* Clear button */}
-              {searchQuery && (
-                <button
-                  onClick={clearSearch}
-                  className="p-1 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors"
-                  title="Clear search (Esc)"
-                >
-                  <X className="w-4 h-4" />
-                </button>
+        <div className="flex items-center justify-between">
+          {/* Contact Count and Stats */}
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-gray-600">
+              {loading ? (
+                <div className="flex items-center">
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Loading contacts...
+                </div>
+              ) : (
+                <span>
+                  {total > 0 ? `${total} contact${total !== 1 ? 's' : ''}` : 'No contacts found'}
+                  {effectiveSearchQuery && ` matching "${effectiveSearchQuery}"`}
+                </span>
               )}
             </div>
+          </div>
 
-            {/* Search Suggestions Dropdown */}
-            {showSuggestions && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
-                {/* Recent Searches */}
-                {recentSearches.length > 0 && (
-                  <div className="p-2">
-                    <div className="text-xs font-medium text-gray-500 uppercase tracking-wider px-2 py-1">
-                      Recent Searches
-                    </div>
-                    {recentSearches.map((search, index) => (
-                      <button
-                        key={index}
-                        onClick={() => applySuggestion(search)}
-                        className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center"
-                      >
-                        <Search className="w-4 h-4 mr-2 text-gray-400" />
-                        {search}
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {/* Comprehensive Search Examples */}
-                {searchQuery.length === 0 && (
-                  <div className="p-2 border-t border-gray-100">
-                    <div className="text-xs font-medium text-gray-500 uppercase tracking-wider px-2 py-1">
-                      Search Examples
-                    </div>
-                    <div className="text-xs text-gray-500 px-2 py-1 mb-2">
-                      Search across names, notes, address, social media, and all contact fields
-                    </div>
-                    {[
-                      { text: 'Andrea', desc: 'Find "Andrea" in any field' },
-                      { text: 'New York', desc: 'Search addresses' },
-                      { text: 'linkedin.com', desc: 'Find social profiles' },
-                      { text: 'meeting notes', desc: 'Search notes content' },
-                      { text: '@gmail.com', desc: 'Email domains' },
-                      { text: 'birthday party', desc: 'Notes and events' }
-                    ].map((suggestion) => (
-                      <button
-                        key={suggestion.text}
-                        onClick={() => applySuggestion(suggestion.text)}
-                        className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded"
-                      >
-                        <div className="flex items-center">
-                          <Search className="w-4 h-4 mr-2 text-gray-400 flex-shrink-0" />
-                          <div>
-                            <div className="font-medium">{suggestion.text}</div>
-                            <div className="text-xs text-gray-500">{suggestion.desc}</div>
-                          </div>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
+          {/* Controls Section */}
+          <div className="flex items-center space-x-4">
+            {/* Sort Info Display */}
+            {sortField && (
+              <div className="flex items-center px-3 py-2 bg-blue-50 text-blue-700 rounded-lg text-sm">
+                <span>Sorted by {sortOptions.find(opt => opt.value === sortField)?.label}</span>
+                {sortDirection === 'asc' ? (
+                  <SortAsc className="w-4 h-4 ml-1" />
+                ) : (
+                  <SortDesc className="w-4 h-4 ml-1" />
                 )}
               </div>
             )}
-          </div>
 
-          {/* Group Filter Indicator */}
-          {groupId && activeGroupName && (
-            <div className="flex items-center justify-between bg-indigo-50 border border-indigo-200 rounded-lg px-3 py-2 mt-3">
-              <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
-                <span className="text-sm font-medium text-indigo-900">
-                  Filtering by group: <span className="font-semibold">{activeGroupName}</span>
-                </span>
-              </div>
-              {onClearGroupFilter && (
-                <button
-                  onClick={onClearGroupFilter}
-                  className="text-indigo-600 hover:text-indigo-800 p-1 rounded-full hover:bg-indigo-100 transition-colors"
-                  title="Clear group filter"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-          )}
-
-          {/* Sort Info Display */}
-          {sortField && (
-            <div className="flex items-center px-3 py-2 bg-blue-50 text-blue-700 rounded-lg text-sm">
-              <span>Sorted by {sortOptions.find(opt => opt.value === sortField)?.label}</span>
-              {sortDirection === 'asc' ? (
-                <SortAsc className="w-4 h-4 ml-1" />
-              ) : (
-                <SortDesc className="w-4 h-4 ml-1" />
-              )}
-            </div>
-          )}
-
-          {/* Filter Button */}
-          <button
+            {/* Filter Button */}
+            <button
             onClick={() => setShowFilters(!showFilters)}
             className={`p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
               showFilters
@@ -398,6 +228,7 @@ const OptimizedContactsView: React.FC<OptimizedContactsViewProps> = ({
               </button>
             </div>
           )}
+          </div>
         </div>
 
         {/* Advanced Filters (collapsible) */}

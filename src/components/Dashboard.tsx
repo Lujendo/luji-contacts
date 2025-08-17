@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { contactsApi, groupsApi } from '../api';
 import { useBulkDeleteContacts } from '../hooks/useContactQueries';
+import { UnifiedSearchBar } from './UnifiedSearchBar';
 import {
   Contact,
   Group,

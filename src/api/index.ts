@@ -248,6 +248,16 @@ export const contactsApi = {
     }
   },
 
+  // Debug method to search for a specific contact
+  async debugSearchContact(searchTerm: string): Promise<any> {
+    try {
+      const response = await api.get<any>(`/contacts?search=${encodeURIComponent(searchTerm)}&limit=10`);
+      return response.data;
+    } catch (error) {
+      handleApiError(error);
+    }
+  },
+
   // Group-related methods for contacts
   async getGroupContacts(groupId: number): Promise<Contact[]> {
     try {

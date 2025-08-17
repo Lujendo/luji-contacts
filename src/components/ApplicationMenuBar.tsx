@@ -1,13 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { 
-  ChevronDown, 
-  Plus, 
-  Search, 
-  Merge, 
-  Upload, 
-  Download, 
-  Users, 
-  Settings, 
+import {
+  ChevronDown,
+  Plus,
+  Search,
+  Merge,
+  Upload,
+  Download,
+  Users,
+  Settings,
   Filter,
   SortAsc,
   SortDesc,
@@ -16,6 +16,7 @@ import {
   List,
   MoreHorizontal
 } from 'lucide-react';
+import { UnifiedSearchBar } from './UnifiedSearchBar';
 
 interface DropdownItem {
   label: string;
@@ -198,17 +199,14 @@ const ApplicationMenuBar: React.FC<ApplicationMenuBarProps> = ({
       <div className="flex items-center justify-between">
         {/* Left side - Search and Menus */}
         <div className="flex items-center space-x-4">
-          {/* Search Bar */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <input
-              type="text"
-              placeholder="Search contacts..."
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              className="w-64 pl-10 pr-4 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-            />
-          </div>
+          {/* Unified Search Bar */}
+          <UnifiedSearchBar
+            onSearchChange={onSearchChange}
+            placeholder="Search contacts by name, email, phone, company..."
+            initialQuery={searchQuery}
+            className="w-80"
+            showRecentSearches={true}
+          />
 
           {/* Menu Bar - Extra Functions */}
           <div className="flex items-center space-x-1">
