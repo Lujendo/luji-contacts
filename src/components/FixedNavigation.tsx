@@ -297,6 +297,25 @@ const FixedNavigation: React.FC<FixedNavigationProps> = ({
           )}
         </div>
 
+        {/* Email Client */}
+        <div className="relative group px-2">
+          <button
+            onClick={() => onOpenPanel('emailClient')}
+            className={`w-full flex items-center rounded-lg text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-colors ${
+              isExpanded ? 'px-3 py-2 justify-start' : 'h-12 justify-center'
+            }`}
+          >
+            <Mail className="h-6 w-6 flex-shrink-0" />
+            {isExpanded && <span className="ml-3 text-sm font-medium">Email Client</span>}
+          </button>
+          {!isExpanded && (
+            <div className="absolute left-16 top-1/2 transform -translate-y-1/2 bg-gray-900 text-white text-sm px-2 py-1 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50">
+              Email Client
+              <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45"></div>
+            </div>
+          )}
+        </div>
+
         {/* Bulk Delete - Only show when contacts are selected */}
         {selectedContactsCount > 0 && onBulkDelete && (
           <div className="group relative">

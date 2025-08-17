@@ -78,7 +78,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
-    
+
     if (!formData.subject.trim() || !formData.body.trim()) {
       setError('Subject and body are required');
       return;
@@ -97,17 +97,68 @@ const EmailForm: React.FC<EmailFormProps> = ({
         await onSend(formData);
         onClose();
       } else {
-        // Fallback: open default email client
-        const emails = getRecipientEmails();
-        const mailtoLink = `mailto:?bcc=${emails.join(',')}&subject=${encodeURIComponent(formData.subject)}&body=${encodeURIComponent(formData.body.replace(/<[^>]*>/g, ''))}`;
-        window.location.href = mailtoLink;
-        onClose();
+        // Use the new professional email API
+        await sendEmailViaProfessionalAPI();
       }
     } catch (error) {
       console.error('Error sending email:', error);
       setError(error instanceof Error ? error.message : 'Failed to send email');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Send email using the new professional email infrastructure
+  const sendEmailViaProfessionalAPI = async (): Promise<void> => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication required');
+      }
+
+      const response = await fetch('/api/emails/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          subject: formData.subject,
+          html: formData.body,
+          text: formData.body.replace(/<[^>]*>/g, ''), // Strip HTML for text version
+          contactIds: formData.contactIds,
+          groupIds: formData.groupIds,
+          options: {
+            priority: 'normal',
+            trackOpens: true,
+            trackClicks: true,
+            tags: ['contact-manager', 'manual-send']
+          }
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to send email');
+      }
+
+      const result = await response.json();
+      console.log('✅ Email sent successfully:', result);
+
+      // Show success message
+      setError(''); // Clear any previous errors
+      alert(`Email queued successfully! Queue ID: ${result.queueId}\nRecipients: ${result.recipientCount}`);
+      onClose();
+
+    } catch (error) {
+      console.error('❌ Professional email API error:', error);
+
+      // Fallback to mailto if API fails
+      console.log('🔄 Falling back to mailto...');
+      const emails = getRecipientEmails();
+      const mailtoLink = `mailto:?bcc=${emails.join(',')}&subject=${encodeURIComponent(formData.subject)}&body=${encodeURIComponent(formData.body.replace(/<[^>]*>/g, ''))}`;
+      window.location.href = mailtoLink;
+      onClose();
     }
   };
 

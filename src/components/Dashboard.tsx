@@ -41,6 +41,7 @@ import AnalyticsModal from './modals/AnalyticsModal';
 import GroupsPageModal from './modals/GroupsPageModal';
 
 import GroupFormModal from './modals/GroupFormModal';
+import EmailClientModal from './modals/EmailClientModal';
 import GroupEditFormModal from './modals/GroupEditFormModal';
 import EmailFormModal from './modals/EmailFormModal';
 import EmailHistoryModal from './modals/EmailHistoryModal';
@@ -119,6 +120,7 @@ const Dashboard: React.FC = () => {
   // New modal states
   const [showAnalytics, setShowAnalytics] = useState<boolean>(false);
   const [showGroupsPage, setShowGroupsPage] = useState<boolean>(false);
+  const [showEmailClient, setShowEmailClient] = useState<boolean>(false);
 
   // Sidebar state
   const [sidebarExpanded, setSidebarExpanded] = useState<boolean>(true);
@@ -379,6 +381,7 @@ const Dashboard: React.FC = () => {
     setShowDuplicateDetection(false);
     setShowAnalytics(false);
     setShowGroupsPage(false);
+    setShowEmailClient(false);
     setUserSettingsTab('profile');
   }, []);
 
@@ -422,6 +425,9 @@ const Dashboard: React.FC = () => {
         break;
       case 'groupsPage':
         setShowGroupsPage(true);
+        break;
+      case 'emailClient':
+        setShowEmailClient(true);
         break;
       default:
         break;
@@ -800,6 +806,14 @@ const Dashboard: React.FC = () => {
           onAddNewGroup={() => setShowGroupForm(true)}
           onGroupClick={handleGroupHighlight}
           activeGroup={activeGroup}
+        />
+      )}
+
+      {/* Email Client Modal */}
+      {showEmailClient && (
+        <EmailClientModal
+          isOpen={showEmailClient}
+          onClose={() => setShowEmailClient(false)}
         />
       )}
     </div>

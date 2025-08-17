@@ -100,20 +100,45 @@ const EmailSettingsForm: React.FC<EmailSettingsFormProps> = ({
     setError('');
 
     try {
-      // This would be implemented in the API
-      // const response = await axios.post('/api/email-settings/test', settings);
-      
-      // Simulate test for now
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      setTestStatus('success');
-      
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication required');
+      }
+
+      // Test the email configuration with the professional email API
+      const response = await fetch('/api/emails/test-connection', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          smtp_host: settings.smtp_host,
+          smtp_port: parseInt(settings.smtp_port),
+          smtp_secure: settings.smtp_secure,
+          smtp_user: settings.smtp_user,
+          smtp_pass: settings.smtp_pass,
+          from_email: settings.from_email,
+          from_name: settings.from_name
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setTestStatus('success');
+        console.log('✅ Email connection test successful:', result);
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Connection test failed');
+      }
+
       // Reset status after 3 seconds
       setTimeout(() => setTestStatus('idle'), 3000);
     } catch (error) {
-      console.error('Error testing email connection:', error);
+      console.error('❌ Email connection test failed:', error);
       setTestStatus('error');
-      setError('Failed to test email connection');
-      
+      setError(error instanceof Error ? error.message : 'Failed to test email connection');
+
       // Reset status after 3 seconds
       setTimeout(() => setTestStatus('idle'), 3000);
     }
@@ -137,16 +162,16 @@ const EmailSettingsForm: React.FC<EmailSettingsFormProps> = ({
           </button>
         </div>
 
-        {/* Not implemented notice */}
-        <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+        {/* Professional Email Infrastructure Notice */}
+        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-md">
           <div className="flex items-center">
-            <AlertCircle className="h-5 w-5 text-yellow-400 mr-2" />
+            <CheckCircle2 className="h-5 w-5 text-green-400 mr-2" />
             <div>
-              <p className="text-sm text-yellow-700 font-medium">
-                Email functionality is not fully implemented
+              <p className="text-sm text-green-700 font-medium">
+                Professional Email Infrastructure Active
               </p>
-              <p className="text-sm text-yellow-600 mt-1">
-                This form is a placeholder for future email configuration.
+              <p className="text-sm text-green-600 mt-1">
+                Configure your email settings below. Supports SMTP, SendGrid, and Mailgun providers with automatic failover.
               </p>
             </div>
           </div>
