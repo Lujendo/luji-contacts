@@ -4,6 +4,7 @@ import { emailQueueService } from '../../services/EmailQueueService';
 import { EmailData, SendEmailOptions, BulkEmailOptions } from '../../types/email';
 import { DatabaseService } from '../utils/database';
 import { AuthService, getAuthenticatedUser, createAuthMiddleware } from '../utils/auth';
+import { ImapService } from '../services/ImapService';
 
 export function createEmailRoutes(db: DatabaseService, auth: AuthService) {
   const app = new Hono();
@@ -404,20 +405,65 @@ app.delete('/queue/:id', async (c) => {
 
 // Get folders for an email account
 app.get('/folders/:accountId', async (c) => {
+  const imapService = new ImapService();
+
   try {
     const user = getAuthenticatedUser(c);
     const accountId = c.req.param('accountId');
 
     // Verify account belongs to user
-    const account = await c.env.DB.prepare(`
+    const accountRow = await c.env.DB.prepare(`
       SELECT * FROM email_accounts WHERE id = ? AND user_id = ?
     `).bind(accountId, user.id).first();
-    if (!account) {
+
+    if (!accountRow) {
       return c.json({ error: 'Account not found' }, 404);
     }
 
-    // For now, return default folders since we don't have real IMAP connection
-    // In a real implementation, this would connect to the IMAP server and fetch actual folders
+    // Convert database row to EmailAccount object
+    const account = {
+      id: accountRow.id,
+      name: accountRow.name,
+      email: accountRow.email,
+      provider: accountRow.provider,
+      incoming: {
+        host: accountRow.incoming_host,
+        port: accountRow.incoming_port,
+        secure: accountRow.incoming_secure === 1,
+        username: accountRow.incoming_username,
+        password: accountRow.incoming_password,
+        authMethod: accountRow.incoming_auth_method
+      },
+      outgoing: {
+        host: accountRow.outgoing_host,
+        port: accountRow.outgoing_port,
+        secure: accountRow.outgoing_secure === 1,
+        username: accountRow.outgoing_username,
+        password: accountRow.outgoing_password,
+        authMethod: accountRow.outgoing_auth_method
+      },
+      folders: [],
+      isDefault: accountRow.is_default === 1,
+      isActive: accountRow.is_active === 1,
+      lastSync: new Date(accountRow.last_sync),
+      syncInterval: accountRow.sync_interval
+    };
+
+    console.log(`📧 Fetching real folders for account: ${account.email}`);
+
+    // Connect to IMAP server and fetch real folders
+    const config = ImapService.createConnectionConfig(account);
+    await imapService.connect(config);
+
+    const folders = await imapService.getFolders();
+
+    console.log(`✅ Retrieved ${folders.length} real folders from IMAP`);
+    return c.json({ folders });
+
+  } catch (error) {
+    console.error('❌ Error fetching folders:', error);
+
+    // Return default folders as fallback
     const folders = [
       {
         id: 'inbox',
@@ -486,15 +532,22 @@ app.get('/folders/:accountId', async (c) => {
       }
     ];
 
-    return c.json({ folders });
-  } catch (error) {
-    console.error('Error fetching folders:', error);
-    return c.json({ error: 'Failed to fetch folders' }, 500);
+    console.log('📧 Returning default folders as fallback');
+    return c.json({
+      folders,
+      warning: 'Using default folders due to connection error',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  } finally {
+    // Always disconnect from IMAP server
+    await imapService.disconnect();
   }
 });
 
 // Get messages for a folder
 app.get('/messages/:accountId/:folderId', async (c) => {
+  const imapService = new ImapService();
+
   try {
     const user = getAuthenticatedUser(c);
     const accountId = c.req.param('accountId');
@@ -503,30 +556,89 @@ app.get('/messages/:accountId/:folderId', async (c) => {
     const limit = parseInt(c.req.query('limit') || '50');
 
     // Verify account belongs to user
-    const account = await c.env.DB.prepare(`
+    const accountRow = await c.env.DB.prepare(`
       SELECT * FROM email_accounts WHERE id = ? AND user_id = ?
     `).bind(accountId, user.id).first();
 
-    if (!account) {
+    if (!accountRow) {
       return c.json({ error: 'Account not found' }, 404);
     }
 
-    // For now, return empty messages since we don't have real IMAP connection
-    // In a real implementation, this would connect to the IMAP server and fetch actual messages
-    const messages = [];
+    // Convert database row to EmailAccount object
+    const account = {
+      id: accountRow.id,
+      name: accountRow.name,
+      email: accountRow.email,
+      provider: accountRow.provider,
+      incoming: {
+        host: accountRow.incoming_host,
+        port: accountRow.incoming_port,
+        secure: accountRow.incoming_secure === 1,
+        username: accountRow.incoming_username,
+        password: accountRow.incoming_password,
+        authMethod: accountRow.incoming_auth_method
+      },
+      outgoing: {
+        host: accountRow.outgoing_host,
+        port: accountRow.outgoing_port,
+        secure: accountRow.outgoing_secure === 1,
+        username: accountRow.outgoing_username,
+        password: accountRow.outgoing_password,
+        authMethod: accountRow.outgoing_auth_method
+      },
+      folders: [],
+      isDefault: accountRow.is_default === 1,
+      isActive: accountRow.is_active === 1,
+      lastSync: new Date(accountRow.last_sync),
+      syncInterval: accountRow.sync_interval
+    };
+
+    console.log(`📧 Fetching real messages for account: ${account.email}, folder: ${folderId}`);
+
+    // Connect to IMAP server and fetch real messages
+    const config = ImapService.createConnectionConfig(account);
+    await imapService.connect(config);
+
+    // Convert folderId to folder name (handle both formats)
+    let folderName = folderId;
+    if (folderId === 'inbox') folderName = 'INBOX';
+    else if (folderId === 'sent') folderName = 'Sent';
+    else if (folderId === 'drafts') folderName = 'Drafts';
+    else if (folderId === 'spam') folderName = 'Spam';
+    else if (folderId === 'trash') folderName = 'Trash';
+
+    const messages = await imapService.getMessages(folderName, limit);
+
+    console.log(`✅ Retrieved ${messages.length} real messages from IMAP`);
 
     return c.json({
       messages,
       pagination: {
         page,
         limit,
-        total: 0,
-        totalPages: 0
+        total: messages.length,
+        totalPages: Math.ceil(messages.length / limit)
       }
     });
+
   } catch (error) {
-    console.error('Error fetching messages:', error);
-    return c.json({ error: 'Failed to fetch messages' }, 500);
+    console.error('❌ Error fetching messages:', error);
+
+    // Return empty messages as fallback
+    return c.json({
+      messages: [],
+      pagination: {
+        page: parseInt(c.req.query('page') || '1'),
+        limit: parseInt(c.req.query('limit') || '50'),
+        total: 0,
+        totalPages: 0
+      },
+      warning: 'Using empty messages due to connection error',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  } finally {
+    // Always disconnect from IMAP server
+    await imapService.disconnect();
   }
 });
 
