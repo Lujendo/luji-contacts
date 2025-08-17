@@ -120,6 +120,9 @@ const Dashboard: React.FC = () => {
   const [showAnalytics, setShowAnalytics] = useState<boolean>(false);
   const [showGroupsPage, setShowGroupsPage] = useState<boolean>(false);
 
+  // Sidebar state
+  const [sidebarExpanded, setSidebarExpanded] = useState<boolean>(true);
+
   // Use appearance context
   const { settings: appearanceSettings, updateSettings: updateAppearanceSettings } = useAppearance();
 
@@ -478,10 +481,14 @@ const Dashboard: React.FC = () => {
         onShowAllContacts={handleShowAllContacts}
         selectedContactsCount={selectedContacts.length}
         onBulkDelete={handleBulkDelete}
+        onSidebarToggle={setSidebarExpanded}
+        isExpanded={sidebarExpanded}
       />
 
       {/* Main Content - Takes remaining space, offset by enhanced nav */}
-      <div className="flex flex-1 min-h-0 overflow-hidden ml-16">{/* Note: ml-16 will be dynamic based on sidebar state */}
+      <div className={`flex flex-1 min-h-0 overflow-hidden transition-all duration-300 ${
+        sidebarExpanded ? 'ml-64' : 'ml-16'
+      }`}>
 
         {/* Main Content Area */}
         <div className="flex-1 overflow-hidden">

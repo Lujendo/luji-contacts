@@ -14,6 +14,7 @@ import {
   Trash2,
   ChevronDown,
   ChevronRight,
+  ChevronLeft,
   Edit2,
   X,
   FileText,
@@ -55,6 +56,8 @@ interface FixedNavigationProps {
   onShowAllContacts?: () => void;
   selectedContactsCount?: number;
   onBulkDelete?: () => void;
+  onSidebarToggle?: (expanded: boolean) => void;
+  isExpanded?: boolean;
 }
 
 const FixedNavigation: React.FC<FixedNavigationProps> = ({
@@ -69,10 +72,26 @@ const FixedNavigation: React.FC<FixedNavigationProps> = ({
   onAddNewGroup,
   onShowAllContacts,
   selectedContactsCount = 0,
-  onBulkDelete
+  onBulkDelete,
+  onSidebarToggle,
+  isExpanded: externalExpanded
 }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [showGroups, setShowGroups] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(externalExpanded ?? true);
+  const [showGroups, setShowGroups] = useState(true);
+
+  // Sync with external state if provided
+  React.useEffect(() => {
+    if (externalExpanded !== undefined) {
+      setIsExpanded(externalExpanded);
+    }
+  }, [externalExpanded]);
+
+  // Handle sidebar toggle
+  const handleToggle = () => {
+    const newExpanded = !isExpanded;
+    setIsExpanded(newExpanded);
+    onSidebarToggle?.(newExpanded);
+  };
   return (
     <nav className={`fixed top-0 left-0 bottom-0 bg-white shadow-lg border-r border-gray-200 z-40 flex flex-col transition-all duration-300 ${
       isExpanded ? 'w-64' : 'w-16'
@@ -86,11 +105,11 @@ const FixedNavigation: React.FC<FixedNavigationProps> = ({
           )}
         </div>
         <button
-          onClick={() => setIsExpanded(!isExpanded)}
+          onClick={handleToggle}
           className="p-1 rounded-md hover:bg-gray-100 text-gray-500 hover:text-gray-700"
           title={isExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
         >
-          {isExpanded ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          {isExpanded ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
         </button>
       </div>
 
