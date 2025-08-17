@@ -47,6 +47,74 @@ export class DatabaseMigrations {
 
     // Run email tables migration
     await this.createEmailTables();
+
+    // Check if email_accounts table migration is needed
+    const emailAccountsExists = await this.db.prepare(`
+      SELECT name FROM sqlite_master WHERE type='table' AND name='email_accounts'
+    `).first();
+
+    if (!emailAccountsExists) {
+      console.log('Creating email_accounts table...');
+
+      // Create email_accounts table
+      await this.db.prepare(`
+        CREATE TABLE IF NOT EXISTS email_accounts (
+          id TEXT PRIMARY KEY,
+          user_id INTEGER NOT NULL,
+          name TEXT NOT NULL,
+          email TEXT NOT NULL,
+          provider TEXT NOT NULL DEFAULT 'imap',
+
+          -- Incoming server settings (IMAP/POP3)
+          incoming_host TEXT NOT NULL,
+          incoming_port INTEGER NOT NULL DEFAULT 993,
+          incoming_secure INTEGER NOT NULL DEFAULT 1,
+          incoming_username TEXT NOT NULL,
+          incoming_password TEXT NOT NULL,
+          incoming_auth_method TEXT NOT NULL DEFAULT 'plain',
+
+          -- Outgoing server settings (SMTP)
+          outgoing_host TEXT,
+          outgoing_port INTEGER DEFAULT 587,
+          outgoing_secure INTEGER DEFAULT 1,
+          outgoing_username TEXT,
+          outgoing_password TEXT,
+          outgoing_auth_method TEXT DEFAULT 'plain',
+
+          -- Account settings
+          sync_interval INTEGER NOT NULL DEFAULT 5,
+          is_default INTEGER NOT NULL DEFAULT 0,
+          is_active INTEGER NOT NULL DEFAULT 1,
+          last_sync TEXT NOT NULL,
+
+          -- Timestamps
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+          -- Foreign key constraint
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+      `).run();
+
+      // Create indexes
+      await this.db.prepare(`
+        CREATE INDEX IF NOT EXISTS idx_email_accounts_user_id ON email_accounts(user_id)
+      `).run();
+
+      await this.db.prepare(`
+        CREATE INDEX IF NOT EXISTS idx_email_accounts_email ON email_accounts(email)
+      `).run();
+
+      await this.db.prepare(`
+        CREATE INDEX IF NOT EXISTS idx_email_accounts_is_default ON email_accounts(user_id, is_default)
+      `).run();
+
+      await this.db.prepare(`
+        CREATE INDEX IF NOT EXISTS idx_email_accounts_is_active ON email_accounts(user_id, is_active)
+      `).run();
+
+      console.log('Email accounts table and indexes created successfully');
+    }
   }
 
   async checkNicknameColumn(): Promise<boolean> {

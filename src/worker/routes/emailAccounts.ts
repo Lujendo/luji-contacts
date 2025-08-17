@@ -90,10 +90,22 @@ app.post('/', async (c) => {
     const userId = user.id;
     const accountData = await c.req.json();
 
+    console.log('📧 Creating email account for user:', userId);
+    console.log('📧 Account data received:', JSON.stringify(accountData, null, 2));
+
     // Validate required fields
     if (!accountData.name || !accountData.email || !accountData.incoming?.host) {
       return c.json({ error: 'Missing required fields' }, 400);
     }
+
+    // Ensure SMTP settings have defaults
+    const outgoingSettings = accountData.outgoing || {};
+    const smtpHost = outgoingSettings.host?.trim() || accountData.incoming.host.replace('imap.', 'smtp.').replace('pop.', 'smtp.');
+    const smtpPort = outgoingSettings.port || 587;
+    const smtpSecure = outgoingSettings.secure !== undefined ? outgoingSettings.secure : true;
+    const smtpUsername = outgoingSettings.username?.trim() || accountData.incoming.username;
+    const smtpPassword = outgoingSettings.password?.trim() || accountData.incoming.password;
+    const smtpAuthMethod = outgoingSettings.authMethod?.trim() || 'plain';
 
     // Generate unique ID
     const accountId = crypto.randomUUID();
@@ -125,16 +137,16 @@ app.post('/', async (c) => {
       accountData.incoming.username,
       accountData.incoming.password,
       accountData.incoming.authMethod || 'plain',
-      accountData.outgoing?.host || '',
-      accountData.outgoing?.port || 587,
-      accountData.outgoing?.secure ? 1 : 0,
-      accountData.outgoing?.username || '',
-      accountData.outgoing?.password || '',
-      accountData.outgoing?.authMethod || 'plain',
+      smtpHost,
+      smtpPort,
+      smtpSecure ? 1 : 0,
+      smtpUsername,
+      smtpPassword,
+      smtpAuthMethod,
       accountData.syncInterval || 5,
       isDefault ? 1 : 0,
       1, // is_active
-      new Date().toISOString(),
+      new Date().toISOString(), // Always use current time for last_sync
       new Date().toISOString(),
       new Date().toISOString()
     ).run();
@@ -157,7 +169,11 @@ app.post('/', async (c) => {
     return c.json({ account: newAccount }, 201);
   } catch (error) {
     console.error('Error creating email account:', error);
-    return c.json({ error: 'Failed to create email account' }, 500);
+    console.error('Error details:', error instanceof Error ? error.message : error);
+    return c.json({
+      error: 'Failed to create email account',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, 500);
   }
 });
 
@@ -286,6 +302,28 @@ app.post('/test', async (c) => {
     }, 500);
   }
 });
+
+  // Debug endpoint to check table schema
+  app.get('/debug/schema', async (c) => {
+    try {
+      getAuthenticatedUser(c); // Ensure user is authenticated
+
+      const tableInfo = await c.env.DB.prepare(`
+        PRAGMA table_info(email_accounts)
+      `).all();
+
+      return c.json({
+        tableExists: tableInfo.results.length > 0,
+        schema: tableInfo.results
+      });
+    } catch (error) {
+      console.error('Error checking schema:', error);
+      return c.json({
+        error: 'Failed to check schema',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      }, 500);
+    }
+  });
 
   return app;
 }
