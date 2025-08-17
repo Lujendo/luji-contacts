@@ -21,7 +21,7 @@ const EmailFormModal: React.FC<EmailFormModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title="Send Email"
-      size="xl"
+      size="2xl"
     >
       <EmailForm
         contacts={contacts}

@@ -9,7 +9,6 @@ import {
   Users,
   Plus,
   Send,
-  Search,
   Palette,
   Trash2,
   ChevronDown,
@@ -317,33 +316,7 @@ const FixedNavigation: React.FC<FixedNavigationProps> = ({
           </div>
         )}
 
-        {/* Find Duplicates */}
-        <div className="relative group">
-          <button
-            onClick={() => onOpenPanel('duplicateDetection')}
-            className="w-12 h-12 flex items-center justify-center rounded-lg text-gray-600 hover:text-orange-600 hover:bg-orange-50 transition-colors"
-          >
-            <Search className="h-6 w-6" />
-          </button>
-          <div className="absolute left-16 top-1/2 transform -translate-y-1/2 bg-gray-900 text-white text-sm px-2 py-1 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50">
-            Find Duplicates
-            <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45"></div>
-          </div>
-        </div>
 
-        {/* Import/Export */}
-        <div className="relative group">
-          <button
-            onClick={() => onOpenPanel('importExport')}
-            className="w-12 h-12 flex items-center justify-center rounded-lg text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
-          >
-            <ArrowUpDown className="h-6 w-6" />
-          </button>
-          <div className="absolute left-16 top-1/2 transform -translate-y-1/2 bg-gray-900 text-white text-sm px-2 py-1 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50">
-            Import/Export
-            <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45"></div>
-          </div>
-        </div>
       </div>
 
       {/* User Menu */}

@@ -27,16 +27,14 @@ const ImportModal: React.FC<ImportModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title="Import & Export Contacts"
-      size="xl"
+      size="2xl"
       showCloseButton={true}
       closeOnOverlayClick={false} // Prevent accidental closes during import
     >
-      <div className="p-6">
-        <DashboardImportExport
-          onClose={onClose}
-          onContactsImported={handleContactsImported}
-        />
-      </div>
+      <DashboardImportExport
+        onClose={onClose}
+        onContactsImported={handleContactsImported}
+      />
     </Modal>
   );
 };
