@@ -21,7 +21,8 @@ import {
   Flag,
   Clock,
   User,
-  Calendar
+  Calendar,
+  ArrowLeft
 } from 'lucide-react';
 import { EmailMessage, EmailFolder, EmailAccount, EmailClientSettings } from '../types/emailClient';
 import EmailForm from './EmailForm';
@@ -290,6 +291,15 @@ const ClassicEmailClient: React.FC<ClassicEmailClientProps> = ({
       <div className="bg-white border-b border-gray-200 px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
+            <button
+              onClick={onClose}
+              className="p-2 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100 flex items-center"
+              title="Back to Contacts"
+            >
+              <ArrowLeft className="h-5 w-5 mr-1" />
+              <span className="text-sm font-medium">Back</span>
+            </button>
+            <div className="h-6 w-px bg-gray-300"></div>
             <h1 className="text-xl font-semibold text-gray-900 flex items-center">
               <Mail className="h-6 w-6 mr-2 text-blue-600" />
               Email Client

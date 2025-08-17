@@ -38,14 +38,6 @@ const EmailClientModal: React.FC<EmailClientModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-white">
-      {/* Close Button */}
-      <button
-        onClick={onClose}
-        className="absolute top-4 right-4 z-10 rounded-lg p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors duration-200"
-      >
-        <X className="h-6 w-6" />
-      </button>
-
       {/* Email Client */}
       <div className="h-full">
         <ClassicEmailClient
