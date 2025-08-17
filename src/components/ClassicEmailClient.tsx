@@ -25,11 +25,15 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import { EmailMessage, EmailFolder, EmailAccount, EmailClientSettings } from '../types/emailClient';
+import { Contact } from '../types';
 import EmailForm from './EmailForm';
+import EmailAccountSettings from './EmailAccountSettings';
+import EnhancedComposeModal from './EnhancedComposeModal';
+import ResizablePane from './ResizablePane';
 
 interface ClassicEmailClientProps {
   onClose: () => void;
-  preSelectedContacts?: Array<{ id: number; email: string; name?: string }>;
+  preSelectedContacts?: Contact[];
   composeMode?: boolean;
 }
 
@@ -48,13 +52,39 @@ const ClassicEmailClient: React.FC<ClassicEmailClientProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showAccountSettings, setShowAccountSettings] = useState(false);
   const [showCompose, setShowCompose] = useState(composeMode);
   const [previewPane, setPreviewPane] = useState<'right' | 'bottom' | 'hidden'>('right');
+  const [messageListWidth, setMessageListWidth] = useState(50); // Percentage
+  const [isResizing, setIsResizing] = useState(false);
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [filteredContacts, setFilteredContacts] = useState<Contact[]>([]);
 
-  // Mock data for demonstration
+  // Load data on component mount
   useEffect(() => {
     loadMockData();
+    loadContacts();
   }, []);
+
+  // Load contacts from API
+  const loadContacts = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const response = await fetch('/api/contacts', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setContacts(data.contacts || []);
+        setFilteredContacts(data.contacts || []);
+      }
+    } catch (error) {
+      console.error('Error loading contacts:', error);
+    }
+  };
 
   const loadMockData = () => {
     const mockAccount: EmailAccount = {
@@ -113,6 +143,32 @@ const ClassicEmailClient: React.FC<ClassicEmailClientProps> = ({
           children: [],
           unreadCount: 2,
           totalCount: 3,
+          canSelect: true,
+          canCreate: false,
+          canDelete: false,
+          canRename: false
+        },
+        {
+          id: 'spam',
+          name: 'Spam',
+          displayName: 'Spam',
+          type: 'spam',
+          children: [],
+          unreadCount: 1,
+          totalCount: 5,
+          canSelect: true,
+          canCreate: false,
+          canDelete: false,
+          canRename: false
+        },
+        {
+          id: 'archive',
+          name: 'Archive',
+          displayName: 'Archive',
+          type: 'archive',
+          children: [],
+          unreadCount: 0,
+          totalCount: 45,
           canSelect: true,
           canCreate: false,
           canDelete: false,
@@ -232,10 +288,12 @@ const ClassicEmailClient: React.FC<ClassicEmailClientProps> = ({
         return <Send className="h-4 w-4" />;
       case 'drafts':
         return <FileText className="h-4 w-4" />;
-      case 'trash':
-        return <Trash2 className="h-4 w-4" />;
+      case 'spam':
+        return <Flag className="h-4 w-4 text-red-500" />;
       case 'archive':
         return <Archive className="h-4 w-4" />;
+      case 'trash':
+        return <Trash2 className="h-4 w-4" />;
       default:
         return <Mail className="h-4 w-4" />;
     }
@@ -319,9 +377,9 @@ const ClassicEmailClient: React.FC<ClassicEmailClientProps> = ({
               <RefreshCw className={`h-5 w-5 ${isLoading ? 'animate-spin' : ''}`} />
             </button>
             <button
-              onClick={() => setShowSettings(!showSettings)}
+              onClick={() => setShowAccountSettings(true)}
               className="p-2 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100"
-              title="Settings"
+              title="Account Settings"
             >
               <Settings className="h-5 w-5" />
             </button>
@@ -412,55 +470,57 @@ const ClassicEmailClient: React.FC<ClassicEmailClientProps> = ({
           </div>
 
           {/* Email Content Area */}
-          <div className="flex-1 flex overflow-hidden">
-            {/* Message List */}
-            <div className={`${previewPane === 'right' ? 'w-1/2' : 'flex-1'} border-r border-gray-200 bg-white`}>
-              <div className="h-full overflow-y-auto">
-                {messages.map((message) => (
-                  <div
-                    key={message.id}
-                    onClick={() => handleMessageClick(message)}
-                    className={`border-b border-gray-100 p-4 cursor-pointer hover:bg-gray-50 ${
-                      selectedMessage?.id === message.id ? 'bg-blue-50' : ''
-                    } ${!message.isRead ? 'bg-blue-25' : ''}`}
-                  >
-                    <div className="flex items-start space-x-3">
-                      <input
-                        type="checkbox"
-                        checked={selectedMessages.includes(message.id)}
-                        onChange={(e) => handleMessageSelect(message.id, e.target.checked)}
-                        onClick={(e) => e.stopPropagation()}
-                        className="mt-1"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-2">
-                            <span className={`text-sm ${!message.isRead ? 'font-semibold' : 'font-medium'} text-gray-900 truncate`}>
-                              {message.from.name || message.from.email}
-                            </span>
-                            {message.isStarred && <Star className="h-4 w-4 text-yellow-400 fill-current" />}
-                            {message.attachments.length > 0 && <Paperclip className="h-4 w-4 text-gray-400" />}
+          <div className="flex-1 overflow-hidden">
+            <ResizablePane
+              initialLeftWidth={messageListWidth}
+              onResize={setMessageListWidth}
+              leftPane={
+                <div className="h-full bg-white">
+                  <div className="h-full overflow-y-auto">
+                    {messages.map((message) => (
+                      <div
+                        key={message.id}
+                        onClick={() => handleMessageClick(message)}
+                        className={`border-b border-gray-100 p-4 cursor-pointer hover:bg-gray-50 ${
+                          selectedMessage?.id === message.id ? 'bg-blue-50' : ''
+                        } ${!message.isRead ? 'bg-blue-25' : ''}`}
+                      >
+                        <div className="flex items-start space-x-3">
+                          <input
+                            type="checkbox"
+                            checked={selectedMessages.includes(message.id)}
+                            onChange={(e) => handleMessageSelect(message.id, e.target.checked)}
+                            onClick={(e) => e.stopPropagation()}
+                            className="mt-1"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-2">
+                                <span className={`text-sm ${!message.isRead ? 'font-semibold' : 'font-medium'} text-gray-900 truncate`}>
+                                  {message.from.name || message.from.email}
+                                </span>
+                                {message.isStarred && <Star className="h-4 w-4 text-yellow-400 fill-current" />}
+                                {message.attachments.length > 0 && <Paperclip className="h-4 w-4 text-gray-400" />}
+                              </div>
+                              <span className="text-xs text-gray-500 flex-shrink-0">
+                                {formatDate(message.date)}
+                              </span>
+                            </div>
+                            <div className={`text-sm ${!message.isRead ? 'font-medium' : ''} text-gray-900 truncate mt-1`}>
+                              {message.subject}
+                            </div>
+                            <div className="text-sm text-gray-500 truncate mt-1">
+                              {message.body.text}
+                            </div>
                           </div>
-                          <span className="text-xs text-gray-500 flex-shrink-0">
-                            {formatDate(message.date)}
-                          </span>
-                        </div>
-                        <div className={`text-sm ${!message.isRead ? 'font-medium' : ''} text-gray-900 truncate mt-1`}>
-                          {message.subject}
-                        </div>
-                        <div className="text-sm text-gray-500 truncate mt-1">
-                          {message.body.text}
                         </div>
                       </div>
-                    </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Message Preview Pane */}
-            {previewPane === 'right' && (
-              <div className="w-1/2 bg-white flex flex-col">
+                </div>
+              }
+              rightPane={
+                <div className="h-full bg-white flex flex-col">
                 {selectedMessage ? (
                   <>
                     {/* Message Header */}
@@ -547,38 +607,60 @@ const ClassicEmailClient: React.FC<ClassicEmailClientProps> = ({
                     </div>
                   </div>
                 )}
-              </div>
-            )}
+                </div>
+              }
+            />
           </div>
         </div>
       </div>
 
-      {/* Compose Email Modal */}
-      {showCompose && (
+      {/* Enhanced Compose Modal */}
+      <EnhancedComposeModal
+        isOpen={showCompose}
+        onClose={() => setShowCompose(false)}
+        contacts={contacts}
+        preSelectedContacts={preSelectedContacts}
+      />
+
+      {/* Account Settings Modal */}
+      {showAccountSettings && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="flex min-h-full items-center justify-center p-4">
-            <div className="fixed inset-0 bg-gray-500 bg-opacity-75" onClick={() => setShowCompose(false)}></div>
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75" onClick={() => setShowAccountSettings(false)}></div>
             <div className="relative bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
               <div className="px-6 py-4 border-b border-gray-200">
-                <h3 className="text-lg font-medium text-gray-900">Compose Email</h3>
+                <h3 className="text-lg font-medium text-gray-900">Email Account Settings</h3>
               </div>
-              <EmailForm
-                onClose={() => setShowCompose(false)}
-                selectedContacts={preSelectedContacts.map(contact => ({
-                  id: contact.id,
-                  first_name: contact.name?.split(' ')[0] || '',
-                  last_name: contact.name?.split(' ').slice(1).join(' ') || '',
-                  email: contact.email,
-                  phone: '',
-                  company: '',
-                  position: '',
-                  notes: '',
-                  created_at: new Date(),
-                  updated_at: new Date()
-                }))}
-                contacts={[]}
-                groups={[]}
-              />
+              <div className="p-6">
+                <EmailAccountSettings
+                  accounts={accounts}
+                  onAddAccount={async (account) => {
+                    // Implementation for adding account
+                    console.log('Add account:', account);
+                  }}
+                  onUpdateAccount={async (id, updates) => {
+                    // Implementation for updating account
+                    console.log('Update account:', id, updates);
+                  }}
+                  onDeleteAccount={async (id) => {
+                    // Implementation for deleting account
+                    console.log('Delete account:', id);
+                  }}
+                  onTestConnection={async (account) => {
+                    // Implementation for testing connection
+                    console.log('Test connection:', account);
+                    return true;
+                  }}
+                />
+              </div>
+              <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-end">
+                <button
+                  onClick={() => setShowAccountSettings(false)}
+                  className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         </div>
