@@ -89,8 +89,8 @@ export function createContactRoutes(db: DatabaseService, auth: AuthService, stor
               ? contact.profile_image_url
               : `/api/files/${contact.profile_image_url}`
           ) : contact.profile_image_url,
-          Groups: groups.map(g => ({ id: g.id, name: g.name })), // Use uppercase Groups for frontend compatibility
-          groups: groups.map(g => ({ id: g.id, name: g.name }))  // Keep lowercase for backward compatibility
+          Groups: groups.map((g: any) => ({ id: g.id, name: g.name })), // Use uppercase Groups for frontend compatibility
+          groups: groups.map((g: any) => ({ id: g.id, name: g.name }))  // Keep lowercase for backward compatibility
         };
       });
 
@@ -327,13 +327,23 @@ export function createContactRoutes(db: DatabaseService, auth: AuthService, stor
       const user = getAuthenticatedUser(c);
       const contactId = parseInt(c.req.param('id'));
 
+      console.log(`Delete request for contact ID: ${contactId}, user ID: ${user.id}`);
+
       if (isNaN(contactId)) {
         return c.json({ error: 'Invalid contact ID' }, 400);
       }
 
       // Check if contact exists and belongs to user
       const existingContact = await db.getContactById(contactId, user.id);
+      console.log(`Contact lookup result:`, existingContact ? `Found contact: ${existingContact.first_name} ${existingContact.last_name}` : 'Contact not found');
+
       if (!existingContact) {
+        // Let's also check if the contact exists for any user (debugging)
+        const anyUserContact = await db.db.prepare('SELECT id, user_id, first_name, last_name FROM contacts WHERE id = ?')
+          .bind(contactId)
+          .first();
+        console.log(`Contact exists for any user:`, anyUserContact || 'No contact with this ID exists');
+
         return c.json({ error: 'Contact not found' }, 404);
       }
 
@@ -485,6 +495,8 @@ export function createContactRoutes(db: DatabaseService, auth: AuthService, stor
       const body = await c.req.json();
       const { contactIds } = body;
 
+      console.log(`Bulk delete request for ${contactIds?.length || 0} contacts by user ${user.id}:`, contactIds);
+
       if (!Array.isArray(contactIds) || contactIds.length === 0) {
         return c.json({ error: 'Contact IDs array is required' }, 400);
       }
@@ -494,8 +506,10 @@ export function createContactRoutes(db: DatabaseService, auth: AuthService, stor
 
       for (const contactId of contactIds) {
         try {
+          console.log(`Checking contact ${contactId} for user ${user.id}`);
           const contact = await db.getContactById(contactId, user.id);
           if (contact) {
+            console.log(`Found contact ${contactId}: ${contact.first_name} ${contact.last_name}`);
             // Delete profile image if exists
             if (contact.profile_image_url) {
               await storage.deleteFile(contact.profile_image_url);
@@ -504,9 +518,17 @@ export function createContactRoutes(db: DatabaseService, auth: AuthService, stor
             const deleted = await db.deleteContact(contactId, user.id);
             if (deleted) {
               deletedCount++;
+              console.log(`Successfully deleted contact ${contactId}`);
+            } else {
+              console.log(`Failed to delete contact ${contactId} - database operation failed`);
+              errors.push(`Failed to delete contact ${contactId}`);
             }
+          } else {
+            console.log(`Contact ${contactId} not found for user ${user.id}`);
+            errors.push(`Contact ${contactId} not found`);
           }
         } catch (error) {
+          console.error(`Error deleting contact ${contactId}:`, error);
           errors.push(`Failed to delete contact ${contactId}`);
         }
       }
@@ -525,6 +547,30 @@ export function createContactRoutes(db: DatabaseService, auth: AuthService, stor
     } catch (error) {
       console.error('Bulk delete error:', error);
       return c.json({ error: 'Internal server error' }, 500);
+    }
+  });
+
+  // Debug endpoint to check what contacts exist in database
+  contacts.get('/debug/list', async (c) => {
+    try {
+      const user = getAuthenticatedUser(c);
+
+      // Get all contacts for this user with minimal info
+      const result = await db.getContactsByUserId(user.id);
+      const allContacts = result.contacts;
+
+      console.log(`Debug: Found ${allContacts.length || 0} contacts for user ${user.id}`);
+
+      return c.json({
+        user_id: user.id,
+        total_contacts: allContacts.length || 0,
+        contacts: allContacts || [],
+        message: 'Debug info for contact deletion issues'
+      });
+
+    } catch (error) {
+      console.error('Debug endpoint error:', error);
+      return c.json({ error: 'Debug endpoint failed' }, 500);
     }
   });
 

@@ -238,6 +238,16 @@ export const contactsApi = {
     }
   },
 
+  // Debug method to check what contacts exist in database
+  async debugListContacts(): Promise<any> {
+    try {
+      const response = await api.get<any>('/contacts/debug/list');
+      return response.data;
+    } catch (error) {
+      handleApiError(error);
+    }
+  },
+
   // Group-related methods for contacts
   async getGroupContacts(groupId: number): Promise<Contact[]> {
     try {

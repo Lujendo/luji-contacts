@@ -273,23 +273,29 @@ export const useDeleteContact = () => {
     },
 
     onError: (error, id, context) => {
-      // Revert optimistic update
-      if (context?.previousContacts) {
-        queryClient.setQueryData(contactKeys.lists(), context.previousContacts);
-      }
-
-      // Handle 404 errors gracefully
-      if (error instanceof Error && error.message.includes('Contact not found')) {
+      // Handle 404 errors gracefully - contact doesn't exist in database
+      if (error instanceof Error && (
+        error.message.includes('Contact not found') ||
+        error.message.includes('404')
+      )) {
         console.log('Contact not found in database, removing from local state');
         removeContact(id);
-        toast.success('Contact removed from list');
+        toast.success('Contact removed from list (was not found in database)');
+
+        // Don't revert optimistic update for 404s - the contact should be removed
+        queryClient.invalidateQueries({ queryKey: contactKeys.lists() });
         return;
+      }
+
+      // For other errors, revert optimistic update
+      if (context?.previousContacts) {
+        queryClient.setQueryData(contactKeys.lists(), context.previousContacts);
       }
 
       const errorMessage = error instanceof Error ? error.message : 'Failed to delete contact';
       setError(errorMessage);
       toast.error(errorMessage);
-      
+
       console.error('Error deleting contact:', error);
     },
   });
@@ -311,15 +317,26 @@ export const useBulkDeleteContacts = () => {
     onSuccess: (result) => {
       // Invalidate queries
       queryClient.invalidateQueries({ queryKey: contactKeys.lists() });
-      
+
       // Clear selection
       clearSelection();
-      
-      toast.success(`Successfully deleted ${result.successful} contacts`);
-      if (result.failed > 0) {
-        toast.error(`Failed to delete ${result.failed} contacts`);
+
+      const deletedCount = result.deletedCount || 0;
+      const errorCount = result.errors?.length || 0;
+
+      if (deletedCount > 0) {
+        toast.success(`Successfully deleted ${deletedCount} contact${deletedCount > 1 ? 's' : ''}`);
       }
-      
+
+      if (errorCount > 0) {
+        toast.error(`Failed to delete ${errorCount} contact${errorCount > 1 ? 's' : ''}`);
+        console.log('Bulk delete errors:', result.errors);
+      }
+
+      if (deletedCount === 0 && errorCount === 0) {
+        toast.info('No contacts were deleted');
+      }
+
       setError(null);
     },
 
