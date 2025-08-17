@@ -1,18 +1,13 @@
 import { Hono } from 'hono';
 import { DatabaseService } from '../utils/database';
 import { EmailAccount } from '../../types/emailClient';
-import { getAuthenticatedUser } from '../utils/auth';
+import { AuthService, getAuthenticatedUser, createAuthMiddleware } from '../utils/auth';
 
-const app = new Hono();
+export function createEmailAccountRoutes(db: DatabaseService, auth: AuthService) {
+  const app = new Hono<{ Bindings: Env }>();
 
-// Helper function to authenticate user from context
-async function authenticateUser(c: any) {
-  try {
-    return getAuthenticatedUser(c);
-  } catch (error) {
-    return null;
-  }
-}
+  // Apply authentication middleware to all routes
+  app.use('*', createAuthMiddleware(auth, db));
 
 // Email Account Database Schema
 interface EmailAccountRecord {
@@ -41,18 +36,13 @@ interface EmailAccountRecord {
   updated_at: string;
 }
 
-// Get all email accounts for user
-app.get('/', async (c) => {
-  try {
-    const user = await authenticateUser(c);
-    if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
+  // Get all email accounts for user
+  app.get('/', async (c) => {
+    try {
+      const user = getAuthenticatedUser(c);
+      const userId = user.id;
 
-    const db = new DatabaseService(c.env.DB);
-    const userId = user.id;
-
-    const accounts = await db.prepare(`
+      const accounts = await c.env.DB.prepare(`
       SELECT * FROM email_accounts 
       WHERE user_id = ? 
       ORDER BY is_default DESC, created_at ASC
@@ -96,12 +86,7 @@ app.get('/', async (c) => {
 // Create new email account
 app.post('/', async (c) => {
   try {
-    const user = await authenticateUser(c);
-    if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-
-    const db = new DatabaseManager(c.env.DB);
+    const user = getAuthenticatedUser(c);
     const userId = user.id;
     const accountData = await c.req.json();
 
@@ -114,14 +99,14 @@ app.post('/', async (c) => {
     const accountId = crypto.randomUUID();
 
     // If this is the first account, make it default
-    const existingAccounts = await db.prepare(`
+    const existingAccounts = await c.env.DB.prepare(`
       SELECT COUNT(*) as count FROM email_accounts WHERE user_id = ?
     `).bind(userId).first();
 
-    const isDefault = existingAccounts.count === 0;
+    const isDefault = existingAccounts?.count === 0;
 
     // Insert new account
-    await db.prepare(`
+    await c.env.DB.prepare(`
       INSERT INTO email_accounts (
         id, user_id, name, email, provider,
         incoming_host, incoming_port, incoming_secure, incoming_username, incoming_password, incoming_auth_method,
@@ -179,18 +164,13 @@ app.post('/', async (c) => {
 // Update email account
 app.put('/:id', async (c) => {
   try {
-    const user = await authenticateUser(c);
-    if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-
-    const db = new DatabaseService(c.env.DB);
+    const user = getAuthenticatedUser(c);
     const userId = user.id;
     const accountId = c.req.param('id');
     const updates = await c.req.json();
 
     // Verify account belongs to user
-    const existingAccount = await db.prepare(`
+    const existingAccount = await c.env.DB.prepare(`
       SELECT * FROM email_accounts WHERE id = ? AND user_id = ?
     `).bind(accountId, userId).first();
 
@@ -199,7 +179,7 @@ app.put('/:id', async (c) => {
     }
 
     // Update account
-    await db.prepare(`
+    await c.env.DB.prepare(`
       UPDATE email_accounts SET
         name = ?, email = ?, provider = ?,
         incoming_host = ?, incoming_port = ?, incoming_secure = ?, 
@@ -240,17 +220,12 @@ app.put('/:id', async (c) => {
 // Delete email account
 app.delete('/:id', async (c) => {
   try {
-    const user = await authenticateUser(c);
-    if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-
-    const db = new DatabaseService(c.env.DB);
+    const user = getAuthenticatedUser(c);
     const userId = user.id;
     const accountId = c.req.param('id');
 
     // Verify account belongs to user
-    const existingAccount = await db.prepare(`
+    const existingAccount = await c.env.DB.prepare(`
       SELECT * FROM email_accounts WHERE id = ? AND user_id = ?
     `).bind(accountId, userId).first();
 
@@ -259,7 +234,7 @@ app.delete('/:id', async (c) => {
     }
 
     // Delete account
-    await db.prepare(`
+    await c.env.DB.prepare(`
       DELETE FROM email_accounts WHERE id = ? AND user_id = ?
     `).bind(accountId, userId).run();
 
@@ -273,10 +248,7 @@ app.delete('/:id', async (c) => {
 // Test email account connection
 app.post('/test', async (c) => {
   try {
-    const user = await authenticateUser(c);
-    if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
+    getAuthenticatedUser(c); // Ensure user is authenticated
 
     const accountData = await c.req.json();
 
@@ -315,4 +287,5 @@ app.post('/test', async (c) => {
   }
 });
 
-export default app;
+  return app;
+}
