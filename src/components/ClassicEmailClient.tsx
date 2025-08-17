@@ -24,12 +24,19 @@ import {
   Calendar
 } from 'lucide-react';
 import { EmailMessage, EmailFolder, EmailAccount, EmailClientSettings } from '../types/emailClient';
+import EmailForm from './EmailForm';
 
 interface ClassicEmailClientProps {
   onClose: () => void;
+  preSelectedContacts?: Array<{ id: number; email: string; name?: string }>;
+  composeMode?: boolean;
 }
 
-const ClassicEmailClient: React.FC<ClassicEmailClientProps> = ({ onClose }) => {
+const ClassicEmailClient: React.FC<ClassicEmailClientProps> = ({
+  onClose,
+  preSelectedContacts = [],
+  composeMode = false
+}) => {
   // State management
   const [accounts, setAccounts] = useState<EmailAccount[]>([]);
   const [currentAccount, setCurrentAccount] = useState<EmailAccount | null>(null);
@@ -40,6 +47,7 @@ const ClassicEmailClient: React.FC<ClassicEmailClientProps> = ({ onClose }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showCompose, setShowCompose] = useState(composeMode);
   const [previewPane, setPreviewPane] = useState<'right' | 'bottom' | 'hidden'>('right');
 
   // Mock data for demonstration
@@ -357,7 +365,10 @@ const ClassicEmailClient: React.FC<ClassicEmailClientProps> = ({ onClose }) => {
           <div className="bg-white border-b border-gray-200 px-4 py-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
-                <button className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                <button
+                  onClick={() => setShowCompose(true)}
+                  className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
                   <Plus className="h-4 w-4 mr-1 inline" />
                   Compose
                 </button>
@@ -531,6 +542,37 @@ const ClassicEmailClient: React.FC<ClassicEmailClientProps> = ({ onClose }) => {
           </div>
         </div>
       </div>
+
+      {/* Compose Email Modal */}
+      {showCompose && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex min-h-full items-center justify-center p-4">
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75" onClick={() => setShowCompose(false)}></div>
+            <div className="relative bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h3 className="text-lg font-medium text-gray-900">Compose Email</h3>
+              </div>
+              <EmailForm
+                onClose={() => setShowCompose(false)}
+                selectedContacts={preSelectedContacts.map(contact => ({
+                  id: contact.id,
+                  first_name: contact.name?.split(' ')[0] || '',
+                  last_name: contact.name?.split(' ').slice(1).join(' ') || '',
+                  email: contact.email,
+                  phone: '',
+                  company: '',
+                  position: '',
+                  notes: '',
+                  created_at: new Date(),
+                  updated_at: new Date()
+                }))}
+                contacts={[]}
+                groups={[]}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

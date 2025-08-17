@@ -16,8 +16,7 @@ import {
 import FixedNavigation from './FixedNavigation';
 import ContactFormModal from './ContactFormModal';
 import OptimizedContactsView from './OptimizedContactsView';
-import EmailForm from './EmailForm';
-import EmailHistory from './EmailHistory';
+
 import ImportModal from './ImportModal';
 import UserSettings from './UserSettings';
 import BulkGroupAssign from './BulkGroupAssign';
@@ -43,8 +42,7 @@ import GroupsPageModal from './modals/GroupsPageModal';
 import GroupFormModal from './modals/GroupFormModal';
 import EmailClientModal from './modals/EmailClientModal';
 import GroupEditFormModal from './modals/GroupEditFormModal';
-import EmailFormModal from './modals/EmailFormModal';
-import EmailHistoryModal from './modals/EmailHistoryModal';
+
 import BulkGroupAssignModal from './modals/BulkGroupAssignModal';
 import BulkGroupRemoveModal from './modals/BulkGroupRemoveModal';
 import GroupContactsManagerModal from './modals/GroupContactsManagerModal';
@@ -101,8 +99,7 @@ const Dashboard: React.FC = () => {
   const [showContactDetail, setShowContactDetail] = useState<boolean>(false);
   const [showGroupForm, setShowGroupForm] = useState<boolean>(false);
   const [showGroupEditForm, setShowGroupEditForm] = useState<boolean>(false);
-  const [showEmailForm, setShowEmailForm] = useState<boolean>(false);
-  const [showEmailHistory, setShowEmailHistory] = useState<boolean>(false);
+
   const [showImportModal, setShowImportModal] = useState<boolean>(false);
   const [showUserSettings, setShowUserSettings] = useState<boolean>(false);
   const [showBulkGroupAssign, setShowBulkGroupAssign] = useState<boolean>(false);
@@ -368,8 +365,7 @@ const Dashboard: React.FC = () => {
     setShowContactDetail(false);
     setShowGroupForm(false);
     setShowGroupEditForm(false);
-    setShowEmailForm(false);
-    setShowEmailHistory(false);
+
     setShowImportModal(false);
     setShowUserSettings(false);
     setShowBulkGroupAssign(false);
@@ -395,18 +391,12 @@ const Dashboard: React.FC = () => {
       case 'groupForm':
         setShowGroupForm(true);
         break;
-      case 'emailForm':
-        setShowEmailForm(true);
-        break;
       case 'duplicateDetection':
         setShowDuplicateDetection(true);
         break;
       case 'appearanceSettings':
         setShowUserSettings(true);
         setUserSettingsTab('appearance');
-        break;
-      case 'emailHistory':
-        setShowEmailHistory(true);
         break;
       case 'importExport':
         setShowImportModal(true);
@@ -541,7 +531,7 @@ const Dashboard: React.FC = () => {
                 }}
                 onSendEmail={(contact) => {
                   setSelectedContact(contact);
-                  openPanel('emailForm');
+                  openPanel('emailClient');
                 }}
                 onAddToGroup={(contact) => {
                   setSelectedContacts([contact.id]);
@@ -589,21 +579,7 @@ const Dashboard: React.FC = () => {
         />
       )}
 
-      {/* Email Modals */}
-      <EmailFormModal
-        isOpen={showEmailForm}
-        onClose={() => setShowEmailForm(false)}
-        contacts={selectedContacts.length > 0
-          ? contacts.filter(c => selectedContacts.includes(c.id))
-          : contacts
-        }
-        selectedContact={selectedContact}
-      />
 
-      <EmailHistoryModal
-        isOpen={showEmailHistory}
-        onClose={() => setShowEmailHistory(false)}
-      />
 
 
       {/* User Settings Modal */}
@@ -814,6 +790,12 @@ const Dashboard: React.FC = () => {
         <EmailClientModal
           isOpen={showEmailClient}
           onClose={() => setShowEmailClient(false)}
+          preSelectedContacts={selectedContact ? [{
+            id: selectedContact.id,
+            email: selectedContact.email,
+            name: `${selectedContact.first_name} ${selectedContact.last_name}`.trim()
+          }] : []}
+          composeMode={!!selectedContact}
         />
       )}
     </div>
