@@ -251,17 +251,30 @@ const Dashboard: React.FC = () => {
 
   const handleContactDelete = useCallback(async (contactId: number): Promise<void> => {
     try {
+      console.log('Dashboard: Deleting contact with ID:', contactId);
       await contactsApi.deleteContact(contactId);
+      console.log('Dashboard: Contact deleted successfully:', contactId);
+
+      // Remove from contacts list
       setContacts(prev => prev.filter(c => c.id !== contactId));
       setSelectedContact(null);
       setShowContactDetail(false);
     } catch (error) {
       console.error('Error deleting contact:', error);
-      setError(error instanceof Error ? error.message : 'Failed to delete contact');
+
+      // If contact doesn't exist (404), remove it from the list anyway
+      if (error instanceof Error && error.message.includes('Contact not found')) {
+        console.log('Contact not found in database, removing from local list');
+        setContacts(prev => prev.filter(c => c.id !== contactId));
+        setSelectedContact(null);
+        setShowContactDetail(false);
+      } else {
+        setError(error instanceof Error ? error.message : 'Failed to delete contact');
+      }
     }
   }, []);
 
-  const handleContactCreate = useCallback(async (contactData: Contact): Promise<void> => {
+  const handleContactCreate = useCallback(async (contactData: any): Promise<void> => {
     try {
       console.log('Dashboard: Creating contact with data:', contactData);
       const newContact = await contactsApi.createContact(contactData);

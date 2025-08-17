@@ -445,15 +445,21 @@ const ContactFormModal: React.FC<ContactFormModalProps> = ({
         }
       } else {
         // Create new contact
-        console.log('Creating new contact with data:', contactData);
-        savedContact = await contactsApi.createContact(contactData);
-        console.log('Contact created successfully:', savedContact.id);
-
-        // Only call one callback to prevent duplicates
         if (onContactCreated) {
-          onContactCreated(savedContact);
+          // Let the parent handle the API call to prevent duplicates
+          console.log('Passing contact data to parent for creation:', contactData);
+          onContactCreated(contactData as Contact);
         } else if (onContactAdded) {
+          // Legacy support - handle API call here
+          console.log('Creating new contact with data (legacy):', contactData);
+          savedContact = await contactsApi.createContact(contactData);
+          console.log('Contact created successfully (legacy):', savedContact.id);
           onContactAdded(savedContact);
+        } else {
+          // No callback provided, create directly
+          console.log('Creating new contact directly:', contactData);
+          savedContact = await contactsApi.createContact(contactData);
+          console.log('Contact created successfully (direct):', savedContact.id);
         }
       }
 
