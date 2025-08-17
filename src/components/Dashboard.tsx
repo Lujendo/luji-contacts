@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { contactsApi, groupsApi } from '../api';
+import { useBulkDeleteContacts } from '../hooks/useContactQueries';
 import {
   Contact,
   Group,
@@ -337,6 +338,31 @@ const Dashboard: React.FC = () => {
     setSelectedContacts(selected ? contacts.map(c => c.id) : []);
   }, [contacts]);
 
+  // React Query hook for bulk deletion
+  const bulkDeleteMutation = useBulkDeleteContacts();
+
+  const handleBulkDelete = useCallback((): void => {
+    if (selectedContacts.length === 0) return;
+
+    const confirmMessage = `Are you sure you want to delete ${selectedContacts.length} contact${selectedContacts.length > 1 ? 's' : ''}? This action cannot be undone.`;
+
+    if (!window.confirm(confirmMessage)) return;
+
+    // Use React Query mutation for optimistic updates and error handling
+    bulkDeleteMutation.mutate(selectedContacts, {
+      onSuccess: () => {
+        // Remove deleted contacts from local state
+        setContacts(prev => prev.filter(c => !selectedContacts.includes(c.id)));
+        // Clear selection
+        setSelectedContacts([]);
+      },
+      onError: (error) => {
+        console.error('Bulk delete error:', error);
+        setError(error instanceof Error ? error.message : 'Failed to delete contacts');
+      }
+    });
+  }, [selectedContacts, bulkDeleteMutation]);
+
   // Panel management functions
   const closeAllPanels = useCallback((): void => {
     setShowContactForm(false);
@@ -441,6 +467,7 @@ const Dashboard: React.FC = () => {
         onToggleGroupsSidebar={handleGroupsSidebarToggle}
         isGroupsSidebarExpanded={!isGroupsSidebarCollapsed}
         selectedContactsCount={selectedContacts.length}
+        onBulkDelete={handleBulkDelete}
       />
 
       {/* Main Content with Groups Sidebar - Takes remaining space, offset by fixed nav */}

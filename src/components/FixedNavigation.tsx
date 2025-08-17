@@ -10,7 +10,8 @@ import {
   Plus,
   Send,
   Search,
-  Palette
+  Palette,
+  Trash2
 } from 'lucide-react';
 import ProfileImage from './ui/ProfileImage';
 
@@ -41,6 +42,7 @@ interface FixedNavigationProps {
   onToggleGroupsSidebar?: () => void;
   isGroupsSidebarExpanded?: boolean;
   selectedContactsCount?: number;
+  onBulkDelete?: () => void;
 }
 
 const FixedNavigation: React.FC<FixedNavigationProps> = ({
@@ -49,7 +51,8 @@ const FixedNavigation: React.FC<FixedNavigationProps> = ({
   onOpenPanel,
   onToggleGroupsSidebar,
   isGroupsSidebarExpanded = false,
-  selectedContactsCount = 0
+  selectedContactsCount = 0,
+  onBulkDelete
 }) => {
   return (
     <nav className="fixed top-0 left-0 bottom-0 w-16 bg-white shadow-lg border-r border-gray-200 z-40 flex flex-col">
@@ -124,6 +127,25 @@ const FixedNavigation: React.FC<FixedNavigationProps> = ({
             <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45"></div>
           </div>
         </div>
+
+        {/* Bulk Delete - Only show when contacts are selected */}
+        {selectedContactsCount > 0 && onBulkDelete && (
+          <div className="group relative">
+            <button
+              onClick={onBulkDelete}
+              className="w-12 h-12 flex items-center justify-center rounded-lg text-gray-600 hover:text-red-600 hover:bg-red-50 transition-colors"
+            >
+              <Trash2 className="h-6 w-6" />
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                {selectedContactsCount > 99 ? '99+' : selectedContactsCount}
+              </span>
+            </button>
+            <div className="absolute left-16 top-1/2 transform -translate-y-1/2 bg-gray-900 text-white text-sm px-2 py-1 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50">
+              Delete {selectedContactsCount} Contact{selectedContactsCount > 1 ? 's' : ''}
+              <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45"></div>
+            </div>
+          </div>
+        )}
 
         {/* Find Duplicates */}
         <div className="relative group">
