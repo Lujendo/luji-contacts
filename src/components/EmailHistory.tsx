@@ -1,6 +1,6 @@
 import React from 'react';
 import { Group } from '../types';
-import { Mail, Calendar, Users, User, X } from 'lucide-react';
+import { Mail, Calendar, Users, User } from 'lucide-react';
 import { format } from 'date-fns';
 
 // Email interface
@@ -20,24 +20,10 @@ interface EmailHistoryProps {
   onClose: () => void;
 }
 
-const EmailHistory: React.FC<EmailHistoryProps> = ({ emails = [], onClose }) => {
+const EmailHistory: React.FC<EmailHistoryProps> = ({ emails = [] }) => {
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex justify-center items-center z-50">
-      <div className="relative bg-white rounded-lg shadow-xl p-6 w-full max-w-4xl m-4 max-h-[80vh] flex flex-col">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold flex items-center text-gray-900">
-            <Mail className="mr-2 text-indigo-600" size={24} />
-            Email History
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 focus:outline-none"
-            aria-label="Close"
-          >
-            <X size={20} />
-          </button>
-        </div>
+    <div className="p-6">
+      <div className="space-y-6">
 
         {/* Email not implemented notice */}
         <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
@@ -154,20 +140,12 @@ const EmailHistory: React.FC<EmailHistoryProps> = ({ emails = [], onClose }) => 
 
         {/* Footer */}
         <div className="mt-6 pt-4 border-t border-gray-200">
-          <div className="flex justify-between items-center">
-            <p className="text-sm text-gray-500">
-              {emails.length > 0 
-                ? `Showing ${emails.length} email${emails.length !== 1 ? 's' : ''}`
-                : 'No emails to display'
-              }
-            </p>
-            <button
-              onClick={onClose}
-              className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              Close
-            </button>
-          </div>
+          <p className="text-sm text-gray-500">
+            {emails.length > 0
+              ? `Showing ${emails.length} email${emails.length !== 1 ? 's' : ''}`
+              : 'No emails to display'
+            }
+          </p>
         </div>
       </div>
     </div>

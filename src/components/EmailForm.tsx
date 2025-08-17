@@ -138,17 +138,8 @@ const EmailForm: React.FC<EmailFormProps> = ({
   const recipientCount = getRecipientCount();
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex justify-center items-center z-50">
-      <div className="relative bg-white rounded-lg shadow-xl p-6 w-full max-w-4xl m-4 max-h-[90vh] overflow-y-auto">
-        {/* Close button */}
-        <button
-          onClick={onClose}
-          disabled={loading}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 focus:outline-none disabled:cursor-not-allowed"
-          aria-label="Close"
-        >
-          <X size={20} />
-        </button>
+    <div className="p-6">
+      <div className="space-y-6">
 
         {/* Header */}
         <div className="mb-6">
