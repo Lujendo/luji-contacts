@@ -54,6 +54,8 @@ const ClassicEmailClient: React.FC<ClassicEmailClientProps> = ({
   const [selectedMessages, setSelectedMessages] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [loadedAccountId, setLoadedAccountId] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showAccountSettings, setShowAccountSettings] = useState(false);
   const [showCompose, setShowCompose] = useState(composeMode);
@@ -73,14 +75,12 @@ const ClassicEmailClient: React.FC<ClassicEmailClientProps> = ({
   const loadEmailData = useCallback(async (account: EmailAccount) => {
     try {
       setIsLoading(true);
+      setLoadError(null);
       const emailService = EmailFetchService.getInstance();
 
       // Fetch folders for the account
       console.log('📧 Loading folders for account:', account.name);
       const folders = await emailService.fetchFolders(account);
-
-      // Update folders state (don't update currentAccount to avoid infinite loop)
-      setFolders(folders);
 
       // Set default selected folder (inbox)
       const inboxFolder = folders.find(f => f.type === 'inbox') || folders[0];
@@ -92,18 +92,24 @@ const ClassicEmailClient: React.FC<ClassicEmailClientProps> = ({
         const messages = await emailService.fetchMessages(account, inboxFolder.id);
         setMessages(messages);
 
-        // Update folder counts
+        // Update folder counts and set folders in one operation
         const updatedFolders = folders.map(folder =>
           folder.id === inboxFolder.id
             ? { ...folder, totalCount: messages.length, unreadCount: messages.filter(m => !m.isRead).length }
             : folder
         );
         setFolders(updatedFolders);
+      } else {
+        // No inbox found, just set the folders
+        setFolders(folders);
       }
 
       console.log('✅ Email data loaded successfully');
     } catch (error) {
-      console.error('❌ Error loading email data:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('❌ Error loading email data:', errorMessage);
+      setLoadError(errorMessage);
+
       // Fallback to default folders if loading fails
       const emailService = EmailFetchService.getInstance();
       const defaultFolders = (emailService as any).getDefaultFolders();
@@ -115,12 +121,25 @@ const ClassicEmailClient: React.FC<ClassicEmailClientProps> = ({
     }
   }, []); // Empty dependency array since this function doesn't depend on any props or state
 
+  // Reset loaded account when current account changes
+  useEffect(() => {
+    if (currentAccount?.id !== loadedAccountId) {
+      setLoadedAccountId(null);
+      setLoadError(null);
+      setFolders([]);
+      setMessages([]);
+      setSelectedFolder(null);
+    }
+  }, [currentAccount?.id, loadedAccountId]);
+
   // Load real email data when current account changes
   useEffect(() => {
-    if (currentAccount && currentAccount.id) {
+    if (currentAccount && currentAccount.id && loadedAccountId !== currentAccount.id && !isLoading) {
+      console.log(`📧 Loading email data for new account: ${currentAccount.id}`);
+      setLoadedAccountId(currentAccount.id);
       loadEmailData(currentAccount);
     }
-  }, [currentAccount?.id, loadEmailData]); // Include memoized function
+  }, [currentAccount?.id, loadEmailData, loadedAccountId, isLoading]); // Include all dependencies
 
   // Load contacts from API
   const loadContacts = async () => {
