@@ -64,6 +64,7 @@ const ClassicEmailClient: React.FC<ClassicEmailClientProps> = ({
   useEffect(() => {
     loadMockData();
     loadContacts();
+    loadEmailAccounts();
   }, []);
 
   // Load contacts from API
@@ -83,6 +84,139 @@ const ClassicEmailClient: React.FC<ClassicEmailClientProps> = ({
       }
     } catch (error) {
       console.error('Error loading contacts:', error);
+    }
+  };
+
+  // Load email accounts from API
+  const loadEmailAccounts = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const response = await fetch('/api/email-accounts', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setAccounts(data.accounts || []);
+        if (data.accounts && data.accounts.length > 0) {
+          const defaultAccount = data.accounts.find((acc: EmailAccount) => acc.isDefault) || data.accounts[0];
+          setCurrentAccount(defaultAccount);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading email accounts:', error);
+    }
+  };
+
+  // Email account management handlers
+  const handleAddAccount = async (accountData: Omit<EmailAccount, 'id'>) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('Authentication required');
+
+      const response = await fetch('/api/email-accounts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(accountData)
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setAccounts(prev => [...prev, data.account]);
+        if (accounts.length === 0) {
+          setCurrentAccount(data.account);
+        }
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to add account');
+      }
+    } catch (error) {
+      console.error('Error adding email account:', error);
+      throw error;
+    }
+  };
+
+  const handleUpdateAccount = async (id: string, updates: Partial<EmailAccount>) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('Authentication required');
+
+      const response = await fetch(`/api/email-accounts/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(updates)
+      });
+
+      if (response.ok) {
+        setAccounts(prev => prev.map(acc =>
+          acc.id === id ? { ...acc, ...updates } : acc
+        ));
+        if (currentAccount?.id === id) {
+          setCurrentAccount(prev => prev ? { ...prev, ...updates } : null);
+        }
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update account');
+      }
+    } catch (error) {
+      console.error('Error updating email account:', error);
+      throw error;
+    }
+  };
+
+  const handleDeleteAccount = async (id: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('Authentication required');
+
+      const response = await fetch(`/api/email-accounts/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        setAccounts(prev => prev.filter(acc => acc.id !== id));
+        if (currentAccount?.id === id) {
+          const remainingAccounts = accounts.filter(acc => acc.id !== id);
+          setCurrentAccount(remainingAccounts.length > 0 ? remainingAccounts[0] : null);
+        }
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete account');
+      }
+    } catch (error) {
+      console.error('Error deleting email account:', error);
+      throw error;
+    }
+  };
+
+  const handleTestConnection = async (account: Partial<EmailAccount>): Promise<boolean> => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('Authentication required');
+
+      const response = await fetch('/api/email-accounts/test', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(account)
+      });
+
+      const data = await response.json();
+      return data.success;
+    } catch (error) {
+      console.error('Error testing email connection:', error);
+      return false;
     }
   };
 
@@ -634,23 +768,10 @@ const ClassicEmailClient: React.FC<ClassicEmailClientProps> = ({
               <div className="p-6">
                 <EmailAccountSettings
                   accounts={accounts}
-                  onAddAccount={async (account) => {
-                    // Implementation for adding account
-                    console.log('Add account:', account);
-                  }}
-                  onUpdateAccount={async (id, updates) => {
-                    // Implementation for updating account
-                    console.log('Update account:', id, updates);
-                  }}
-                  onDeleteAccount={async (id) => {
-                    // Implementation for deleting account
-                    console.log('Delete account:', id);
-                  }}
-                  onTestConnection={async (account) => {
-                    // Implementation for testing connection
-                    console.log('Test connection:', account);
-                    return true;
-                  }}
+                  onAddAccount={handleAddAccount}
+                  onUpdateAccount={handleUpdateAccount}
+                  onDeleteAccount={handleDeleteAccount}
+                  onTestConnection={handleTestConnection}
                 />
               </div>
               <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-end">
