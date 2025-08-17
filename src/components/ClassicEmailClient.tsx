@@ -73,6 +73,12 @@ const ClassicEmailClient: React.FC<ClassicEmailClientProps> = ({
 
   // Load real email data for an account
   const loadEmailData = useCallback(async (account: EmailAccount) => {
+    // Prevent multiple simultaneous loads for the same account
+    if (isLoading || loadedAccountId === account.id) {
+      console.log('📧 Skipping load - already loading or loaded for account:', account.id);
+      return;
+    }
+
     try {
       setIsLoading(true);
       setLoadError(null);
@@ -81,6 +87,7 @@ const ClassicEmailClient: React.FC<ClassicEmailClientProps> = ({
       // Fetch folders for the account
       console.log('📧 Loading folders for account:', account.name);
       const folders = await emailService.fetchFolders(account);
+      console.log('📧 Received folders:', folders.length, folders);
 
       // Set default selected folder (inbox)
       const inboxFolder = folders.find(f => f.type === 'inbox') || folders[0];
@@ -139,7 +146,7 @@ const ClassicEmailClient: React.FC<ClassicEmailClientProps> = ({
       setLoadedAccountId(currentAccount.id);
       loadEmailData(currentAccount);
     }
-  }, [currentAccount?.id, loadEmailData, loadedAccountId, isLoading]); // Include all dependencies
+  }, [currentAccount?.id, loadedAccountId, isLoading]); // Remove loadEmailData from dependencies to prevent recreation
 
   // Load contacts from API
   const loadContacts = async () => {

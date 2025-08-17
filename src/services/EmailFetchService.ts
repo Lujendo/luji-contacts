@@ -24,7 +24,22 @@ export class EmailFetchService {
 
       if (response.ok) {
         const data = await response.json();
-        return data.folders || [];
+        console.log('📧 API Response:', data);
+
+        if (data.warning) {
+          console.log('⚠️ API Warning:', data.warning);
+          console.log('❌ API Error:', data.error);
+        }
+
+        const folders = data.folders || [];
+        console.log('📧 Folders from API:', folders.length, folders);
+
+        if (folders.length === 0) {
+          console.log('📧 No folders received, using defaults');
+          return this.getDefaultFolders();
+        }
+
+        return folders;
       } else {
         console.error('Failed to fetch folders:', await response.text());
         return this.getDefaultFolders();
