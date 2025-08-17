@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Users, Plus, Edit2, Trash2, UserPlus, Settings, Search } from 'lucide-react';
+import { X, Users, Plus, Edit2, Trash2, UserPlus, Settings, Search, Mail, Phone } from 'lucide-react';
 import { Group, Contact } from '../../types';
 
 interface GroupsPageModalProps {
@@ -50,9 +50,9 @@ const GroupsPageModal: React.FC<GroupsPageModalProps> = ({
   };
 
   const getGroupContacts = (groupId: number) => {
-    // This would need to be implemented based on your group-contact relationship
-    // For now, returning empty array as placeholder
-    return [];
+    // Find the group and return its contacts
+    const group = groups.find(g => g.id === groupId);
+    return group?.contacts || [];
   };
 
   return (
@@ -248,8 +248,45 @@ const GroupsPageModal: React.FC<GroupsPageModalProps> = ({
                         </div>
                       ) : (
                         <div className="space-y-2">
-                          {/* Contact list would go here */}
-                          <p className="text-gray-500 text-sm">Contact list implementation needed</p>
+                          {groupContacts.map((contact) => (
+                            <div key={contact.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                              <div className="flex items-center space-x-3">
+                                <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center">
+                                  <span className="text-indigo-600 font-medium text-sm">
+                                    {contact.first_name?.charAt(0) || contact.last_name?.charAt(0) || '?'}
+                                  </span>
+                                </div>
+                                <div>
+                                  <p className="text-sm font-medium text-gray-900">
+                                    {contact.first_name} {contact.last_name}
+                                  </p>
+                                  <p className="text-xs text-gray-500">
+                                    {contact.email || contact.phone || 'No contact info'}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                {contact.email && (
+                                  <button
+                                    onClick={() => window.open(`mailto:${contact.email}`)}
+                                    className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded"
+                                    title="Send email"
+                                  >
+                                    <Mail className="h-4 w-4" />
+                                  </button>
+                                )}
+                                {contact.phone && (
+                                  <button
+                                    onClick={() => window.open(`tel:${contact.phone}`)}
+                                    className="p-1 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded"
+                                    title="Call contact"
+                                  >
+                                    <Phone className="h-4 w-4" />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       )}
                     </div>
