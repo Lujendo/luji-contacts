@@ -338,21 +338,13 @@ const OptimizedContactsView: React.FC<OptimizedContactsViewProps> = ({
         )}
       </div>
 
-      {/* Selection Summary */}
+      {/* Selection Summary - Simplified without hidden buttons */}
       {selectedContacts.length > 0 && (
         <div className="flex-shrink-0 p-3 bg-blue-50 border-t border-blue-200">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-blue-700">
+          <div className="flex items-center justify-center">
+            <span className="text-sm text-blue-700 font-medium">
               {selectedContacts.length} contact{selectedContacts.length === 1 ? '' : 's'} selected
             </span>
-            <div className="flex items-center space-x-2">
-              <button className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700">
-                Export Selected
-              </button>
-              <button className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700">
-                Delete Selected
-              </button>
-            </div>
           </div>
         </div>
       )}

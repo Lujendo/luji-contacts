@@ -1,5 +1,5 @@
-import React from 'react';
-import { User } from '../types';
+import React, { useState } from 'react';
+import { User, Group } from '../types';
 import {
   Mail,
   LogOut,
@@ -11,7 +11,14 @@ import {
   Send,
   Search,
   Palette,
-  Trash2
+  Trash2,
+  ChevronDown,
+  ChevronRight,
+  Edit2,
+  X,
+  FileText,
+  Download,
+  Upload
 } from 'lucide-react';
 import ProfileImage from './ui/ProfileImage';
 
@@ -39,8 +46,13 @@ interface FixedNavigationProps {
   user: User | null;
   onLogout: () => void;
   onOpenPanel: (panelName: string) => void;
-  onToggleGroupsSidebar?: () => void;
-  isGroupsSidebarExpanded?: boolean;
+  groups?: Group[];
+  activeGroup?: Group | null;
+  onGroupClick?: (groupId: number) => void;
+  onGroupEdit?: (group: Group) => void;
+  onGroupDelete?: (groupId: number) => void;
+  onAddNewGroup?: () => void;
+  onShowAllContacts?: () => void;
   selectedContactsCount?: number;
   onBulkDelete?: () => void;
 }
@@ -49,83 +61,213 @@ const FixedNavigation: React.FC<FixedNavigationProps> = ({
   user,
   onLogout,
   onOpenPanel,
-  onToggleGroupsSidebar,
-  isGroupsSidebarExpanded = false,
+  groups = [],
+  activeGroup,
+  onGroupClick,
+  onGroupEdit,
+  onGroupDelete,
+  onAddNewGroup,
+  onShowAllContacts,
   selectedContactsCount = 0,
   onBulkDelete
 }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [showGroups, setShowGroups] = useState(false);
   return (
-    <nav className="fixed top-0 left-0 bottom-0 w-16 bg-white shadow-lg border-r border-gray-200 z-40 flex flex-col">
+    <nav className={`fixed top-0 left-0 bottom-0 bg-white shadow-lg border-r border-gray-200 z-40 flex flex-col transition-all duration-300 ${
+      isExpanded ? 'w-64' : 'w-16'
+    }`}>
       {/* Logo/Brand */}
-      <div className="flex items-center justify-center h-16 border-b border-gray-200">
-        <Mail className="h-8 w-8 text-indigo-600" />
+      <div className="flex items-center justify-between h-16 border-b border-gray-200 px-4">
+        <div className="flex items-center space-x-3">
+          <Mail className="h-8 w-8 text-indigo-600 flex-shrink-0" />
+          {isExpanded && (
+            <span className="text-xl font-bold text-gray-900">Contacts</span>
+          )}
+        </div>
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="p-1 rounded-md hover:bg-gray-100 text-gray-500 hover:text-gray-700"
+          title={isExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
+        >
+          {isExpanded ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        </button>
       </div>
 
       {/* Navigation Items */}
-      <div className="flex-1 flex flex-col items-center py-4 space-y-2">
+      <div className="flex-1 flex flex-col py-4 space-y-2 overflow-y-auto">
         {/* Add Contact */}
-        <div className="relative group">
+        <div className="relative group px-2">
           <button
             onClick={() => onOpenPanel('contactForm')}
-            className="w-12 h-12 flex items-center justify-center rounded-lg text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
-          >
-            <Plus className="h-6 w-6" />
-          </button>
-          <div className="absolute left-16 top-1/2 transform -translate-y-1/2 bg-gray-900 text-white text-sm px-2 py-1 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50">
-            Add Contact
-            <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45"></div>
-          </div>
-        </div>
-
-        {/* Groups */}
-        <div className="relative group">
-          <button
-            onClick={onToggleGroupsSidebar}
-            className={`w-12 h-12 flex items-center justify-center rounded-lg transition-colors ${
-              isGroupsSidebarExpanded
-                ? 'text-indigo-600 bg-indigo-50'
-                : 'text-gray-600 hover:text-indigo-600 hover:bg-indigo-50'
+            className={`w-full flex items-center rounded-lg text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition-colors ${
+              isExpanded ? 'px-3 py-2 justify-start' : 'h-12 justify-center'
             }`}
           >
-            <Users className="h-6 w-6" />
+            <Plus className="h-6 w-6 flex-shrink-0" />
+            {isExpanded && <span className="ml-3 text-sm font-medium">Add Contact</span>}
           </button>
-          <div className="absolute left-16 top-1/2 transform -translate-y-1/2 bg-gray-900 text-white text-sm px-2 py-1 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50">
-            Groups
-            <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45"></div>
-          </div>
+          {!isExpanded && (
+            <div className="absolute left-16 top-1/2 transform -translate-y-1/2 bg-gray-900 text-white text-sm px-2 py-1 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50">
+              Add Contact
+              <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45"></div>
+            </div>
+          )}
+        </div>
+
+        {/* Groups Section */}
+        <div className="px-2">
+          <button
+            onClick={() => setShowGroups(!showGroups)}
+            className={`w-full flex items-center rounded-lg text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition-colors ${
+              isExpanded ? 'px-3 py-2 justify-between' : 'h-12 justify-center'
+            } ${showGroups ? 'text-indigo-600 bg-indigo-50' : ''}`}
+          >
+            <div className="flex items-center">
+              <Users className="h-6 w-6 flex-shrink-0" />
+              {isExpanded && <span className="ml-3 text-sm font-medium">Groups</span>}
+            </div>
+            {isExpanded && (
+              <ChevronDown className={`h-4 w-4 transition-transform ${showGroups ? 'rotate-180' : ''}`} />
+            )}
+          </button>
+
+          {/* Groups List - Only show when expanded and groups section is open */}
+          {isExpanded && showGroups && (
+            <div className="mt-2 ml-4 space-y-1">
+              {/* All Contacts */}
+              <button
+                onClick={onShowAllContacts}
+                className={`w-full flex items-center px-3 py-2 text-sm rounded-lg transition-colors ${
+                  !activeGroup
+                    ? 'text-indigo-600 bg-indigo-50'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                <Users className="h-4 w-4 mr-2" />
+                All Contacts
+              </button>
+
+              {/* Individual Groups */}
+              {groups.map((group) => (
+                <div key={group.id} className="flex items-center group">
+                  <button
+                    onClick={() => onGroupClick?.(group.id)}
+                    className={`flex-1 flex items-center px-3 py-2 text-sm rounded-lg transition-colors ${
+                      activeGroup?.id === group.id
+                        ? 'text-indigo-600 bg-indigo-50'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    }`}
+                  >
+                    <div className="w-4 h-4 mr-2 rounded-full bg-gray-300 flex items-center justify-center text-xs font-medium text-gray-600">
+                      {group.name.charAt(0).toUpperCase()}
+                    </div>
+                    <span className="truncate">{group.name}</span>
+                    <span className="ml-auto text-xs text-gray-400">{group.contact_count || 0}</span>
+                  </button>
+                  <button
+                    onClick={() => onGroupEdit?.(group)}
+                    className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-gray-600 transition-all"
+                    title="Edit group"
+                  >
+                    <Edit2 className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+
+              {/* Add New Group */}
+              <button
+                onClick={onAddNewGroup}
+                className="w-full flex items-center px-3 py-2 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Group
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Email */}
-        <div className="relative group">
+        <div className="relative group px-2">
           <button
             onClick={() => onOpenPanel('emailForm')}
-            className="relative w-12 h-12 flex items-center justify-center rounded-lg text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+            className={`relative w-full flex items-center rounded-lg text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition-colors ${
+              isExpanded ? 'px-3 py-2 justify-start' : 'h-12 justify-center'
+            }`}
           >
-            <Send className="h-6 w-6" />
+            <Send className="h-6 w-6 flex-shrink-0" />
+            {isExpanded && <span className="ml-3 text-sm font-medium">Send Email</span>}
             {selectedContactsCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+              <span className={`bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center ${
+                isExpanded ? 'ml-auto' : 'absolute -top-1 -right-1'
+              }`}>
                 {selectedContactsCount > 99 ? '99+' : selectedContactsCount}
               </span>
             )}
           </button>
-          <div className="absolute left-16 top-1/2 transform -translate-y-1/2 bg-gray-900 text-white text-sm px-2 py-1 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50">
-            Send Email
-            <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45"></div>
-          </div>
+          {!isExpanded && (
+            <div className="absolute left-16 top-1/2 transform -translate-y-1/2 bg-gray-900 text-white text-sm px-2 py-1 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50">
+              Send Email
+              <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45"></div>
+            </div>
+          )}
         </div>
 
         {/* Email History */}
-        <div className="relative group">
+        <div className="relative group px-2">
           <button
             onClick={() => onOpenPanel('emailHistory')}
-            className="w-12 h-12 flex items-center justify-center rounded-lg text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+            className={`w-full flex items-center rounded-lg text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition-colors ${
+              isExpanded ? 'px-3 py-2 justify-start' : 'h-12 justify-center'
+            }`}
           >
-            <History className="h-6 w-6" />
+            <History className="h-6 w-6 flex-shrink-0" />
+            {isExpanded && <span className="ml-3 text-sm font-medium">Email History</span>}
           </button>
-          <div className="absolute left-16 top-1/2 transform -translate-y-1/2 bg-gray-900 text-white text-sm px-2 py-1 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50">
-            Email History
-            <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45"></div>
-          </div>
+          {!isExpanded && (
+            <div className="absolute left-16 top-1/2 transform -translate-y-1/2 bg-gray-900 text-white text-sm px-2 py-1 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50">
+              Email History
+              <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45"></div>
+            </div>
+          )}
+        </div>
+
+        {/* Import/Export */}
+        <div className="relative group px-2">
+          <button
+            onClick={() => onOpenPanel('importModal')}
+            className={`w-full flex items-center rounded-lg text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition-colors ${
+              isExpanded ? 'px-3 py-2 justify-start' : 'h-12 justify-center'
+            }`}
+          >
+            <Upload className="h-6 w-6 flex-shrink-0" />
+            {isExpanded && <span className="ml-3 text-sm font-medium">Import/Export</span>}
+          </button>
+          {!isExpanded && (
+            <div className="absolute left-16 top-1/2 transform -translate-y-1/2 bg-gray-900 text-white text-sm px-2 py-1 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50">
+              Import/Export
+              <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45"></div>
+            </div>
+          )}
+        </div>
+
+        {/* Analytics */}
+        <div className="relative group px-2">
+          <button
+            onClick={() => onOpenPanel('analytics')}
+            className={`w-full flex items-center rounded-lg text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition-colors ${
+              isExpanded ? 'px-3 py-2 justify-start' : 'h-12 justify-center'
+            }`}
+          >
+            <ArrowUpDown className="h-6 w-6 flex-shrink-0" />
+            {isExpanded && <span className="ml-3 text-sm font-medium">Analytics</span>}
+          </button>
+          {!isExpanded && (
+            <div className="absolute left-16 top-1/2 transform -translate-y-1/2 bg-gray-900 text-white text-sm px-2 py-1 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50">
+              Analytics
+              <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45"></div>
+            </div>
+          )}
         </div>
 
         {/* Bulk Delete - Only show when contacts are selected */}

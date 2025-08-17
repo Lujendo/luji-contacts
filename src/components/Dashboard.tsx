@@ -42,7 +42,7 @@ import { useAppearance } from '../contexts/AppearanceContext';
 // Modal imports
 import UserSettingsModal from './modals/UserSettingsModal';
 import GroupListModal from './modals/GroupListModal';
-import GroupsSidebar from './GroupsSidebar';
+
 import GroupFormModal from './modals/GroupFormModal';
 import GroupEditFormModal from './modals/GroupEditFormModal';
 import EmailFormModal from './modals/EmailFormModal';
@@ -79,7 +79,6 @@ interface DashboardState {
   showGroupRemoveModal: boolean;
 
   // UI state
-  isGroupsSidebarCollapsed: boolean;
   showMergeContacts: boolean;
   showDuplicateDetection: boolean;
   
@@ -118,7 +117,6 @@ const Dashboard: React.FC = () => {
   const [showGroupRemoveModal, setShowGroupRemoveModal] = useState<boolean>(false);
 
   // UI states
-  const [isGroupsSidebarCollapsed, setIsGroupsSidebarCollapsed] = useState<boolean>(true);
   const [showMergeContacts, setShowMergeContacts] = useState<boolean>(false);
   const [showDuplicateDetection, setShowDuplicateDetection] = useState<boolean>(false);
   const [contactsToMerge, setContactsToMerge] = useState<Contact[]>([]);
@@ -220,10 +218,7 @@ const Dashboard: React.FC = () => {
     console.log('Showing all contacts');
   }, []);
 
-  // New group sidebar handlers
-  const handleGroupsSidebarToggle = useCallback(() => {
-    setIsGroupsSidebarCollapsed(prev => !prev);
-  }, []);
+
 
   const handleGroupDelete = useCallback(async (groupId: number) => {
     try {
@@ -460,35 +455,27 @@ const Dashboard: React.FC = () => {
         />
       )}
 
-      {/* Fixed Navigation Sidebar - Positioned absolutely */}
+      {/* Enhanced Fixed Navigation Sidebar with Groups */}
       <FixedNavigation
         user={user}
         onLogout={handleLogout}
         onOpenPanel={openPanel}
-        onToggleGroupsSidebar={handleGroupsSidebarToggle}
-        isGroupsSidebarExpanded={!isGroupsSidebarCollapsed}
+        groups={groups}
+        activeGroup={activeGroup}
+        onGroupClick={handleGroupHighlight}
+        onGroupEdit={(group) => {
+          setSelectedGroup(group);
+          setShowGroupContactsManager(true);
+        }}
+        onGroupDelete={handleGroupDelete}
+        onAddNewGroup={() => setShowGroupForm(true)}
+        onShowAllContacts={handleShowAllContacts}
         selectedContactsCount={selectedContacts.length}
         onBulkDelete={handleBulkDelete}
       />
 
-      {/* Main Content with Groups Sidebar - Takes remaining space, offset by fixed nav */}
-      <div className="flex flex-1 min-h-0 overflow-hidden ml-16">
-        {/* Groups Sidebar */}
-        <GroupsSidebar
-          groups={groups}
-          activeGroup={activeGroup}
-          highlightedGroupId={highlightedGroupId}
-          onGroupClick={handleGroupHighlight}
-          onGroupEdit={(group) => {
-            setSelectedGroup(group);
-            setShowGroupContactsManager(true);
-          }}
-          onGroupDelete={handleGroupDelete}
-          onAddNewGroup={() => setShowGroupForm(true)}
-          onShowAll={handleShowAllContacts}
-          isCollapsed={isGroupsSidebarCollapsed}
-          onToggleCollapse={handleGroupsSidebarToggle}
-        />
+      {/* Main Content - Takes remaining space, offset by enhanced nav */}
+      <div className="flex flex-1 min-h-0 overflow-hidden ml-16">{/* Note: ml-16 will be dynamic based on sidebar state */}
 
         {/* Main Content Area */}
         <div className="flex-1 overflow-hidden">
