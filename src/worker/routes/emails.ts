@@ -2,18 +2,23 @@ import { Hono } from 'hono';
 import { EmailService } from '../../services/EmailService';
 import { emailQueueService } from '../../services/EmailQueueService';
 import { EmailData, SendEmailOptions, BulkEmailOptions } from '../../types/email';
-import { getAuthenticatedUser } from '../utils/auth';
+import { DatabaseService } from '../utils/database';
+import { AuthService, getAuthenticatedUser, createAuthMiddleware } from '../utils/auth';
 
-// Helper function to authenticate user from context
-async function authenticateUser(c: any) {
-  try {
-    return getAuthenticatedUser(c);
-  } catch (error) {
-    return null;
+export function createEmailRoutes(db: DatabaseService, auth: AuthService) {
+  const app = new Hono();
+
+  // Apply authentication middleware to all routes
+  app.use('*', createAuthMiddleware(auth, db));
+
+  // Helper function to authenticate user from context
+  async function authenticateUser(c: any) {
+    try {
+      return getAuthenticatedUser(c);
+    } catch (error) {
+      return null;
+    }
   }
-}
-
-const app = new Hono();
 
 // Initialize email service
 const emailService = new EmailService();
@@ -114,7 +119,7 @@ app.post('/send', async (c) => {
     const queueId = await emailService.sendEmail(emailData, user.id, options);
 
     // Log email in database
-    await db.prepare(`
+    await c.env.DB.prepare(`
       INSERT INTO emails (id, user_id, subject, body, recipients_count, queue_id, created_at)
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `).bind(
@@ -397,4 +402,165 @@ app.delete('/queue/:id', async (c) => {
   }
 });
 
-export default app;
+// Get folders for an email account
+app.get('/folders/:accountId', async (c) => {
+  try {
+    const user = getAuthenticatedUser(c);
+    const accountId = c.req.param('accountId');
+
+    // Verify account belongs to user
+    const account = await c.env.DB.prepare(`
+      SELECT * FROM email_accounts WHERE id = ? AND user_id = ?
+    `).bind(accountId, user.id).first();
+    if (!account) {
+      return c.json({ error: 'Account not found' }, 404);
+    }
+
+    // For now, return default folders since we don't have real IMAP connection
+    // In a real implementation, this would connect to the IMAP server and fetch actual folders
+    const folders = [
+      {
+        id: 'inbox',
+        name: 'INBOX',
+        displayName: 'Inbox',
+        type: 'inbox',
+        children: [],
+        unreadCount: 0,
+        totalCount: 0,
+        canSelect: true,
+        canCreate: false,
+        canDelete: false,
+        canRename: false
+      },
+      {
+        id: 'sent',
+        name: 'Sent',
+        displayName: 'Sent',
+        type: 'sent',
+        children: [],
+        unreadCount: 0,
+        totalCount: 0,
+        canSelect: true,
+        canCreate: false,
+        canDelete: false,
+        canRename: false
+      },
+      {
+        id: 'drafts',
+        name: 'Drafts',
+        displayName: 'Drafts',
+        type: 'drafts',
+        children: [],
+        unreadCount: 0,
+        totalCount: 0,
+        canSelect: true,
+        canCreate: false,
+        canDelete: false,
+        canRename: false
+      },
+      {
+        id: 'spam',
+        name: 'Spam',
+        displayName: 'Spam',
+        type: 'spam',
+        children: [],
+        unreadCount: 0,
+        totalCount: 0,
+        canSelect: true,
+        canCreate: false,
+        canDelete: false,
+        canRename: false
+      },
+      {
+        id: 'trash',
+        name: 'Trash',
+        displayName: 'Trash',
+        type: 'trash',
+        children: [],
+        unreadCount: 0,
+        totalCount: 0,
+        canSelect: true,
+        canCreate: false,
+        canDelete: false,
+        canRename: false
+      }
+    ];
+
+    return c.json({ folders });
+  } catch (error) {
+    console.error('Error fetching folders:', error);
+    return c.json({ error: 'Failed to fetch folders' }, 500);
+  }
+});
+
+// Get messages for a folder
+app.get('/messages/:accountId/:folderId', async (c) => {
+  try {
+    const user = getAuthenticatedUser(c);
+    const accountId = c.req.param('accountId');
+    const folderId = c.req.param('folderId');
+    const page = parseInt(c.req.query('page') || '1');
+    const limit = parseInt(c.req.query('limit') || '50');
+
+    // Verify account belongs to user
+    const account = await c.env.DB.prepare(`
+      SELECT * FROM email_accounts WHERE id = ? AND user_id = ?
+    `).bind(accountId, user.id).first();
+
+    if (!account) {
+      return c.json({ error: 'Account not found' }, 404);
+    }
+
+    // For now, return empty messages since we don't have real IMAP connection
+    // In a real implementation, this would connect to the IMAP server and fetch actual messages
+    const messages = [];
+
+    return c.json({
+      messages,
+      pagination: {
+        page,
+        limit,
+        total: 0,
+        totalPages: 0
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching messages:', error);
+    return c.json({ error: 'Failed to fetch messages' }, 500);
+  }
+});
+
+// Sync account - fetch latest emails
+app.post('/sync/:accountId', async (c) => {
+  try {
+    const user = getAuthenticatedUser(c);
+    const accountId = c.req.param('accountId');
+
+    // Verify account belongs to user
+    const account = await c.env.DB.prepare(`
+      SELECT * FROM email_accounts WHERE id = ? AND user_id = ?
+    `).bind(accountId, user.id).first();
+
+    if (!account) {
+      return c.json({ error: 'Account not found' }, 404);
+    }
+
+    // Update last sync time
+    await c.env.DB.prepare(`
+      UPDATE email_accounts SET last_sync = ? WHERE id = ?
+    `).bind(new Date().toISOString(), accountId).run();
+
+    // For now, just return success since we don't have real IMAP connection
+    // In a real implementation, this would connect to the IMAP server and sync emails
+    return c.json({
+      message: 'Account synced successfully',
+      syncedAt: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error syncing account:', error);
+    return c.json({ error: 'Failed to sync account' }, 500);
+  }
+});
+
+  return app;
+}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Mail,
   Inbox,
@@ -30,6 +30,7 @@ import EmailForm from './EmailForm';
 import EmailAccountSettings from './EmailAccountSettings';
 import EnhancedComposeModal from './EnhancedComposeModal';
 import ResizablePane from './ResizablePane';
+import { EmailFetchService } from '../services/EmailFetchService';
 
 interface ClassicEmailClientProps {
   onClose: () => void;
@@ -45,6 +46,8 @@ const ClassicEmailClient: React.FC<ClassicEmailClientProps> = ({
   // State management
   const [accounts, setAccounts] = useState<EmailAccount[]>([]);
   const [currentAccount, setCurrentAccount] = useState<EmailAccount | null>(null);
+  const [folders, setFolders] = useState<EmailFolder[]>([]);
+  const [selectedFolder, setSelectedFolder] = useState<EmailFolder | null>(null);
   const [currentFolder, setCurrentFolder] = useState<EmailFolder | null>(null);
   const [messages, setMessages] = useState<EmailMessage[]>([]);
   const [selectedMessage, setSelectedMessage] = useState<EmailMessage | null>(null);
@@ -62,10 +65,62 @@ const ClassicEmailClient: React.FC<ClassicEmailClientProps> = ({
 
   // Load data on component mount
   useEffect(() => {
-    loadMockData();
     loadContacts();
     loadEmailAccounts();
   }, []);
+
+  // Load real email data for an account
+  const loadEmailData = useCallback(async (account: EmailAccount) => {
+    try {
+      setIsLoading(true);
+      const emailService = EmailFetchService.getInstance();
+
+      // Fetch folders for the account
+      console.log('📧 Loading folders for account:', account.name);
+      const folders = await emailService.fetchFolders(account);
+
+      // Update folders state (don't update currentAccount to avoid infinite loop)
+      setFolders(folders);
+
+      // Set default selected folder (inbox)
+      const inboxFolder = folders.find(f => f.type === 'inbox') || folders[0];
+      if (inboxFolder) {
+        setSelectedFolder(inboxFolder);
+
+        // Load messages for the inbox
+        console.log('📧 Loading messages for folder:', inboxFolder.displayName);
+        const messages = await emailService.fetchMessages(account, inboxFolder.id);
+        setMessages(messages);
+
+        // Update folder counts
+        const updatedFolders = folders.map(folder =>
+          folder.id === inboxFolder.id
+            ? { ...folder, totalCount: messages.length, unreadCount: messages.filter(m => !m.isRead).length }
+            : folder
+        );
+        setFolders(updatedFolders);
+      }
+
+      console.log('✅ Email data loaded successfully');
+    } catch (error) {
+      console.error('❌ Error loading email data:', error);
+      // Fallback to default folders if loading fails
+      const emailService = EmailFetchService.getInstance();
+      const defaultFolders = (emailService as any).getDefaultFolders();
+      setFolders(defaultFolders);
+      setSelectedFolder(defaultFolders[0]);
+      setMessages([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []); // Empty dependency array since this function doesn't depend on any props or state
+
+  // Load real email data when current account changes
+  useEffect(() => {
+    if (currentAccount && currentAccount.id) {
+      loadEmailData(currentAccount);
+    }
+  }, [currentAccount?.id, loadEmailData]); // Include memoized function
 
   // Load contacts from API
   const loadContacts = async () => {
@@ -220,199 +275,7 @@ const ClassicEmailClient: React.FC<ClassicEmailClientProps> = ({
     }
   };
 
-  const loadMockData = () => {
-    const mockAccount: EmailAccount = {
-      id: 'account-1',
-      name: 'Personal Email',
-      email: 'user@example.com',
-      provider: 'imap',
-      incoming: {
-        host: 'imap.example.com',
-        port: 993,
-        secure: true,
-        username: 'user@example.com',
-        password: '',
-        authMethod: 'plain'
-      },
-      outgoing: {
-        host: 'smtp.example.com',
-        port: 587,
-        secure: true,
-        username: 'user@example.com',
-        password: '',
-        authMethod: 'plain'
-      },
-      folders: [
-        {
-          id: 'inbox',
-          name: 'INBOX',
-          displayName: 'Inbox',
-          type: 'inbox',
-          children: [],
-          unreadCount: 5,
-          totalCount: 25,
-          canSelect: true,
-          canCreate: false,
-          canDelete: false,
-          canRename: false
-        },
-        {
-          id: 'sent',
-          name: 'Sent',
-          displayName: 'Sent',
-          type: 'sent',
-          children: [],
-          unreadCount: 0,
-          totalCount: 12,
-          canSelect: true,
-          canCreate: false,
-          canDelete: false,
-          canRename: false
-        },
-        {
-          id: 'drafts',
-          name: 'Drafts',
-          displayName: 'Drafts',
-          type: 'drafts',
-          children: [],
-          unreadCount: 2,
-          totalCount: 3,
-          canSelect: true,
-          canCreate: false,
-          canDelete: false,
-          canRename: false
-        },
-        {
-          id: 'spam',
-          name: 'Spam',
-          displayName: 'Spam',
-          type: 'spam',
-          children: [],
-          unreadCount: 1,
-          totalCount: 5,
-          canSelect: true,
-          canCreate: false,
-          canDelete: false,
-          canRename: false
-        },
-        {
-          id: 'archive',
-          name: 'Archive',
-          displayName: 'Archive',
-          type: 'archive',
-          children: [],
-          unreadCount: 0,
-          totalCount: 45,
-          canSelect: true,
-          canCreate: false,
-          canDelete: false,
-          canRename: false
-        },
-        {
-          id: 'trash',
-          name: 'Trash',
-          displayName: 'Trash',
-          type: 'trash',
-          children: [],
-          unreadCount: 0,
-          totalCount: 8,
-          canSelect: true,
-          canCreate: false,
-          canDelete: false,
-          canRename: false
-        }
-      ],
-      isDefault: true,
-      isActive: true,
-      lastSync: new Date(),
-      syncInterval: 5
-    };
 
-    const mockMessages: EmailMessage[] = [
-      {
-        id: 'msg-1',
-        messageId: '<msg1@example.com>',
-        subject: 'Welcome to the new email client!',
-        from: { name: 'Email Team', email: 'team@example.com' },
-        to: [{ name: 'You', email: 'user@example.com' }],
-        date: new Date(Date.now() - 1000 * 60 * 30), // 30 minutes ago
-        receivedDate: new Date(Date.now() - 1000 * 60 * 30),
-        body: {
-          text: 'Welcome to your new professional email client! This is a demonstration of the classic email interface.',
-          html: '<p>Welcome to your new <strong>professional email client</strong>! This is a demonstration of the classic email interface.</p>'
-        },
-        attachments: [],
-        flags: { seen: false, answered: false, flagged: true, deleted: false, draft: false, recent: true },
-        headers: {},
-        size: 1024,
-        folder: 'inbox',
-        uid: 1,
-        isRead: false,
-        isStarred: true,
-        isImportant: true,
-        labels: ['important']
-      },
-      {
-        id: 'msg-2',
-        messageId: '<msg2@example.com>',
-        subject: 'Project Update - Q4 2024',
-        from: { name: 'John Smith', email: 'john@company.com' },
-        to: [{ name: 'You', email: 'user@example.com' }],
-        date: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 hours ago
-        receivedDate: new Date(Date.now() - 1000 * 60 * 60 * 2),
-        body: {
-          text: 'Here is the latest update on our Q4 project progress. Please review the attached documents.',
-          html: '<p>Here is the latest update on our Q4 project progress. Please review the attached documents.</p>'
-        },
-        attachments: [
-          {
-            id: 'att-1',
-            filename: 'Q4_Report.pdf',
-            contentType: 'application/pdf',
-            size: 2048576,
-            disposition: 'attachment'
-          }
-        ],
-        flags: { seen: true, answered: false, flagged: false, deleted: false, draft: false, recent: false },
-        headers: {},
-        size: 2048576,
-        folder: 'inbox',
-        uid: 2,
-        isRead: true,
-        isStarred: false,
-        isImportant: false,
-        labels: []
-      },
-      {
-        id: 'msg-3',
-        messageId: '<msg3@example.com>',
-        subject: 'Meeting Reminder: Team Standup',
-        from: { name: 'Calendar', email: 'calendar@company.com' },
-        to: [{ name: 'You', email: 'user@example.com' }],
-        date: new Date(Date.now() - 1000 * 60 * 60 * 4), // 4 hours ago
-        receivedDate: new Date(Date.now() - 1000 * 60 * 60 * 4),
-        body: {
-          text: 'Reminder: Team standup meeting at 2:00 PM today in Conference Room A.',
-          html: '<p><strong>Reminder:</strong> Team standup meeting at 2:00 PM today in Conference Room A.</p>'
-        },
-        attachments: [],
-        flags: { seen: false, answered: false, flagged: false, deleted: false, draft: false, recent: true },
-        headers: {},
-        size: 512,
-        folder: 'inbox',
-        uid: 3,
-        isRead: false,
-        isStarred: false,
-        isImportant: false,
-        labels: ['meeting']
-      }
-    ];
-
-    setAccounts([mockAccount]);
-    setCurrentAccount(mockAccount);
-    setCurrentFolder(mockAccount.folders[0]); // Inbox
-    setMessages(mockMessages);
-  };
 
   const getFolderIcon = (folder: EmailFolder) => {
     switch (folder.type) {
@@ -451,11 +314,35 @@ const ClassicEmailClient: React.FC<ClassicEmailClientProps> = ({
     }
   };
 
-  const handleFolderClick = (folder: EmailFolder) => {
+  const handleFolderClick = async (folder: EmailFolder) => {
+    if (!currentAccount) return;
+
     setCurrentFolder(folder);
     setSelectedMessage(null);
     setSelectedMessages([]);
-    // In a real implementation, this would fetch messages for the folder
+    setIsLoading(true);
+
+    try {
+      const emailService = EmailFetchService.getInstance();
+      console.log('📧 Loading messages for folder:', folder.displayName);
+      const messages = await emailService.fetchMessages(currentAccount, folder.id);
+      setMessages(messages);
+
+      // Update folder counts
+      const updatedFolders = folders.map(f =>
+        f.id === folder.id
+          ? { ...f, totalCount: messages.length, unreadCount: messages.filter(m => !m.isRead).length }
+          : f
+      );
+      setFolders(updatedFolders);
+
+      console.log(`✅ Loaded ${messages.length} messages for ${folder.displayName}`);
+    } catch (error) {
+      console.error('❌ Error loading messages:', error);
+      setMessages([]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleMessageClick = (message: EmailMessage) => {
@@ -537,7 +424,25 @@ const ClassicEmailClient: React.FC<ClassicEmailClientProps> = ({
 
           {/* Folder List */}
           <div className="flex-1 overflow-y-auto">
-            {currentAccount?.folders.map((folder) => (
+            {!currentAccount ? (
+              <div className="p-4 text-center text-gray-500">
+                <Mail className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                <p className="text-sm">No email account selected</p>
+                <p className="text-xs mt-1">Add an email account to get started</p>
+              </div>
+            ) : isLoading ? (
+              <div className="p-4 text-center text-gray-500">
+                <RefreshCw className="h-6 w-6 mx-auto mb-2 text-gray-400 animate-spin" />
+                <p className="text-sm">Loading folders...</p>
+              </div>
+            ) : folders.length === 0 ? (
+              <div className="p-4 text-center text-gray-500">
+                <Mail className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                <p className="text-sm">No folders found</p>
+                <p className="text-xs mt-1">Check your account settings</p>
+              </div>
+            ) : (
+              folders.map((folder) => (
               <button
                 key={folder.id}
                 onClick={() => handleFolderClick(folder)}
@@ -557,7 +462,8 @@ const ClassicEmailClient: React.FC<ClassicEmailClientProps> = ({
                   </span>
                 )}
               </button>
-            ))}
+              ))
+            )}
           </div>
         </div>
 

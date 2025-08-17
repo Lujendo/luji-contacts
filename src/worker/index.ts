@@ -8,7 +8,7 @@ import { createUserRoutes } from './routes/users';
 import { createContactRoutes } from './routes/contacts';
 import { createGroupRoutes } from './routes/groups';
 import { createImportExportRoutes } from './routes/import-export';
-import emailRoutes from './routes/emails';
+import { createEmailRoutes } from './routes/emails';
 import { createEmailAccountRoutes } from './routes/emailAccounts';
 
 const app = new Hono<{ Bindings: Env }>();
@@ -97,6 +97,7 @@ app.all('/api/*', async (c) => {
   }
 
   if (path.startsWith('/api/emails')) {
+    const emailRoutes = createEmailRoutes(db, auth);
     const newReq = new Request(c.req.raw.url.replace('/api/emails', ''), c.req.raw);
     return emailRoutes.fetch(newReq, c.env, c.executionCtx);
   }
