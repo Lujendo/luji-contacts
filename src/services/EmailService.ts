@@ -11,17 +11,20 @@ import { emailQueueService } from './EmailQueueService';
 export class EmailService {
   private providers: Map<string, IEmailProvider> = new Map();
   private providerConfigs: Map<string, EmailProvider> = new Map();
+  private isInitialized = false;
 
   constructor() {
-    this.initializeDefaultProviders();
+    // Don't initialize providers in constructor for Cloudflare Workers compatibility
   }
 
   /**
-   * Initialize default email providers
+   * Initialize email providers (lazy initialization)
    */
-  private initializeDefaultProviders(): void {
-    // Default providers will be configured from environment variables
-    this.loadProvidersFromEnvironment();
+  private ensureInitialized(): void {
+    if (!this.isInitialized) {
+      this.isInitialized = true;
+      this.loadProvidersFromEnvironment();
+    }
   }
 
   /**
@@ -105,6 +108,7 @@ export class EmailService {
     userId: number,
     options: SendEmailOptions = {}
   ): Promise<string> {
+    this.ensureInitialized();
     return await emailQueueService.addToQueue(emailData, userId, options);
   }
 
@@ -116,6 +120,7 @@ export class EmailService {
     userId: number,
     providerId: string = 'auto'
   ): Promise<EmailSendResult> {
+    this.ensureInitialized();
     const selectedProvider = await this.selectProvider(providerId, userId);
     
     if (!selectedProvider) {

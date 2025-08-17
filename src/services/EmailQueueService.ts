@@ -11,9 +11,21 @@ export class EmailQueueService {
   private processingInterval: NodeJS.Timeout | null = null;
   private readonly PROCESSING_INTERVAL = 5000; // 5 seconds
   private readonly MAX_CONCURRENT_EMAILS = 10;
+  private isInitialized = false;
 
   constructor() {
-    this.startQueueProcessor();
+    // Don't start processor in constructor for Cloudflare Workers compatibility
+  }
+
+  /**
+   * Initialize the queue service (lazy initialization)
+   */
+  private ensureInitialized(): void {
+    if (!this.isInitialized) {
+      this.isInitialized = true;
+      // Start processor only when first used
+      this.startQueueProcessor();
+    }
   }
 
   /**
@@ -24,6 +36,7 @@ export class EmailQueueService {
     userId: number,
     options: SendEmailOptions = {}
   ): Promise<string> {
+    this.ensureInitialized();
     const queueItem: EmailQueueItem = {
       id: uuidv4(),
       userId,
@@ -81,6 +94,7 @@ export class EmailQueueService {
    * Get queue statistics
    */
   getQueueStatistics(): QueueStatistics {
+    this.ensureInitialized();
     const items = Array.from(this.queue.values());
     const today = new Date();
     today.setHours(0, 0, 0, 0);
