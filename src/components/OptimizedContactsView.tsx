@@ -1,9 +1,17 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { Contact } from '../types';
-import { Filter, SortAsc, SortDesc, Loader2, Zap, Users } from 'lucide-react';
+import { Filter, SortAsc, SortDesc, Loader2, Zap, Users, Settings } from 'lucide-react';
 import InfiniteContactList from './InfiniteContactList';
 import PaginatedContactList from './PaginatedContactList';
+import AdvancedSortingModal from './AdvancedSortingModal';
 import { useDebounce } from '../hooks/useDebounce';
+import {
+  SortingPreferences,
+  loadSortingPreferences,
+  saveSortingPreferences,
+  getSortDescription,
+  createSortQueryParams
+} from '../utils/sortingPreferences';
 
 interface OptimizedContactsViewProps {
   onContactSelect: (contact: Contact) => void;
@@ -46,6 +54,10 @@ const OptimizedContactsView: React.FC<OptimizedContactsViewProps> = ({
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [showFilters, setShowFilters] = useState(false);
   const [containerHeight, setContainerHeight] = useState(600);
+  const [showAdvancedSorting, setShowAdvancedSorting] = useState(false);
+  const [sortingPreferences, setSortingPreferences] = useState<SortingPreferences>(() =>
+    loadSortingPreferences()
+  );
   const [isInfiniteScrollEnabled, setIsInfiniteScrollEnabled] = useState(() => {
     // Try to get user preference from localStorage, fallback to prop
     const saved = localStorage.getItem('contactsViewMode');
@@ -97,6 +109,14 @@ const OptimizedContactsView: React.FC<OptimizedContactsViewProps> = ({
       setSortDirection('asc');
     }
   }, [sortField]);
+
+  const handleAdvancedSortingApply = useCallback((preferences: SortingPreferences) => {
+    setSortingPreferences(preferences);
+    saveSortingPreferences(preferences);
+    // Update the basic sort state to match the primary sort
+    setSortField(preferences.primary.field);
+    setSortDirection(preferences.primary.direction);
+  }, []);
 
   const handleContactClick = useCallback((contact: Contact) => {
     onContactSelect(contact);
@@ -174,6 +194,15 @@ const OptimizedContactsView: React.FC<OptimizedContactsViewProps> = ({
                 )}
               </div>
             )}
+
+            {/* Advanced Sorting Button */}
+            <button
+              onClick={() => setShowAdvancedSorting(true)}
+              className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+              title={`Advanced sorting - ${getSortDescription(sortingPreferences)}`}
+            >
+              <Settings className="w-5 h-5" />
+            </button>
 
             {/* Filter Button */}
             <button
@@ -327,6 +356,14 @@ const OptimizedContactsView: React.FC<OptimizedContactsViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* Advanced Sorting Modal */}
+      <AdvancedSortingModal
+        isOpen={showAdvancedSorting}
+        onClose={() => setShowAdvancedSorting(false)}
+        currentPreferences={sortingPreferences}
+        onApply={handleAdvancedSortingApply}
+      />
     </div>
   );
 };

@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Contact } from '../types';
-import { Phone, Mail, Building, MapPin } from 'lucide-react';
+import { Phone, Mail, Building, MapPin, Edit, PhoneCall } from 'lucide-react';
 import ProfileImage from './ui/ProfileImage';
 import ContactActionsMenu from './ContactActionsMenu';
 
@@ -31,6 +31,7 @@ const ContactListItem: React.FC<ContactListItemProps> = ({
   onAddToGroup,
   onViewDetails
 }) => {
+  const [isHovered, setIsHovered] = useState(false);
   const getInitials = (contact: Contact) => {
     // Use nickname if available, otherwise use first and last name
     if (contact.nickname) {
@@ -69,11 +70,13 @@ const ContactListItem: React.FC<ContactListItemProps> = ({
 
   return (
     <div
-      className={`grid grid-cols-12 gap-4 items-center p-4 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-100 ${
+      className={`group grid grid-cols-12 gap-4 items-center p-4 hover:bg-gray-50 cursor-pointer transition-all duration-200 border-b border-gray-100 ${
         selected ? 'bg-blue-50 border-l-4 border-blue-500' : ''
-      } ${className}`}
+      } ${isHovered ? 'shadow-sm' : ''} ${className}`}
       style={style}
       onClick={handleClick}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
       {/* Selection checkbox */}
       {onSelect && (
@@ -185,8 +188,56 @@ const ContactListItem: React.FC<ContactListItemProps> = ({
         )}
       </div>
 
-      {/* Actions column */}
-      <div className="col-span-1 flex justify-end items-center">
+      {/* Enhanced Actions column with quick actions */}
+      <div className="col-span-1 flex justify-end items-center space-x-1">
+        {/* Quick Action Buttons - appear on hover */}
+        <div className={`flex items-center space-x-1 transition-all duration-200 ${
+          isHovered ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-2'
+        }`}>
+          {/* Quick Call Button */}
+          {contact.phone && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                window.open(`tel:${contact.phone}`);
+              }}
+              className="p-1.5 rounded-full bg-green-100 text-green-600 hover:bg-green-200 transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-1"
+              title={`Call ${contact.phone}`}
+            >
+              <PhoneCall className="w-3.5 h-3.5" />
+            </button>
+          )}
+
+          {/* Quick Email Button */}
+          {contact.email && onSendEmail && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onSendEmail(contact);
+              }}
+              className="p-1.5 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+              title={`Email ${contact.email}`}
+            >
+              <Mail className="w-3.5 h-3.5" />
+            </button>
+          )}
+
+          {/* Quick Edit Button */}
+          {onEdit && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit(contact);
+              }}
+              className="p-1.5 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-1"
+              title="Edit contact"
+            >
+              <Edit className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+
+        {/* 3-dots menu - always visible */}
         <ContactActionsMenu
           contact={contact}
           onEdit={onEdit}
@@ -194,6 +245,7 @@ const ContactListItem: React.FC<ContactListItemProps> = ({
           onSendEmail={onSendEmail}
           onAddToGroup={onAddToGroup}
           onViewDetails={onViewDetails}
+          className="ml-1"
         />
       </div>
 

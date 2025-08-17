@@ -4,7 +4,17 @@ import { useInfiniteContacts } from '../hooks/useInfiniteContacts';
 import { useIntersectionObserver } from '../hooks/useIntersectionObserver';
 import ContactListItem from './ContactListItem';
 import ContactListSkeleton from './ContactListSkeleton';
-import { ChevronUp, ChevronDown, BarChart3 } from 'lucide-react';
+import {
+  ChevronUp,
+  ChevronDown,
+  BarChart3,
+  User,
+  Mail,
+  Phone,
+  Building,
+  Calendar,
+  Clock
+} from 'lucide-react';
 
 interface InfiniteContactListProps {
   search?: string;
@@ -79,13 +89,14 @@ const InfiniteContactList: React.FC<InfiniteContactListProps> = ({
     refresh();
   }, [search, sort, direction, groupId, refresh]);
 
-  // Sortable column header component
+  // Enhanced sortable column header component
   const SortableHeader: React.FC<{
     field: string;
     label: string;
     className?: string;
     sortable?: boolean;
-  }> = ({ field, label, className = '', sortable = true }) => {
+    icon?: React.ComponentType<{ className?: string }>;
+  }> = ({ field, label, className = '', sortable = true, icon: Icon }) => {
     const isActive = sort === field;
     const isAsc = direction === 'asc';
 
@@ -96,30 +107,43 @@ const InfiniteContactList: React.FC<InfiniteContactListProps> = ({
     };
 
     if (!sortable) {
-      return <div className={className}>{label}</div>;
+      return (
+        <div className={`${className} flex items-center space-x-1 text-gray-400`}>
+          {Icon && <Icon className="w-3 h-3" />}
+          <span>{label}</span>
+        </div>
+      );
     }
 
     return (
       <button
         onClick={handleClick}
-        className={`${className} flex items-center space-x-1 hover:text-gray-700 transition-colors ${
-          isActive ? 'text-blue-600' : 'text-gray-500'
-        }`}
-        title={`Sort by ${label}`}
+        className={`${className} group flex items-center space-x-1 hover:text-blue-600 transition-all duration-200 ${
+          isActive ? 'text-blue-600 font-medium' : 'text-gray-500'
+        } ${loading ? 'cursor-wait' : 'cursor-pointer'}`}
+        title={`Sort by ${label}${isActive ? (isAsc ? ' (ascending)' : ' (descending)') : ''}`}
+        disabled={loading}
       >
-        <span>{label}</span>
-        {isActive && (
-          isAsc ? (
-            <ChevronUp className="w-3 h-3" />
+        {Icon && <Icon className="w-3 h-3" />}
+        <span className="select-none">{label}</span>
+        <div className="flex items-center">
+          {loading && isActive ? (
+            <div className="w-3 h-3 border border-blue-600 border-t-transparent rounded-full animate-spin" />
+          ) : isActive ? (
+            isAsc ? (
+              <ChevronUp className="w-3 h-3 text-blue-600" />
+            ) : (
+              <ChevronDown className="w-3 h-3 text-blue-600" />
+            )
           ) : (
-            <ChevronDown className="w-3 h-3" />
-          )
-        )}
+            <ChevronUp className="w-3 h-3 opacity-0 group-hover:opacity-50 transition-opacity" />
+          )}
+        </div>
       </button>
     );
   };
 
-  // Multi-option sortable header for name column
+  // Enhanced multi-option sortable header for name column
   const NameSortableHeader: React.FC<{
     className?: string;
   }> = ({ className = '' }) => {
@@ -132,35 +156,45 @@ const InfiniteContactList: React.FC<InfiniteContactListProps> = ({
         <span className="text-gray-500 text-xs font-medium uppercase tracking-wider">Name:</span>
         <button
           onClick={() => onSortChange && onSortChange('first_name')}
-          className={`flex items-center space-x-1 hover:text-gray-700 transition-colors text-xs ${
+          className={`group flex items-center space-x-1 hover:text-blue-600 transition-all duration-200 text-xs ${
             isFirstNameActive ? 'text-blue-600 font-medium' : 'text-gray-500'
-          }`}
-          title="Sort by First Name"
+          } ${loading ? 'cursor-wait' : 'cursor-pointer'}`}
+          title={`Sort by First Name${isFirstNameActive ? (isAsc ? ' (ascending)' : ' (descending)') : ''}`}
+          disabled={loading}
         >
-          <span>First</span>
-          {isFirstNameActive && (
+          <span className="select-none">First</span>
+          {loading && isFirstNameActive ? (
+            <div className="w-3 h-3 border border-blue-600 border-t-transparent rounded-full animate-spin" />
+          ) : isFirstNameActive ? (
             isAsc ? (
-              <ChevronUp className="w-3 h-3" />
+              <ChevronUp className="w-3 h-3 text-blue-600" />
             ) : (
-              <ChevronDown className="w-3 h-3" />
+              <ChevronDown className="w-3 h-3 text-blue-600" />
             )
+          ) : (
+            <ChevronUp className="w-3 h-3 opacity-0 group-hover:opacity-50 transition-opacity" />
           )}
         </button>
         <span className="text-gray-300">|</span>
         <button
           onClick={() => onSortChange && onSortChange('last_name')}
-          className={`flex items-center space-x-1 hover:text-gray-700 transition-colors text-xs ${
+          className={`group flex items-center space-x-1 hover:text-blue-600 transition-all duration-200 text-xs ${
             isLastNameActive ? 'text-blue-600 font-medium' : 'text-gray-500'
-          }`}
-          title="Sort by Last Name"
+          } ${loading ? 'cursor-wait' : 'cursor-pointer'}`}
+          title={`Sort by Last Name${isLastNameActive ? (isAsc ? ' (ascending)' : ' (descending)') : ''}`}
+          disabled={loading}
         >
-          <span>Last</span>
-          {isLastNameActive && (
+          <span className="select-none">Last</span>
+          {loading && isLastNameActive ? (
+            <div className="w-3 h-3 border border-blue-600 border-t-transparent rounded-full animate-spin" />
+          ) : isLastNameActive ? (
             isAsc ? (
-              <ChevronUp className="w-3 h-3" />
+              <ChevronUp className="w-3 h-3 text-blue-600" />
             ) : (
-              <ChevronDown className="w-3 h-3" />
+              <ChevronDown className="w-3 h-3 text-blue-600" />
             )
+          ) : (
+            <ChevronUp className="w-3 h-3 opacity-0 group-hover:opacity-50 transition-opacity" />
           )}
         </button>
       </div>
@@ -218,9 +252,9 @@ const InfiniteContactList: React.FC<InfiniteContactListProps> = ({
         </div>
       )}
 
-      {/* Sortable Table Header */}
+      {/* Enhanced Sortable Table Header */}
       {contacts.length > 0 && (
-        <div className="grid grid-cols-12 gap-4 items-center px-4 py-3 bg-gray-50 border-b border-gray-200 text-xs font-medium uppercase tracking-wider">
+        <div className="grid grid-cols-12 gap-4 items-center px-4 py-3 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200 text-xs font-medium uppercase tracking-wider">
           {onContactSelect && <div className="col-span-1"></div>}
           <NameSortableHeader
             className={onContactSelect ? 'col-span-3' : 'col-span-4'}
@@ -228,25 +262,29 @@ const InfiniteContactList: React.FC<InfiniteContactListProps> = ({
           <SortableHeader
             field="email"
             label="Email"
+            icon={Mail}
             className="col-span-2"
           />
           <SortableHeader
             field="phone"
             label="Phone"
+            icon={Phone}
             className="col-span-2"
-            sortable={false}
+            sortable={true}
           />
           <SortableHeader
             field="company"
             label="Company"
+            icon={Building}
             className="col-span-2"
           />
           <SortableHeader
-            field="role"
-            label="Role/Groups"
-            className="col-span-2"
-            sortable={false}
+            field="created_at"
+            label="Added"
+            icon={Calendar}
+            className="col-span-1"
           />
+          <div className="col-span-1"></div> {/* Actions column */}
         </div>
       )}
 
