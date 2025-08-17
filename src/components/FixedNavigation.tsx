@@ -183,6 +183,15 @@ const FixedNavigation: React.FC<FixedNavigationProps> = ({
                 <Plus className="h-4 w-4 mr-2" />
                 Add Group
               </button>
+
+              {/* Manage Groups Page */}
+              <button
+                onClick={() => onOpenPanel('groupsPage')}
+                className="w-full flex items-center px-3 py-2 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Manage Groups
+              </button>
             </div>
           )}
         </div>
@@ -235,7 +244,7 @@ const FixedNavigation: React.FC<FixedNavigationProps> = ({
         {/* Import/Export */}
         <div className="relative group px-2">
           <button
-            onClick={() => onOpenPanel('importModal')}
+            onClick={() => onOpenPanel('importExport')}
             className={`w-full flex items-center rounded-lg text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition-colors ${
               isExpanded ? 'px-3 py-2 justify-start' : 'h-12 justify-center'
             }`}

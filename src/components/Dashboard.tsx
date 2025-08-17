@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { contactsApi, groupsApi } from '../api';
 import { useBulkDeleteContacts } from '../hooks/useContactQueries';
-import { UnifiedSearchBar } from './UnifiedSearchBar';
 import {
   Contact,
   Group,
@@ -16,11 +15,7 @@ import {
 // Component imports
 import FixedNavigation from './FixedNavigation';
 import ContactFormModal from './ContactFormModal';
-import ContactTable from './ContactTable';
 import OptimizedContactsView from './OptimizedContactsView';
-import GroupList from './GroupList';
-import GroupForm from './GroupForm';
-import GroupEditForm from './GroupEditForm';
 import EmailForm from './EmailForm';
 import EmailHistory from './EmailHistory';
 import ImportModal from './ImportModal';
@@ -42,6 +37,8 @@ import { useAppearance } from '../contexts/AppearanceContext';
 // Modal imports
 import UserSettingsModal from './modals/UserSettingsModal';
 import GroupListModal from './modals/GroupListModal';
+import AnalyticsModal from './modals/AnalyticsModal';
+import GroupsPageModal from './modals/GroupsPageModal';
 
 import GroupFormModal from './modals/GroupFormModal';
 import GroupEditFormModal from './modals/GroupEditFormModal';
@@ -55,9 +52,6 @@ import DuplicateDetectionModal from './modals/DuplicateDetectionModal';
 
 // Icon imports
 import {
-  Search,
-  X,
-  ArrowUpDown,
   Loader
 } from 'lucide-react';
 
@@ -121,6 +115,10 @@ const Dashboard: React.FC = () => {
   const [showDuplicateDetection, setShowDuplicateDetection] = useState<boolean>(false);
   const [contactsToMerge, setContactsToMerge] = useState<Contact[]>([]);
   const [userSettingsTab, setUserSettingsTab] = useState<'profile' | 'email' | 'subscription' | 'security' | 'appearance'>('profile');
+
+  // New modal states
+  const [showAnalytics, setShowAnalytics] = useState<boolean>(false);
+  const [showGroupsPage, setShowGroupsPage] = useState<boolean>(false);
 
   // Use appearance context
   const { settings: appearanceSettings, updateSettings: updateAppearanceSettings } = useAppearance();
@@ -376,6 +374,8 @@ const Dashboard: React.FC = () => {
     setShowGroupRemoveModal(false);
     setShowMergeContacts(false);
     setShowDuplicateDetection(false);
+    setShowAnalytics(false);
+    setShowGroupsPage(false);
     setUserSettingsTab('profile');
   }, []);
 
@@ -413,6 +413,12 @@ const Dashboard: React.FC = () => {
         break;
       case 'bulkGroupRemove':
         setShowBulkGroupRemove(true);
+        break;
+      case 'analytics':
+        setShowAnalytics(true);
+        break;
+      case 'groupsPage':
+        setShowGroupsPage(true);
         break;
       default:
         break;
@@ -759,6 +765,34 @@ const Dashboard: React.FC = () => {
             setSelectedContacts([]);
             setContactsToMerge([]);
           }}
+        />
+      )}
+
+      {/* Analytics Modal */}
+      {showAnalytics && (
+        <AnalyticsModal
+          isOpen={showAnalytics}
+          onClose={() => setShowAnalytics(false)}
+          contacts={contacts}
+          groups={groups}
+        />
+      )}
+
+      {/* Groups Page Modal */}
+      {showGroupsPage && (
+        <GroupsPageModal
+          isOpen={showGroupsPage}
+          onClose={() => setShowGroupsPage(false)}
+          groups={groups}
+          contacts={contacts}
+          onGroupEdit={(group) => {
+            setSelectedGroup(group);
+            setShowGroupContactsManager(true);
+          }}
+          onGroupDelete={handleGroupDelete}
+          onAddNewGroup={() => setShowGroupForm(true)}
+          onGroupClick={handleGroupHighlight}
+          activeGroup={activeGroup}
         />
       )}
     </div>
