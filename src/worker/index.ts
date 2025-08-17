@@ -8,6 +8,7 @@ import { createUserRoutes } from './routes/users';
 import { createContactRoutes } from './routes/contacts';
 import { createGroupRoutes } from './routes/groups';
 import { createImportExportRoutes } from './routes/import-export';
+import emailRoutes from './routes/emails';
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -92,6 +93,11 @@ app.all('/api/*', async (c) => {
     const importExportRoutes = createImportExportRoutes(db, auth, storage);
     const newReq = new Request(c.req.raw.url.replace('/api/import-export', ''), c.req.raw);
     return importExportRoutes.fetch(newReq, c.env, c.executionCtx);
+  }
+
+  if (path.startsWith('/api/emails')) {
+    const newReq = new Request(c.req.raw.url.replace('/api/emails', ''), c.req.raw);
+    return emailRoutes.fetch(newReq, c.env, c.executionCtx);
   }
 
   if (path.startsWith('/api/files/')) {
