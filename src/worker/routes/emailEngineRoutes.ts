@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { UltimateEmailManager } from '../email-engine/core/UltimateEmailManager';
 import { DatabaseService } from '../utils/database';
 import { AuthService, getAuthenticatedUser, createAuthMiddleware } from '../utils/auth';
+import { ImapService } from '../services/ImapService';
 
 /**
  * Create Ultimate Email Engine routes with proper dependencies
@@ -240,57 +241,116 @@ export function createEmailEngineRoutes(db: DatabaseService, auth: AuthService) 
 
       console.log(`📁 Fetching folders with Ultimate Email Engine for account: ${accountId}`);
 
-      // For now, return mock folders since the full IMAP implementation is not complete
-      // In production, this would connect to the account and fetch real folders
-      const mockFolders = [
-        {
-          id: 'INBOX',
-          name: 'INBOX',
-          displayName: 'Inbox',
-          type: 'inbox' as const,
-          children: [],
-          unreadCount: 0,
-          totalCount: 0,
-          canSelect: true,
-          canCreate: false,
-          canDelete: false,
-          canRename: false
-        },
-        {
-          id: 'Sent',
-          name: 'Sent',
-          displayName: 'Sent',
-          type: 'sent' as const,
-          children: [],
-          unreadCount: 0,
-          totalCount: 0,
-          canSelect: true,
-          canCreate: false,
-          canDelete: false,
-          canRename: false
-        },
-        {
-          id: 'Drafts',
-          name: 'Drafts',
-          displayName: 'Drafts',
-          type: 'drafts' as const,
-          children: [],
-          unreadCount: 0,
-          totalCount: 0,
-          canSelect: true,
-          canCreate: false,
-          canDelete: false,
-          canRename: false
-        }
-      ];
+      // Get account details from database for folders
+      const foldersAccountRow = await c.env.DB.prepare(`
+        SELECT * FROM email_accounts WHERE id = ? AND user_id = ?
+      `).bind(accountId, user.id).first();
 
-      console.log(`✅ Ultimate Email Engine returned ${mockFolders.length} folders (mock data)`);
+      if (!foldersAccountRow) {
+        return c.json({ error: 'Account not found' }, 404);
+      }
 
-      return c.json({
-        success: true,
-        folders: mockFolders,
-        message: `Retrieved ${mockFolders.length} folders from Ultimate Email Engine (mock data)`
-      });
+      // Convert database row to EmailAccount object
+      const account = {
+        id: foldersAccountRow.id,
+        name: foldersAccountRow.name,
+        email: foldersAccountRow.email,
+        provider: foldersAccountRow.provider,
+        incoming: {
+          host: foldersAccountRow.incoming_host,
+          port: foldersAccountRow.incoming_port,
+          secure: foldersAccountRow.incoming_secure === 1,
+          username: foldersAccountRow.incoming_username,
+          password: foldersAccountRow.incoming_password,
+          authMethod: foldersAccountRow.incoming_auth_method
+        },
+        outgoing: {
+          host: foldersAccountRow.outgoing_host,
+          port: foldersAccountRow.outgoing_port,
+          secure: foldersAccountRow.outgoing_secure === 1,
+          username: foldersAccountRow.outgoing_username,
+          password: foldersAccountRow.outgoing_password,
+          authMethod: foldersAccountRow.outgoing_auth_method
+        },
+        folders: [],
+        isDefault: foldersAccountRow.is_default === 1,
+        isActive: foldersAccountRow.is_active === 1,
+        lastSync: new Date(foldersAccountRow.last_sync),
+        syncInterval: foldersAccountRow.sync_interval
+      };
+
+      try {
+        // Use real IMAP service to fetch folders
+        const imapService = new ImapService();
+        const config = ImapService.createConnectionConfig(account);
+
+        console.log(`🔌 Connecting to IMAP server: ${config.host}:${config.port}`);
+        await imapService.connect(config);
+
+        const folders = await imapService.getFolders();
+        await imapService.disconnect();
+
+        console.log(`✅ Ultimate Email Engine returned ${folders.length} real folders from IMAP`);
+
+        return c.json({
+          success: true,
+          folders,
+          message: `Retrieved ${folders.length} real folders from Ultimate Email Engine via IMAP`
+        });
+
+      } catch (imapError) {
+        console.error('❌ IMAP connection failed, using fallback folders:', imapError);
+
+        // Fallback to default folders if IMAP fails
+        const fallbackFolders = [
+          {
+            id: 'INBOX',
+            name: 'INBOX',
+            displayName: 'Inbox',
+            type: 'inbox' as const,
+            children: [],
+            unreadCount: 0,
+            totalCount: 0,
+            canSelect: true,
+            canCreate: false,
+            canDelete: false,
+            canRename: false
+          },
+          {
+            id: 'Sent',
+            name: 'Sent',
+            displayName: 'Sent',
+            type: 'sent' as const,
+            children: [],
+            unreadCount: 0,
+            totalCount: 0,
+            canSelect: true,
+            canCreate: false,
+            canDelete: false,
+            canRename: false
+          },
+          {
+            id: 'Drafts',
+            name: 'Drafts',
+            displayName: 'Drafts',
+            type: 'drafts' as const,
+            children: [],
+            unreadCount: 0,
+            totalCount: 0,
+            canSelect: true,
+            canCreate: false,
+            canDelete: false,
+            canRename: false
+          }
+        ];
+
+        return c.json({
+          success: true,
+          folders: fallbackFolders,
+          message: `Retrieved ${fallbackFolders.length} fallback folders (IMAP connection failed)`,
+          warning: `IMAP connection failed: ${imapError instanceof Error ? imapError.message : 'Unknown error'}`
+        });
+      }
 
     } catch (error) {
       console.error('❌ Ultimate Email Engine folders error:', error);
@@ -323,58 +383,92 @@ export function createEmailEngineRoutes(db: DatabaseService, auth: AuthService) 
 
       console.log(`📧 Fetching messages with Ultimate Email Engine: ${accountId}/${folderId}`);
 
-      // For now, return mock messages since the full IMAP implementation is not complete
-      // In production, this would connect to the account and fetch real messages
-      const mockMessages = [
-        {
-          id: 'msg_1',
-          messageId: '<test1@example.com>',
-          subject: 'Welcome to Ultimate Email Engine',
-          from: {
-            name: 'Ultimate Email Engine',
-            email: 'engine@lujiventrucci.com'
-          },
-          to: [{ name: 'User', email: 'user@example.com' }],
-          cc: [],
-          bcc: [],
-          date: new Date(),
-          receivedDate: new Date(),
-          body: {
-            text: 'Welcome to the Ultimate Email Engine - the world\'s most robust email infrastructure!',
-            html: '<p>Welcome to the <strong>Ultimate Email Engine</strong> - the world\'s most robust email infrastructure!</p>'
-          },
-          attachments: [],
-          flags: {
-            seen: false,
-            answered: false,
-            flagged: true,
-            deleted: false,
-            draft: false,
-            recent: true
-          },
-          headers: {},
-          size: 1024,
-          folder: folderId,
-          uid: 1,
-          isRead: false,
-          isStarred: true,
-          isImportant: true,
-          labels: ['Ultimate', 'Engine']
-        }
-      ];
+      // Get account details from database for messages
+      const messagesAccountRow = await c.env.DB.prepare(`
+        SELECT * FROM email_accounts WHERE id = ? AND user_id = ?
+      `).bind(accountId, user.id).first();
 
-      console.log(`✅ Ultimate Email Engine returned ${mockMessages.length} messages (mock data)`);
+      if (!messagesAccountRow) {
+        return c.json({ error: 'Account not found' }, 404);
+      }
 
-      return c.json({
-        success: true,
-        messages: mockMessages,
-        pagination: {
-          limit,
-          total: mockMessages.length,
-          hasMore: false
+      // Convert database row to EmailAccount object
+      const messageAccount = {
+        id: messagesAccountRow.id,
+        name: messagesAccountRow.name,
+        email: messagesAccountRow.email,
+        provider: messagesAccountRow.provider,
+        incoming: {
+          host: messagesAccountRow.incoming_host,
+          port: messagesAccountRow.incoming_port,
+          secure: messagesAccountRow.incoming_secure === 1,
+          username: messagesAccountRow.incoming_username,
+          password: messagesAccountRow.incoming_password,
+          authMethod: messagesAccountRow.incoming_auth_method
         },
-        message: `Retrieved ${mockMessages.length} messages from Ultimate Email Engine (mock data)`
-      });
+        outgoing: {
+          host: messagesAccountRow.outgoing_host,
+          port: messagesAccountRow.outgoing_port,
+          secure: messagesAccountRow.outgoing_secure === 1,
+          username: messagesAccountRow.outgoing_username,
+          password: messagesAccountRow.outgoing_password,
+          authMethod: messagesAccountRow.outgoing_auth_method
+        },
+        folders: [],
+        isDefault: messagesAccountRow.is_default === 1,
+        isActive: messagesAccountRow.is_active === 1,
+        lastSync: new Date(messagesAccountRow.last_sync),
+        syncInterval: messagesAccountRow.sync_interval
+      };
+
+      try {
+        // Use real IMAP service to fetch messages
+        const imapService = new ImapService();
+        const config = ImapService.createConnectionConfig(messageAccount);
+
+        console.log(`🔌 Connecting to IMAP server for messages: ${config.host}:${config.port}`);
+        await imapService.connect(config);
+
+        // Convert folderId to folder name (handle both formats)
+        let folderName = folderId;
+        if (folderId === 'inbox') folderName = 'INBOX';
+        else if (folderId === 'sent') folderName = 'Sent';
+        else if (folderId === 'drafts') folderName = 'Drafts';
+        else if (folderId === 'spam') folderName = 'Spam';
+        else if (folderId === 'trash') folderName = 'Trash';
+
+        const messages = await imapService.getMessages(folderName, limit);
+        await imapService.disconnect();
+
+        console.log(`✅ Ultimate Email Engine returned ${messages.length} real messages from IMAP`);
+
+        return c.json({
+          success: true,
+          messages,
+          pagination: {
+            limit,
+            total: messages.length,
+            hasMore: messages.length === limit
+          },
+          message: `Retrieved ${messages.length} real messages from Ultimate Email Engine via IMAP`
+        });
+
+      } catch (imapError) {
+        console.error('❌ IMAP message fetch failed:', imapError);
+
+        // Return empty messages array if IMAP fails
+        return c.json({
+          success: true,
+          messages: [],
+          pagination: {
+            limit,
+            total: 0,
+            hasMore: false
+          },
+          message: 'No messages retrieved (IMAP connection failed)',
+          warning: `IMAP connection failed: ${imapError instanceof Error ? imapError.message : 'Unknown error'}`
+        });
+      }
 
     } catch (error) {
       console.error('❌ Ultimate Email Engine messages error:', error);
