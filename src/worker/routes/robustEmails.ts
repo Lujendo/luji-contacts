@@ -10,7 +10,7 @@ export function createRobustEmailRoutes(db: DatabaseService, auth: AuthService) 
   const app = new Hono();
 
   // Add authentication middleware
-  app.use('*', createAuthMiddleware(auth));
+  app.use('*', createAuthMiddleware(auth, db));
 
 /**
  * Auto-configure email server settings for a domain

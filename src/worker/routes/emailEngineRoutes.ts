@@ -10,7 +10,7 @@ export function createEmailEngineRoutes(db: DatabaseService, auth: AuthService) 
   const app = new Hono();
 
   // Add authentication middleware
-  app.use('*', createAuthMiddleware(auth));
+  app.use('*', createAuthMiddleware(auth, db));
 
   // Initialize Ultimate Email Manager
   const emailManager = new UltimateEmailManager({
