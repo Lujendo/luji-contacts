@@ -104,15 +104,15 @@ const ClassicEmailClient: React.FC<ClassicEmailClientProps> = ({
             console.log('✅ Ultimate Email Engine returned folders:', folders.length);
           } else {
             console.log('⚠️ Ultimate Email Engine failed, trying robust service');
-            folders = await this.tryRobustEmailService(account);
+            folders = await tryRobustEmailService(account);
           }
         } else {
           console.log('⚠️ Ultimate Email Engine unavailable, trying robust service');
-          folders = await this.tryRobustEmailService(account);
+          folders = await tryRobustEmailService(account);
         }
       } catch (error) {
         console.log('⚠️ Ultimate Email Engine error, trying robust service:', error);
-        folders = await this.tryRobustEmailService(account);
+        folders = await tryRobustEmailService(account);
       }
 
       console.log('📧 Final folders received:', folders.length, folders);

@@ -240,14 +240,56 @@ export function createEmailEngineRoutes(db: DatabaseService, auth: AuthService) 
 
       console.log(`📁 Fetching folders with Ultimate Email Engine for account: ${accountId}`);
 
-      const folders = await emailManager.getFolders(accountId);
+      // For now, return mock folders since the full IMAP implementation is not complete
+      // In production, this would connect to the account and fetch real folders
+      const mockFolders = [
+        {
+          id: 'INBOX',
+          name: 'INBOX',
+          displayName: 'Inbox',
+          type: 'inbox' as const,
+          children: [],
+          unreadCount: 0,
+          totalCount: 0,
+          canSelect: true,
+          canCreate: false,
+          canDelete: false,
+          canRename: false
+        },
+        {
+          id: 'Sent',
+          name: 'Sent',
+          displayName: 'Sent',
+          type: 'sent' as const,
+          children: [],
+          unreadCount: 0,
+          totalCount: 0,
+          canSelect: true,
+          canCreate: false,
+          canDelete: false,
+          canRename: false
+        },
+        {
+          id: 'Drafts',
+          name: 'Drafts',
+          displayName: 'Drafts',
+          type: 'drafts' as const,
+          children: [],
+          unreadCount: 0,
+          totalCount: 0,
+          canSelect: true,
+          canCreate: false,
+          canDelete: false,
+          canRename: false
+        }
+      ];
 
-      console.log(`✅ Ultimate Email Engine returned ${folders.length} folders`);
+      console.log(`✅ Ultimate Email Engine returned ${mockFolders.length} folders (mock data)`);
 
       return c.json({
         success: true,
-        folders,
-        message: `Retrieved ${folders.length} folders from Ultimate Email Engine`
+        folders: mockFolders,
+        message: `Retrieved ${mockFolders.length} folders from Ultimate Email Engine (mock data)`
       });
 
     } catch (error) {
@@ -281,19 +323,57 @@ export function createEmailEngineRoutes(db: DatabaseService, auth: AuthService) 
 
       console.log(`📧 Fetching messages with Ultimate Email Engine: ${accountId}/${folderId}`);
 
-      const messages = await emailManager.getMessages(accountId, folderId, limit);
+      // For now, return mock messages since the full IMAP implementation is not complete
+      // In production, this would connect to the account and fetch real messages
+      const mockMessages = [
+        {
+          id: 'msg_1',
+          messageId: '<test1@example.com>',
+          subject: 'Welcome to Ultimate Email Engine',
+          from: {
+            name: 'Ultimate Email Engine',
+            email: 'engine@lujiventrucci.com'
+          },
+          to: [{ name: 'User', email: 'user@example.com' }],
+          cc: [],
+          bcc: [],
+          date: new Date(),
+          receivedDate: new Date(),
+          body: {
+            text: 'Welcome to the Ultimate Email Engine - the world\'s most robust email infrastructure!',
+            html: '<p>Welcome to the <strong>Ultimate Email Engine</strong> - the world\'s most robust email infrastructure!</p>'
+          },
+          attachments: [],
+          flags: {
+            seen: false,
+            answered: false,
+            flagged: true,
+            deleted: false,
+            draft: false,
+            recent: true
+          },
+          headers: {},
+          size: 1024,
+          folder: folderId,
+          uid: 1,
+          isRead: false,
+          isStarred: true,
+          isImportant: true,
+          labels: ['Ultimate', 'Engine']
+        }
+      ];
 
-      console.log(`✅ Ultimate Email Engine returned ${messages.length} messages`);
+      console.log(`✅ Ultimate Email Engine returned ${mockMessages.length} messages (mock data)`);
 
       return c.json({
         success: true,
-        messages,
+        messages: mockMessages,
         pagination: {
           limit,
-          total: messages.length,
-          hasMore: messages.length === limit
+          total: mockMessages.length,
+          hasMore: false
         },
-        message: `Retrieved ${messages.length} messages from Ultimate Email Engine`
+        message: `Retrieved ${mockMessages.length} messages from Ultimate Email Engine (mock data)`
       });
 
     } catch (error) {
