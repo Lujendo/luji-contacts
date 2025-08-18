@@ -84,10 +84,38 @@ const ClassicEmailClient: React.FC<ClassicEmailClientProps> = ({
       setLoadError(null);
       const emailService = EmailFetchService.getInstance();
 
-      // Fetch folders for the account
+      // Try Ultimate Email Engine first, then robust service, then fallback to regular service
       console.log('📧 Loading folders for account:', account.name);
-      const folders = await emailService.fetchFolders(account);
-      console.log('📧 Received folders:', folders.length, folders);
+
+      let folders: EmailFolder[] = [];
+      try {
+        const token = localStorage.getItem('token');
+
+        // First try the Ultimate Email Engine
+        console.log('🚀 Trying Ultimate Email Engine...');
+        const ultimateResponse = await fetch(`/api/ultimate-email/folders/${account.id}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (ultimateResponse.ok) {
+          const ultimateData = await ultimateResponse.json();
+          if (ultimateData.success && ultimateData.folders && ultimateData.folders.length > 0) {
+            folders = ultimateData.folders;
+            console.log('✅ Ultimate Email Engine returned folders:', folders.length);
+          } else {
+            console.log('⚠️ Ultimate Email Engine failed, trying robust service');
+            folders = await this.tryRobustEmailService(account);
+          }
+        } else {
+          console.log('⚠️ Ultimate Email Engine unavailable, trying robust service');
+          folders = await this.tryRobustEmailService(account);
+        }
+      } catch (error) {
+        console.log('⚠️ Ultimate Email Engine error, trying robust service:', error);
+        folders = await this.tryRobustEmailService(account);
+      }
+
+      console.log('📧 Final folders received:', folders.length, folders);
 
       // Set default selected folder (inbox)
       const inboxFolder = folders.find(f => f.type === 'inbox') || folders[0];
@@ -97,6 +125,7 @@ const ClassicEmailClient: React.FC<ClassicEmailClientProps> = ({
         // Load messages for the inbox
         console.log('📧 Loading messages for folder:', inboxFolder.displayName);
         const messages = await emailService.fetchMessages(account, inboxFolder.id);
+        console.log('📧 Messages received:', messages.length);
         setMessages(messages);
 
         // Update folder counts and set folders in one operation
@@ -340,6 +369,31 @@ const ClassicEmailClient: React.FC<ClassicEmailClientProps> = ({
     }
   };
 
+  // Helper method for robust email service fallback
+  const tryRobustEmailService = async (account: EmailAccount): Promise<EmailFolder[]> => {
+    try {
+      const token = localStorage.getItem('token');
+      const robustResponse = await fetch(`/api/robust-emails/robust-folders/${account.id}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (robustResponse.ok) {
+        const robustData = await robustResponse.json();
+        if (robustData.success && robustData.folders && robustData.folders.length > 0) {
+          console.log('✅ Robust email service returned folders:', robustData.folders.length);
+          return robustData.folders;
+        }
+      }
+    } catch (error) {
+      console.log('⚠️ Robust email service error:', error);
+    }
+
+    // Final fallback to regular service
+    console.log('⚠️ Using regular email service as final fallback');
+    const emailService = EmailFetchService.getInstance();
+    return await emailService.fetchFolders(account);
+  };
+
   const handleFolderClick = async (folder: EmailFolder) => {
     if (!currentAccount) return;
 
@@ -350,8 +404,9 @@ const ClassicEmailClient: React.FC<ClassicEmailClientProps> = ({
 
     try {
       const emailService = EmailFetchService.getInstance();
-      console.log('📧 Loading messages for folder:', folder.displayName);
+      console.log('📧 Loading messages for folder:', folder.displayName, 'Account:', currentAccount.email);
       const messages = await emailService.fetchMessages(currentAccount, folder.id);
+      console.log('📧 Raw messages received:', messages.length, messages);
       setMessages(messages);
 
       // Update folder counts
@@ -362,7 +417,7 @@ const ClassicEmailClient: React.FC<ClassicEmailClientProps> = ({
       );
       setFolders(updatedFolders);
 
-      console.log(`✅ Loaded ${messages.length} messages for ${folder.displayName}`);
+      console.log(`✅ Loaded ${messages.length} messages for ${folder.displayName} in account ${currentAccount.email}`);
     } catch (error) {
       console.error('❌ Error loading messages:', error);
       setMessages([]);
@@ -409,9 +464,41 @@ const ClassicEmailClient: React.FC<ClassicEmailClientProps> = ({
               <Mail className="h-6 w-6 mr-2 text-blue-600" />
               Email Client
             </h1>
-            {currentAccount && (
+
+            {/* Multi-Account Selector */}
+            {accounts.length > 1 && (
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-500">Account:</span>
+                <select
+                  value={currentAccount?.id || ''}
+                  onChange={(e) => {
+                    const selectedAccount = accounts.find(acc => acc.id === e.target.value);
+                    if (selectedAccount) {
+                      setCurrentAccount(selectedAccount);
+                    }
+                  }}
+                  className="text-sm border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {accounts.map(account => (
+                    <option key={account.id} value={account.id}>
+                      {account.name} ({account.email})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Single Account Display */}
+            {accounts.length === 1 && currentAccount && (
               <span className="text-sm text-gray-500">
                 {currentAccount.email}
+              </span>
+            )}
+
+            {/* No Accounts */}
+            {accounts.length === 0 && (
+              <span className="text-sm text-red-500">
+                No email accounts configured
               </span>
             )}
           </div>
