@@ -21,8 +21,10 @@ export function createEmailRoutes(db: DatabaseService, auth: AuthService) {
     }
   }
 
-// Initialize email service
-const emailService = new EmailService();
+// Helper function to get email service with send_email binding
+function getEmailService(c: any): EmailService {
+  return new EmailService(c?.env?.SEND_EMAIL);
+}
 
 /**
  * Send email to specific contacts
@@ -117,6 +119,7 @@ app.post('/send', async (c) => {
     };
 
     // Send email via queue
+    const emailService = getEmailService(c);
     const queueId = await emailService.sendEmail(emailData, user.id, options);
 
     // Log email in database

@@ -3,6 +3,7 @@ import { IEmailProvider, EmailSendResult } from './providers/IEmailProvider';
 import { SendGridProvider } from './providers/SendGridProvider';
 import { MailgunProvider } from './providers/MailgunProvider';
 import { MailChannelsProvider } from './providers/MailChannelsProvider';
+import { CloudflareEmailProvider } from './providers/CloudflareEmailProvider';
 import { emailQueueService } from './EmailQueueService';
 
 /**
@@ -13,9 +14,11 @@ export class EmailService {
   private providers: Map<string, IEmailProvider> = new Map();
   private providerConfigs: Map<string, EmailProvider> = new Map();
   private isInitialized = false;
+  private sendEmailBinding: any;
 
-  constructor() {
+  constructor(sendEmailBinding?: any) {
     // Don't initialize providers in constructor for Cloudflare Workers compatibility
+    this.sendEmailBinding = sendEmailBinding;
   }
 
   /**
@@ -32,7 +35,31 @@ export class EmailService {
    * Load providers from environment variables
    */
   private loadProvidersFromEnvironment(): void {
-    // MailChannels provider (Worker-native)
+    // Cloudflare Email provider (highest priority if send_email binding available)
+    if (this.sendEmailBinding) {
+      try {
+        const cloudflareEmail = new CloudflareEmailProvider(this.sendEmailBinding);
+        this.providers.set('cloudflare-email', cloudflareEmail);
+        this.providerConfigs.set('cloudflare-email', {
+          id: 'cloudflare-email',
+          name: 'Cloudflare Email',
+          type: 'sendgrid',
+          isActive: true,
+          priority: 1,
+          config: {},
+          dailyLimit: 10000,
+          dailySent: 0,
+          lastResetDate: new Date(),
+          healthStatus: 'healthy',
+          lastHealthCheck: new Date()
+        });
+        console.log('✅ Cloudflare Email provider registered with send_email binding');
+      } catch (error) {
+        console.error('❌ Failed to initialize Cloudflare Email provider:', error);
+      }
+    }
+
+    // MailChannels provider (fallback HTTP API)
     try {
       const mailChannels = new MailChannelsProvider();
       this.providers.set('mailchannels', mailChannels);
@@ -41,7 +68,7 @@ export class EmailService {
         name: 'MailChannels',
         type: 'sendgrid',
         isActive: true,
-        priority: 1,
+        priority: this.sendEmailBinding ? 2 : 1, // Lower priority if Cloudflare Email is available
         config: {},
         dailyLimit: 5000,
         dailySent: 0,

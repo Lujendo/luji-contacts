@@ -33,5 +33,11 @@
     "MAILGUN_API_KEY": "",
     "MAILGUN_DOMAIN": "",
     "MAILGUN_REGION": "us"
-  }
+  },
+  "send_email": [
+    {
+      "name": "SEND_EMAIL",
+      "destination_address": "info@lujiventrucci.com"
+    }
+  ]
 }

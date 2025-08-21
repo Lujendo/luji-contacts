@@ -13,6 +13,8 @@ import { createEmailAccountRoutes } from './routes/emailAccounts';
 import { createRobustEmailRoutes } from './routes/robustEmails';
 import { createEmailEngineRoutes } from './routes/emailEngineRoutes';
 import { createOAuthRoutes } from './routes/oauth';
+import emailWorkerRoutes from './routes/emailWorker';
+import emailWorker, { EmailMessage, EmailWorkerEnv } from './email-worker';
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -129,6 +131,18 @@ app.all('/api/*', async (c) => {
     return oauthRoutes.fetch(newReq, c.env, c.executionCtx);
   }
 
+  if (path.startsWith('/api/email-worker')) {
+    // Add user context for email worker routes
+    const userId = await auth.getUserIdFromRequest(c.req);
+    if (!userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+    c.set('userId', userId);
+
+    const newReq = new Request(c.req.raw.url.replace('/api/email-worker', ''), c.req.raw);
+    return emailWorkerRoutes.fetch(newReq, c.env, c.executionCtx);
+  }
+
   if (path.startsWith('/api/files/')) {
     try {
       const filePath = path.replace('/api/files/', '');
@@ -170,4 +184,8 @@ app.onError((err, c) => {
   return c.json({ error: 'Internal server error' }, 500);
 });
 
-export default app;
+// Export both HTTP handler and email handler
+export default {
+  fetch: app.fetch,
+  email: emailWorker.email
+};

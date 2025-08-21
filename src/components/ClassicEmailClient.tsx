@@ -24,13 +24,14 @@ import {
   Calendar,
   ArrowLeft
 } from 'lucide-react';
-import { EmailMessage, EmailFolder, EmailAccount, EmailClientSettings } from '../types/emailClient';
+import { EmailMessage, EmailFolder, EmailAccount, EmailClientSettings, EmailAddress } from '../types/emailClient';
 import { Contact } from '../types';
 import EmailForm from './EmailForm';
 import EmailAccountSettings from './EmailAccountSettings';
 import EnhancedComposeModal from './EnhancedComposeModal';
 import ResizablePane from './ResizablePane';
-import { EmailFetchService } from '../services/EmailFetchService';
+import { EmailWorkerService, initializeEmailWorkerService } from '../services/EmailWorkerService';
+import type { EmailMessage as WorkerEmailMessage } from '../services/EmailWorkerService';
 
 interface ClassicEmailClientProps {
   onClose: () => void;
@@ -71,7 +72,7 @@ const ClassicEmailClient: React.FC<ClassicEmailClientProps> = ({
     loadEmailAccounts();
   }, []);
 
-  // Load real email data for an account
+  // Load real email data for an account using Email Workers
   const loadEmailData = useCallback(async (account: EmailAccount) => {
     // Prevent multiple simultaneous loads for the same account
     if (isLoading || loadedAccountId === account.id) {
@@ -82,76 +83,51 @@ const ClassicEmailClient: React.FC<ClassicEmailClientProps> = ({
     try {
       setIsLoading(true);
       setLoadError(null);
-      const emailService = EmailFetchService.getInstance();
 
-      // Try Ultimate Email Engine first, then robust service, then fallback to regular service
-      console.log('📧 Loading folders for account:', account.name);
-
-      let folders: EmailFolder[] = [];
-      try {
-        const token = localStorage.getItem('token');
-
-        // First try the Ultimate Email Engine
-        console.log('🚀 Trying Ultimate Email Engine...');
-        const ultimateResponse = await fetch(`/api/ultimate-email/folders/${account.id}`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-
-        if (ultimateResponse.ok) {
-          const ultimateData = await ultimateResponse.json();
-          if (ultimateData.success && ultimateData.folders && ultimateData.folders.length > 0) {
-            folders = ultimateData.folders;
-            console.log('✅ Ultimate Email Engine returned folders:', folders.length);
-          } else {
-            console.log('⚠️ Ultimate Email Engine failed, trying robust service');
-            folders = await tryRobustEmailService(account);
-          }
-        } else {
-          console.log('⚠️ Ultimate Email Engine unavailable, trying robust service');
-          folders = await tryRobustEmailService(account);
-        }
-      } catch (error) {
-        console.log('⚠️ Ultimate Email Engine error, trying robust service:', error);
-        folders = await tryRobustEmailService(account);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
       }
 
-      console.log('📧 Final folders received:', folders.length, folders);
+      // Initialize Email Worker Service
+      const emailService = initializeEmailWorkerService(token);
 
-      // Set default selected folder (inbox)
-      const inboxFolder = folders.find(f => f.type === 'inbox') || folders[0];
+      console.log('📧 Loading folders for account using Email Workers:', account.name);
+
+      // Get folders from Email Workers API
+      const { folders: workerFolders, account: accountInfo } = await emailService.getFolders(account.id);
+
+      console.log('✅ Email Worker folders loaded:', workerFolders.length);
+      setFolders(workerFolders);
+
+      // Set default folder (inbox)
+      const inboxFolder = workerFolders.find(f => f.type === 'inbox') || workerFolders[0];
       if (inboxFolder) {
         setSelectedFolder(inboxFolder);
+        setCurrentFolder(inboxFolder);
 
-        // Load messages for the inbox
-        console.log('📧 Loading messages for folder:', inboxFolder.displayName);
-        const messages = await emailService.fetchMessages(account, inboxFolder.id, 1, 50, inboxFolder.name);
-        console.log('📧 Messages received:', messages.length);
-        setMessages(messages);
+        // Load emails from inbox
+        console.log('📧 Loading emails from folder:', inboxFolder.name);
+        const emailsResponse = await emailService.getEmails(account.id, inboxFolder.name, { limit: 50 });
 
-        // Update folder counts and set folders in one operation
-        const updatedFolders = folders.map(folder =>
-          folder.id === inboxFolder.id
-            ? { ...folder, totalCount: messages.length, unreadCount: messages.filter(m => !m.isRead).length }
-            : folder
-        );
-        setFolders(updatedFolders);
-      } else {
-        // No inbox found, just set the folders
-        setFolders(folders);
+        console.log('✅ Emails loaded:', emailsResponse.emails.length);
+        // Convert worker messages to client format
+        const convertedMessages = emailsResponse.emails.map(convertWorkerMessage);
+        setMessages(convertedMessages);
       }
 
-      console.log('✅ Email data loaded successfully');
+      setLoadedAccountId(account.id);
+      console.log('✅ Email data loaded successfully using Email Workers');
+
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.error('❌ Error loading email data:', errorMessage);
       setLoadError(errorMessage);
 
-      // Fallback to default folders if loading fails
-      const emailService = EmailFetchService.getInstance();
-      const defaultFolders = (emailService as any).getDefaultFolders();
-      setFolders(defaultFolders);
-      setSelectedFolder(defaultFolders[0]);
+      // Set empty state on error
+      setFolders([]);
       setMessages([]);
+      setSelectedFolder(null);
     } finally {
       setIsLoading(false);
     }
@@ -176,6 +152,57 @@ const ClassicEmailClient: React.FC<ClassicEmailClientProps> = ({
       loadEmailData(currentAccount);
     }
   }, [currentAccount?.id, loadedAccountId, isLoading]); // Remove loadEmailData from dependencies to prevent recreation
+
+  // Convert Email Worker message to EmailClient message format
+  const convertWorkerMessage = (workerMsg: any): EmailMessage => {
+    const parseEmailAddress = (addr: string): EmailAddress => {
+      const match = addr.match(/^(.+?)\s*<(.+)>$/) || addr.match(/^(.+)$/);
+      if (match && match[2]) {
+        return { name: match[1].trim(), email: match[2].trim() };
+      }
+      return { email: addr.trim() };
+    };
+
+    const parseEmailAddresses = (addrs: string | null): EmailAddress[] => {
+      if (!addrs) return [];
+      return addrs.split(',').map(addr => parseEmailAddress(addr.trim()));
+    };
+
+    return {
+      id: workerMsg.id,
+      messageId: workerMsg.messageId,
+      threadId: undefined,
+      subject: workerMsg.subject || '(No Subject)',
+      from: parseEmailAddress(workerMsg.from),
+      to: parseEmailAddresses(workerMsg.to),
+      cc: parseEmailAddresses(workerMsg.cc),
+      bcc: parseEmailAddresses(workerMsg.bcc),
+      replyTo: workerMsg.replyTo ? parseEmailAddress(workerMsg.replyTo) : undefined,
+      date: new Date(workerMsg.receivedAt),
+      receivedDate: new Date(workerMsg.receivedAt),
+      body: {
+        text: workerMsg.bodyText,
+        html: workerMsg.bodyHtml
+      },
+      attachments: workerMsg.attachments || [],
+      flags: {
+        seen: workerMsg.isRead,
+        answered: false,
+        flagged: workerMsg.isStarred,
+        deleted: false,
+        draft: false,
+        recent: false
+      },
+      headers: workerMsg.headers || {},
+      size: (workerMsg.bodyText || '').length + (workerMsg.bodyHtml || '').length,
+      folder: workerMsg.folder,
+      uid: parseInt(workerMsg.id.slice(-8), 16), // Generate a UID from message ID
+      isRead: workerMsg.isRead,
+      isStarred: workerMsg.isStarred,
+      isImportant: false,
+      labels: []
+    };
+  };
 
   // Load contacts from API
   const loadContacts = async () => {
@@ -369,30 +396,7 @@ const ClassicEmailClient: React.FC<ClassicEmailClientProps> = ({
     }
   };
 
-  // Helper method for robust email service fallback
-  const tryRobustEmailService = async (account: EmailAccount): Promise<EmailFolder[]> => {
-    try {
-      const token = localStorage.getItem('token');
-      const robustResponse = await fetch(`/api/robust-emails/robust-folders/${account.id}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
 
-      if (robustResponse.ok) {
-        const robustData = await robustResponse.json();
-        if (robustData.success && robustData.folders && robustData.folders.length > 0) {
-          console.log('✅ Robust email service returned folders:', robustData.folders.length);
-          return robustData.folders;
-        }
-      }
-    } catch (error) {
-      console.log('⚠️ Robust email service error:', error);
-    }
-
-    // Final fallback to regular service
-    console.log('⚠️ Using regular email service as final fallback');
-    const emailService = EmailFetchService.getInstance();
-    return await emailService.fetchFolders(account);
-  };
 
   const handleFolderClick = async (folder: EmailFolder) => {
     if (!currentAccount) return;
@@ -403,21 +407,22 @@ const ClassicEmailClient: React.FC<ClassicEmailClientProps> = ({
     setIsLoading(true);
 
     try {
-      const emailService = EmailFetchService.getInstance();
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const emailService = initializeEmailWorkerService(token);
       console.log('📧 Loading messages for folder:', folder.displayName, 'Account:', currentAccount.email);
-      const messages = await emailService.fetchMessages(currentAccount, folder.id, 1, 50, folder.name);
-      console.log('📧 Raw messages received:', messages.length, messages);
-      setMessages(messages);
 
-      // Update folder counts
-      const updatedFolders = folders.map(f =>
-        f.id === folder.id
-          ? { ...f, totalCount: messages.length, unreadCount: messages.filter(m => !m.isRead).length }
-          : f
-      );
-      setFolders(updatedFolders);
+      const emailsResponse = await emailService.getEmails(currentAccount.id, folder.name, { limit: 50 });
+      console.log('📧 Raw messages received:', emailsResponse.emails.length, emailsResponse.emails);
 
-      console.log(`✅ Loaded ${messages.length} messages for ${folder.displayName} in account ${currentAccount.email}`);
+      // Convert worker messages to client format
+      const convertedMessages = emailsResponse.emails.map(convertWorkerMessage);
+      setMessages(convertedMessages);
+
+      console.log(`✅ Loaded ${emailsResponse.emails.length} messages for ${folder.displayName} in account ${currentAccount.email}`);
     } catch (error) {
       console.error('❌ Error loading messages:', error);
       setMessages([]);
@@ -426,14 +431,25 @@ const ClassicEmailClient: React.FC<ClassicEmailClientProps> = ({
     }
   };
 
-  const handleMessageClick = (message: EmailMessage) => {
+  const handleMessageClick = async (message: EmailMessage) => {
     setSelectedMessage(message);
-    if (!message.isRead) {
-      // Mark as read
-      const updatedMessages = messages.map(m =>
-        m.id === message.id ? { ...m, isRead: true, flags: { ...m.flags, seen: true } } : m
-      );
-      setMessages(updatedMessages);
+
+    if (!message.isRead && currentAccount) {
+      try {
+        const token = localStorage.getItem('token');
+        if (token) {
+          const emailService = initializeEmailWorkerService(token);
+          await emailService.markAsRead(currentAccount.id, message.id);
+
+          // Update local state
+          const updatedMessages = messages.map(m =>
+            m.id === message.id ? { ...m, isRead: true, flags: { ...m.flags, seen: true } } : m
+          );
+          setMessages(updatedMessages);
+        }
+      } catch (error) {
+        console.error('Error marking message as read:', error);
+      }
     }
   };
 
@@ -619,9 +635,9 @@ const ClassicEmailClient: React.FC<ClassicEmailClientProps> = ({
                   />
                 </div>
                 {/* Connection warning banner */}
-                {!isLoading && (loadError || EmailFetchService.getInstance().getLastWarning()) && (
+                {!isLoading && loadError && (
                   <div className="ml-4 px-3 py-1 text-xs rounded bg-yellow-50 text-yellow-800 border border-yellow-200">
-                    {loadError || EmailFetchService.getInstance().getLastWarning()}
+                    {loadError}
                   </div>
                 )}
               </div>

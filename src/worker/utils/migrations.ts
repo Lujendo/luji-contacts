@@ -149,6 +149,94 @@ export class DatabaseMigrations {
       await this.db.prepare(`INSERT INTO migrations (name) VALUES (?)`).bind('003_add_email_oauth_columns').run();
       console.log('Migration 003_add_email_oauth_columns completed');
     }
+
+    // Migration 004: Create emails table for Email Workers
+    const emailWorkerMigExists = await this.db.prepare(`
+      SELECT name FROM migrations WHERE name = ?
+    `).bind('004_create_email_worker_tables').first();
+
+    if (!emailWorkerMigExists) {
+      console.log('Creating Email Worker tables...');
+
+      // Create emails table for storing incoming emails
+      await this.db.prepare(`
+        CREATE TABLE IF NOT EXISTS worker_emails (
+          id TEXT PRIMARY KEY,
+          message_id TEXT UNIQUE,
+          account_id TEXT,
+          from_addr TEXT NOT NULL,
+          to_addr TEXT NOT NULL,
+          cc_addr TEXT,
+          bcc_addr TEXT,
+          reply_to TEXT,
+          subject TEXT,
+          body_text TEXT,
+          body_html TEXT,
+          headers TEXT, -- JSON string of all headers
+          attachments TEXT, -- JSON string of attachment metadata
+          folder TEXT DEFAULT 'inbox',
+          is_read BOOLEAN DEFAULT FALSE,
+          is_starred BOOLEAN DEFAULT FALSE,
+          is_deleted BOOLEAN DEFAULT FALSE,
+          received_at TEXT NOT NULL,
+          created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+          updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (account_id) REFERENCES email_accounts(id) ON DELETE CASCADE
+        )
+      `).run();
+
+      // Create indexes for worker_emails
+      await this.db.prepare(`
+        CREATE INDEX IF NOT EXISTS idx_worker_emails_account_folder ON worker_emails(account_id, folder)
+      `).run();
+
+      await this.db.prepare(`
+        CREATE INDEX IF NOT EXISTS idx_worker_emails_received_at ON worker_emails(received_at DESC)
+      `).run();
+
+      await this.db.prepare(`
+        CREATE INDEX IF NOT EXISTS idx_worker_emails_message_id ON worker_emails(message_id)
+      `).run();
+
+      await this.db.prepare(`
+        CREATE INDEX IF NOT EXISTS idx_worker_emails_from_addr ON worker_emails(from_addr)
+      `).run();
+
+      // Create email_folders table
+      await this.db.prepare(`
+        CREATE TABLE IF NOT EXISTS email_folders (
+          id TEXT PRIMARY KEY,
+          account_id TEXT NOT NULL,
+          name TEXT NOT NULL,
+          display_name TEXT NOT NULL,
+          type TEXT DEFAULT 'custom', -- inbox, sent, drafts, trash, spam, custom
+          parent_id TEXT,
+          unread_count INTEGER DEFAULT 0,
+          total_count INTEGER DEFAULT 0,
+          can_select BOOLEAN DEFAULT TRUE,
+          can_create BOOLEAN DEFAULT FALSE,
+          can_delete BOOLEAN DEFAULT FALSE,
+          can_rename BOOLEAN DEFAULT TRUE,
+          created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+          updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (account_id) REFERENCES email_accounts(id) ON DELETE CASCADE,
+          FOREIGN KEY (parent_id) REFERENCES email_folders(id) ON DELETE CASCADE,
+          UNIQUE(account_id, name)
+        )
+      `).run();
+
+      // Create indexes for email_folders
+      await this.db.prepare(`
+        CREATE INDEX IF NOT EXISTS idx_email_folders_account ON email_folders(account_id)
+      `).run();
+
+      await this.db.prepare(`
+        CREATE INDEX IF NOT EXISTS idx_email_folders_type ON email_folders(account_id, type)
+      `).run();
+
+      await this.db.prepare(`INSERT INTO migrations (name) VALUES (?)`).bind('004_create_email_worker_tables').run();
+      console.log('Migration 004_create_email_worker_tables completed');
+    }
   }
 
   async checkNicknameColumn(): Promise<boolean> {
