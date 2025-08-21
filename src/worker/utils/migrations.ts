@@ -115,6 +115,40 @@ export class DatabaseMigrations {
 
       console.log('Email accounts table and indexes created successfully');
     }
+
+    // Migration 003: Add OAuth columns for email_accounts
+    const oauthMigExists = await this.db.prepare(`
+      SELECT name FROM migrations WHERE name = ?
+    `).bind('003_add_email_oauth_columns').first();
+
+    if (!oauthMigExists) {
+      // Check existing columns
+      const tableInfo = await this.db.prepare(`PRAGMA table_info(email_accounts)`).all();
+      const has = (name: string) => (tableInfo.results || []).some((c: any) => c.name === name);
+
+      const alterStatements: string[] = [];
+      if (!has('incoming_oauth_provider')) alterStatements.push(`ALTER TABLE email_accounts ADD COLUMN incoming_oauth_provider TEXT`);
+      if (!has('incoming_oauth_access_token')) alterStatements.push(`ALTER TABLE email_accounts ADD COLUMN incoming_oauth_access_token TEXT`);
+      if (!has('incoming_oauth_refresh_token')) alterStatements.push(`ALTER TABLE email_accounts ADD COLUMN incoming_oauth_refresh_token TEXT`);
+      if (!has('incoming_oauth_expires_at')) alterStatements.push(`ALTER TABLE email_accounts ADD COLUMN incoming_oauth_expires_at TEXT`);
+      if (!has('incoming_oauth_scope')) alterStatements.push(`ALTER TABLE email_accounts ADD COLUMN incoming_oauth_scope TEXT`);
+      if (!has('incoming_oauth_token_type')) alterStatements.push(`ALTER TABLE email_accounts ADD COLUMN incoming_oauth_token_type TEXT`);
+
+      // Optional: outgoing (SMTP) OAuth columns for future use
+      if (!has('outgoing_oauth_provider')) alterStatements.push(`ALTER TABLE email_accounts ADD COLUMN outgoing_oauth_provider TEXT`);
+      if (!has('outgoing_oauth_access_token')) alterStatements.push(`ALTER TABLE email_accounts ADD COLUMN outgoing_oauth_access_token TEXT`);
+      if (!has('outgoing_oauth_refresh_token')) alterStatements.push(`ALTER TABLE email_accounts ADD COLUMN outgoing_oauth_refresh_token TEXT`);
+      if (!has('outgoing_oauth_expires_at')) alterStatements.push(`ALTER TABLE email_accounts ADD COLUMN outgoing_oauth_expires_at TEXT`);
+      if (!has('outgoing_oauth_scope')) alterStatements.push(`ALTER TABLE email_accounts ADD COLUMN outgoing_oauth_scope TEXT`);
+      if (!has('outgoing_oauth_token_type')) alterStatements.push(`ALTER TABLE email_accounts ADD COLUMN outgoing_oauth_token_type TEXT`);
+
+      for (const stmt of alterStatements) {
+        await this.db.prepare(stmt).run();
+      }
+
+      await this.db.prepare(`INSERT INTO migrations (name) VALUES (?)`).bind('003_add_email_oauth_columns').run();
+      console.log('Migration 003_add_email_oauth_columns completed');
+    }
   }
 
   async checkNicknameColumn(): Promise<boolean> {

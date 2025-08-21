@@ -452,8 +452,45 @@ app.get('/folders/:accountId', async (c) => {
     console.log(`📧 Fetching real folders for account: ${account.email}`);
 
     // Connect to IMAP server and fetch real folders
-    const config = ImapService.createConnectionConfig(account);
-    await imapService.connect(config);
+    let config = ImapService.createConnectionConfig(account);
+    // If OAuth2, try to include access token from DB
+    if (account.incoming.authMethod === 'oauth2') {
+      // Ensure we have a fresh access token; refresh if expired
+      const tokenRow = await c.env.DB.prepare(`
+        SELECT incoming_oauth_access_token, incoming_oauth_refresh_token, incoming_oauth_expires_at FROM email_accounts WHERE id = ?
+      `).bind(account.id).first();
+      if (tokenRow) {
+        let { incoming_oauth_access_token: accessToken, incoming_oauth_refresh_token: refreshToken, incoming_oauth_expires_at: expiresAt } = tokenRow as any;
+        const isExpired = expiresAt && new Date(expiresAt).getTime() < Date.now() + 60_000;
+        if (!accessToken || isExpired) {
+          if (refreshToken) {
+            const clientId = (c.env as any).GOOGLE_CLIENT_ID as string;
+            const clientSecret = (c.env as any).GOOGLE_CLIENT_SECRET as string;
+            const body = new URLSearchParams();
+            body.set('client_id', clientId);
+            body.set('client_secret', clientSecret);
+            body.set('refresh_token', refreshToken);
+            body.set('grant_type', 'refresh_token');
+            const resp = await fetch('https://oauth2.googleapis.com/token', {
+              method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body
+            });
+            if (resp.ok) {
+              const data = await resp.json() as any;
+              accessToken = data.access_token;
+              const newExpiresAt = new Date(Date.now() + (data.expires_in || 0) * 1000).toISOString();
+              await c.env.DB.prepare(`UPDATE email_accounts SET incoming_oauth_access_token = ?, incoming_oauth_expires_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`)
+                .bind(accessToken, newExpiresAt, account.id).run();
+            } else {
+              console.warn('Failed to refresh access token');
+            }
+          }
+        }
+        if (accessToken) {
+          config = { ...config, authMethod: 'oauth2', oauth: { user: account.email, accessToken } } as any;
+        }
+      }
+    }
+    await imapService.connectAuto(config);
 
     const folders = await imapService.getFolders();
 
@@ -596,16 +633,54 @@ app.get('/messages/:accountId/:folderId', async (c) => {
     console.log(`📧 Fetching real messages for account: ${account.email}, folder: ${folderId}`);
 
     // Connect to IMAP server and fetch real messages
-    const config = ImapService.createConnectionConfig(account);
-    await imapService.connect(config);
+    let config = ImapService.createConnectionConfig(account);
+    if (account.incoming.authMethod === 'oauth2') {
+      const tokenRow = await c.env.DB.prepare(`
+        SELECT incoming_oauth_access_token, incoming_oauth_refresh_token, incoming_oauth_expires_at FROM email_accounts WHERE id = ?
+      `).bind(account.id).first();
+      if (tokenRow) {
+        let { incoming_oauth_access_token: accessToken, incoming_oauth_refresh_token: refreshToken, incoming_oauth_expires_at: expiresAt } = tokenRow as any;
+        const isExpired = expiresAt && new Date(expiresAt).getTime() < Date.now() + 60_000;
+        if (!accessToken || isExpired) {
+          if (refreshToken) {
+            const clientId = (c.env as any).GOOGLE_CLIENT_ID as string;
+            const clientSecret = (c.env as any).GOOGLE_CLIENT_SECRET as string;
+            const body = new URLSearchParams();
+            body.set('client_id', clientId);
+            body.set('client_secret', clientSecret);
+            body.set('refresh_token', refreshToken);
+            body.set('grant_type', 'refresh_token');
+            const resp = await fetch('https://oauth2.googleapis.com/token', {
+              method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body
+            });
+            if (resp.ok) {
+              const data = await resp.json() as any;
+              accessToken = data.access_token;
+              const newExpiresAt = new Date(Date.now() + (data.expires_in || 0) * 1000).toISOString();
+              await c.env.DB.prepare(`UPDATE email_accounts SET incoming_oauth_access_token = ?, incoming_oauth_expires_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`)
+                .bind(accessToken, newExpiresAt, account.id).run();
+            } else {
+              console.warn('Failed to refresh access token');
+            }
+          }
+        }
+        if (accessToken) {
+          config = { ...config, authMethod: 'oauth2', oauth: { user: account.email, accessToken } } as any;
+        }
+      }
+    }
+    await imapService.connectAuto(config);
 
-    // Convert folderId to folder name (handle both formats)
-    let folderName = folderId;
-    if (folderId === 'inbox') folderName = 'INBOX';
-    else if (folderId === 'sent') folderName = 'Sent';
-    else if (folderId === 'drafts') folderName = 'Drafts';
-    else if (folderId === 'spam') folderName = 'Spam';
-    else if (folderId === 'trash') folderName = 'Trash';
+    // Prefer explicit folderName query param (allows names like "[Gmail]/All Mail"), fallback to mapping
+    const providedFolderName = c.req.query('folderName');
+    let folderName = providedFolderName || folderId;
+    if (!providedFolderName) {
+      if (folderId === 'inbox') folderName = 'INBOX';
+      else if (folderId === 'sent') folderName = 'Sent';
+      else if (folderId === 'drafts') folderName = 'Drafts';
+      else if (folderId === 'spam') folderName = 'Spam';
+      else if (folderId === 'trash') folderName = 'Trash';
+    }
 
     const messages = await imapService.getMessages(folderName, limit);
 

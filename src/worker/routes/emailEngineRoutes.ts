@@ -282,10 +282,45 @@ export function createEmailEngineRoutes(db: DatabaseService, auth: AuthService) 
       try {
         // Use real IMAP service to fetch folders
         const imapService = new ImapService();
-        const config = ImapService.createConnectionConfig(account);
+        let config = ImapService.createConnectionConfig(account);
+        if (account.incoming.authMethod === 'oauth2') {
+          const tokenRow = await c.env.DB.prepare(`
+            SELECT incoming_oauth_access_token, incoming_oauth_refresh_token, incoming_oauth_expires_at FROM email_accounts WHERE id = ?
+          `).bind(account.id).first();
+          if (tokenRow) {
+            let { incoming_oauth_access_token: accessToken, incoming_oauth_refresh_token: refreshToken, incoming_oauth_expires_at: expiresAt } = tokenRow as any;
+            const isExpired = expiresAt && new Date(expiresAt).getTime() < Date.now() + 60_000;
+            if (!accessToken || isExpired) {
+              if (refreshToken) {
+                const clientId = (c.env as any).GOOGLE_CLIENT_ID as string;
+                const clientSecret = (c.env as any).GOOGLE_CLIENT_SECRET as string;
+                const body = new URLSearchParams();
+                body.set('client_id', clientId);
+                body.set('client_secret', clientSecret);
+                body.set('refresh_token', refreshToken);
+                body.set('grant_type', 'refresh_token');
+                const resp = await fetch('https://oauth2.googleapis.com/token', {
+                  method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body
+                });
+                if (resp.ok) {
+                  const data = await resp.json() as any;
+                  accessToken = data.access_token;
+                  const newExpiresAt = new Date(Date.now() + (data.expires_in || 0) * 1000).toISOString();
+                  await c.env.DB.prepare(`UPDATE email_accounts SET incoming_oauth_access_token = ?, incoming_oauth_expires_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`)
+                    .bind(accessToken, newExpiresAt, account.id).run();
+                } else {
+                  console.warn('Failed to refresh access token');
+                }
+              }
+            }
+            if (accessToken) {
+              config = { ...config, authMethod: 'oauth2', oauth: { user: account.email, accessToken } } as any;
+            }
+          }
+        }
 
         console.log(`🔌 Connecting to IMAP server: ${config.host}:${config.port}`);
-        await imapService.connect(config);
+        await imapService.connectAuto(config);
 
         const folders = await imapService.getFolders();
         await imapService.disconnect();
@@ -451,18 +486,56 @@ export function createEmailEngineRoutes(db: DatabaseService, auth: AuthService) 
       try {
         // Use real IMAP service to fetch messages
         const imapService = new ImapService();
-        const config = ImapService.createConnectionConfig(messageAccount);
+        let config = ImapService.createConnectionConfig(messageAccount);
+        if (messageAccount.incoming.authMethod === 'oauth2') {
+          const tokenRow = await c.env.DB.prepare(`
+            SELECT incoming_oauth_access_token, incoming_oauth_refresh_token, incoming_oauth_expires_at FROM email_accounts WHERE id = ?
+          `).bind(messageAccount.id).first();
+          if (tokenRow) {
+            let { incoming_oauth_access_token: accessToken, incoming_oauth_refresh_token: refreshToken, incoming_oauth_expires_at: expiresAt } = tokenRow as any;
+            const isExpired = expiresAt && new Date(expiresAt).getTime() < Date.now() + 60_000;
+            if (!accessToken || isExpired) {
+              if (refreshToken) {
+                const clientId = (c.env as any).GOOGLE_CLIENT_ID as string;
+                const clientSecret = (c.env as any).GOOGLE_CLIENT_SECRET as string;
+                const body = new URLSearchParams();
+                body.set('client_id', clientId);
+                body.set('client_secret', clientSecret);
+                body.set('refresh_token', refreshToken);
+                body.set('grant_type', 'refresh_token');
+                const resp = await fetch('https://oauth2.googleapis.com/token', {
+                  method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body
+                });
+                if (resp.ok) {
+                  const data = await resp.json() as any;
+                  accessToken = data.access_token;
+                  const newExpiresAt = new Date(Date.now() + (data.expires_in || 0) * 1000).toISOString();
+                  await c.env.DB.prepare(`UPDATE email_accounts SET incoming_oauth_access_token = ?, incoming_oauth_expires_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`)
+                    .bind(accessToken, newExpiresAt, messageAccount.id).run();
+                } else {
+                  console.warn('Failed to refresh access token');
+                }
+              }
+            }
+            if (accessToken) {
+              config = { ...config, authMethod: 'oauth2', oauth: { user: messageAccount.email, accessToken } } as any;
+            }
+          }
+        }
 
         console.log(`🔌 Connecting to IMAP server for messages: ${config.host}:${config.port}`);
-        await imapService.connect(config);
+        await imapService.connectAuto(config);
 
-        // Convert folderId to folder name (handle both formats)
-        let folderName = folderId;
-        if (folderId === 'inbox') folderName = 'INBOX';
-        else if (folderId === 'sent') folderName = 'Sent';
-        else if (folderId === 'drafts') folderName = 'Drafts';
-        else if (folderId === 'spam') folderName = 'Spam';
-        else if (folderId === 'trash') folderName = 'Trash';
+        // Prefer explicit folderName query param (allows names like "[Gmail]/All Mail"), fallback to mapping
+        const providedFolderName = c.req.query('folderName');
+        let folderName = providedFolderName || folderId;
+        if (!providedFolderName) {
+          if (folderId === 'inbox') folderName = 'INBOX';
+          else if (folderId === 'sent') folderName = 'Sent';
+          else if (folderId === 'drafts') folderName = 'Drafts';
+          else if (folderId === 'spam') folderName = 'Spam';
+          else if (folderId === 'trash') folderName = 'Trash';
+        }
 
         const messages = await imapService.getMessages(folderName, limit);
         await imapService.disconnect();
@@ -820,7 +893,7 @@ export function createEmailEngineRoutes(db: DatabaseService, auth: AuthService) 
         console.log(`🔌 Debug: Password length: ${config.auth.password?.length || 0}`);
         console.log(`🔌 Debug: TLS: ${config.tls}`);
 
-        await imapService.connect(config);
+        await imapService.connectAuto(config);
 
         console.log('✅ Debug: IMAP connection successful');
 
@@ -868,6 +941,42 @@ export function createEmailEngineRoutes(db: DatabaseService, auth: AuthService) 
       }, 500);
     }
   });
+  /**
+   * Quick custom IMAP check (bypass DB) using request body credentials
+   */
+  app.post('/debug/test-imap-custom', async (c) => {
+    try {
+      const body = await c.req.json().catch(() => ({}));
+      const host = body.host || 'mail.lujiventrucci.com';
+      const port = Number(body.port || 993);
+      const tls = body.tls !== undefined ? !!body.tls : true;
+      const username = body.username;
+      const password = body.password;
+      if (!username || !password) {
+        return c.json({ success: false, error: 'username and password required in body' }, 400);
+      }
+
+      const imapService = new ImapService();
+      const config = {
+        host,
+        port,
+        tls,
+        auth: { username, password },
+        authMethod: 'plain' as const
+      };
+
+      console.log(`🧪 Custom IMAP test to ${host}:${port} tls=${tls} user=${username}`);
+      await imapService.connectAuto(config);
+      const folders = await imapService.getFolders();
+      await imapService.disconnect();
+
+      return c.json({ success: true, foldersFound: folders.length, firstFolders: folders.slice(0,5) });
+    } catch (error) {
+      console.error('❌ Custom IMAP test failed:', error);
+      return c.json({ success: false, error: error instanceof Error ? error.message : 'Unknown error' }, 500);
+    }
+  });
+
 
   return app;
 }

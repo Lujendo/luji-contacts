@@ -6,8 +6,13 @@ export interface ImapConnectionConfig {
   port: number;
   tls: boolean;
   auth: {
-    username: string;
-    password: string;
+    username?: string;
+    password?: string;
+  };
+  authMethod?: 'plain' | 'oauth2';
+  oauth?: {
+    user: string;
+    accessToken: string;
   };
 }
 
@@ -42,15 +47,25 @@ export class ImapService {
    * Create IMAP connection from email account
    */
   static createConnectionConfig(account: EmailAccount): ImapConnectionConfig {
-    return {
+    const base = {
       host: account.incoming.host,
       port: account.incoming.port,
-      tls: account.incoming.secure,
+      tls: account.incoming.secure
+    } as ImapConnectionConfig;
+
+    if (account.incoming.authMethod === 'oauth2') {
+      // We will read tokens in the route and pass via oauth field when available
+      return { ...base, auth: {}, authMethod: 'oauth2' } as ImapConnectionConfig;
+    }
+
+    return {
+      ...base,
       auth: {
         username: account.incoming.username,
         password: account.incoming.password
-      }
-    };
+      },
+      authMethod: 'plain'
+    } as ImapConnectionConfig;
   }
 
   /**
@@ -59,23 +74,72 @@ export class ImapService {
   async connect(config: ImapConnectionConfig): Promise<void> {
     try {
       console.log(`📧 Connecting to IMAP server: ${config.host}:${config.port}`);
-      
-      this.imap = new CFImap({
+
+      const imapOpts: any = {
         host: config.host,
         port: config.port,
-        tls: config.tls,
-        auth: config.auth
-      });
+        tls: config.tls
+      };
+      if (config.authMethod === 'oauth2' && config.oauth?.accessToken && config.oauth.user) {
+        imapOpts.auth = { method: 'XOAUTH2', user: config.oauth.user, accessToken: config.oauth.accessToken };
+      } else {
+        imapOpts.auth = config.auth;
+      }
+
+      this.imap = new CFImap(imapOpts);
 
       await this.imap.connect();
       this.isConnected = true;
-      
+
       console.log('✅ IMAP connection established');
     } catch (error) {
       console.error('❌ IMAP connection failed:', error);
       this.isConnected = false;
       throw new Error(`Failed to connect to IMAP server: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
+  }
+
+  /**
+   * Try to connect with common fallbacks (implicit TLS 993, then 143 without TLS)
+   */
+  async connectAuto(config: ImapConnectionConfig): Promise<void> {
+    const attempts: ImapConnectionConfig[] = [];
+
+    // Attempt 1: as provided
+    attempts.push({ ...config });
+
+    // If not already 993/TLS, try 993/TLS
+    if (!(config.port === 993 && config.tls)) {
+      attempts.push({ ...config, port: 993, tls: true });
+    }
+
+    // Attempt 2: 143 with TLS (some libraries use this flag to initiate STARTTLS)
+    if (!(config.port === 143 && config.tls === true)) {
+      attempts.push({ ...config, port: 143, tls: true });
+    }
+
+    // Attempt 3: 143 without TLS (plain)
+    if (!(config.port === 143 && config.tls === false)) {
+      attempts.push({ ...config, port: 143, tls: false });
+    }
+
+    const errors: string[] = [];
+    for (const attempt of attempts) {
+      try {
+        const authMode = attempt.authMethod === 'oauth2' && attempt.oauth?.accessToken ? `XOAUTH2(user=${attempt.oauth.user})` : 'PLAIN';
+        console.log(`🔁 IMAP connect attempt ${attempt.host}:${attempt.port} tls=${attempt.tls} auth=${authMode}`);
+        await this.connect(attempt);
+        return; // success
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        console.warn(`⚠️ IMAP connect attempt failed: ${attempt.host}:${attempt.port} tls=${attempt.tls} -> ${msg}`);
+        errors.push(`${attempt.port}/${attempt.tls ? 'TLS' : 'noTLS'}: ${msg}`);
+        // ensure clean state before next attempt
+        await this.disconnect();
+      }
+    }
+
+    throw new Error(`All IMAP connection attempts failed: ${errors.join(' | ')}`);
   }
 
   /**
@@ -105,24 +169,69 @@ export class ImapService {
 
     try {
       console.log('📧 Fetching IMAP folders...');
-      
+
       // Get namespaces first (optional but recommended)
-      const namespaces = await this.imap.getNamespaces();
+      const namespaces = await (this.imap as any).getNamespaces?.();
       console.log('📧 Namespaces:', namespaces);
 
-      // Get folder list
-      const imapFolders = await this.imap.getFolders();
-      console.log('📧 Raw IMAP folders:', imapFolders);
+      // Try several method names to list folders/mailboxes
+      let imapFolders = await (this.imap as any).getFolders?.();
+      if (!imapFolders) imapFolders = await (this.imap as any).listMailboxes?.();
+      if (!imapFolders) imapFolders = await (this.imap as any).listBoxes?.();
+      if (!imapFolders) imapFolders = await (this.imap as any).list?.();
+      console.log('📧 Raw IMAP folders (any):', imapFolders);
+
+      // If still nothing, assume at least INBOX exists
+      if (!imapFolders || (Array.isArray(imapFolders) && imapFolders.length === 0)) {
+        console.warn('⚠️ No folders returned by server API, falling back to INBOX-only');
+        return [
+          {
+            id: 'inbox',
+            name: 'INBOX',
+            displayName: 'Inbox',
+            type: 'inbox',
+            children: [],
+            unreadCount: 0,
+            totalCount: 0,
+            canSelect: true,
+            canCreate: false,
+            canDelete: false,
+            canRename: false
+          }
+        ];
+      }
 
       // Convert IMAP folders to our format
-      const folders = this.convertImapFolders(imapFolders);
-      
+      const folders = this.convertImapFolders((imapFolders || []) as any);
+
       console.log(`✅ Retrieved ${folders.length} folders from IMAP`);
       return folders;
     } catch (error) {
       console.error('❌ Failed to fetch IMAP folders:', error);
       throw new Error(`Failed to fetch folders: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
+  }
+
+  private async selectAnyMailbox(folderName: string): Promise<any> {
+    // Try common method names
+    const imapAny = this.imap as any;
+    let info = await imapAny.selectFolder?.(folderName);
+    if (!info) info = await imapAny.selectMailbox?.(folderName);
+    if (!info) info = await imapAny.openBox?.(folderName, true);
+    if (!info) info = await imapAny.select?.(folderName);
+    // Try status call as last resort
+    if (!info) {
+      const status = await imapAny.status?.(folderName, ['MESSAGES']);
+      if (status && typeof status.messages === 'number') {
+        info = { exists: status.messages };
+      }
+    }
+    // Fallback to INBOX
+    if (!info && folderName !== 'INBOX') {
+      console.warn(`⚠️ select folder ${folderName} failed, retrying INBOX`);
+      return this.selectAnyMailbox('INBOX');
+    }
+    return info;
   }
 
   /**
@@ -136,8 +245,8 @@ export class ImapService {
     try {
       console.log(`📧 Selecting folder: ${folderName}`);
       
-      // Select the folder
-      const folderInfo = await this.imap.selectFolder(folderName);
+      // Select the folder (try multiple methods)
+      const folderInfo = await this.selectAnyMailbox(folderName);
       console.log('📧 Folder info:', folderInfo);
 
       if (folderInfo.exists === 0) {
@@ -147,13 +256,14 @@ export class ImapService {
 
       // Fetch recent messages (limit to avoid timeout)
       const messageCount = Math.min(limit, folderInfo.exists);
-      const startUid = Math.max(1, folderInfo.exists - messageCount + 1);
-      const endUid = folderInfo.exists;
+      const seqStart = Math.max(1, folderInfo.exists - messageCount + 1);
 
-      console.log(`📧 Fetching messages ${startUid}:${endUid} from ${folderName}`);
+      // Prefer sequence range with '*' as end to be robust across servers
+      let range = `${seqStart}:*`;
+      console.log(`📧 Fetching messages (seq) ${range} from ${folderName}`);
 
       // Fetch message headers and basic info
-      const messages = await this.imap.fetchMessages(`${startUid}:${endUid}`, {
+      let messages = await (this.imap as any).fetchMessages?.(range, {
         envelope: true,
         flags: true,
         uid: true,
@@ -161,10 +271,26 @@ export class ImapService {
         size: true
       });
 
-      console.log(`✅ Retrieved ${messages.length} messages from ${folderName}`);
+      // Fallback: try full range if empty
+      if (!messages || messages.length === 0) {
+        range = '1:*';
+        console.log(`📧 Primary fetch returned 0 — fallback to full range ${range}`);
+        messages = await (this.imap as any).fetchMessages?.(range, {
+          envelope: true,
+          flags: true,
+          uid: true,
+          bodyStructure: true,
+          size: true
+        });
+      }
 
-      // Convert IMAP messages to our format
-      return this.convertImapMessages(messages, folderName);
+      const count = Array.isArray(messages) ? messages.length : 0;
+      console.log(`✅ Retrieved ${count} messages from ${folderName}`);
+
+      // Convert IMAP messages to our format (take last N if we fetched too many)
+      const msgs = (messages || []) as any[];
+      const slice = count > limit ? msgs.slice(-limit) : msgs;
+      return this.convertImapMessages(slice as any, folderName);
     } catch (error) {
       console.error(`❌ Failed to fetch messages from ${folderName}:`, error);
       throw new Error(`Failed to fetch messages: ${error instanceof Error ? error.message : 'Unknown error'}`);

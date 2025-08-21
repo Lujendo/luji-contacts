@@ -13,6 +13,8 @@ export class EmailFetchService {
   /**
    * Fetch folders for an email account
    */
+  private lastWarning: string | undefined;
+
   async fetchFolders(account: EmailAccount): Promise<EmailFolder[]> {
     try {
       const token = localStorage.getItem('token');
@@ -27,24 +29,32 @@ export class EmailFetchService {
         console.log('📧 API Response:', data);
 
         if (data.warning) {
+          this.lastWarning = data.warning;
           console.log('⚠️ API Warning:', data.warning);
-          console.log('❌ API Error:', data.error);
+          if (data.error) console.log('❌ API Error:', data.error);
+        } else {
+          this.lastWarning = undefined;
         }
 
         const folders = data.folders || [];
         console.log('📧 Folders from API:', folders.length, folders);
 
         if (folders.length === 0) {
+          this.lastWarning = this.lastWarning || 'No folders received from server. Displaying default folders.';
           console.log('📧 No folders received, using defaults');
           return this.getDefaultFolders();
         }
 
         return folders;
       } else {
-        console.error('Failed to fetch folders:', await response.text());
+        const text = await response.text();
+        this.lastWarning = `Failed to fetch folders: ${text}`;
+        console.error('Failed to fetch folders:', text);
         return this.getDefaultFolders();
       }
     } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      this.lastWarning = `Error fetching folders: ${msg}`;
       console.error('Error fetching folders:', error);
       return this.getDefaultFolders();
     }
@@ -53,23 +63,42 @@ export class EmailFetchService {
   /**
    * Fetch messages for a specific folder
    */
-  async fetchMessages(account: EmailAccount, folderId: string, page: number = 1, limit: number = 50): Promise<EmailMessage[]> {
+  async fetchMessages(
+    account: EmailAccount,
+    folderId: string,
+    page: number = 1,
+    limit: number = 50,
+    folderName?: string
+  ): Promise<EmailMessage[]> {
     try {
       const token = localStorage.getItem('token');
       if (!token) throw new Error('Authentication required');
 
-      const response = await fetch(`/api/emails/messages/${account.id}/${folderId}?page=${page}&limit=${limit}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const folderNameParam = folderName ? `&folderName=${encodeURIComponent(folderName)}` : '';
+      const response = await fetch(
+        `/api/emails/messages/${account.id}/${folderId}?page=${page}&limit=${limit}${folderNameParam}`,
+        {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }
+      );
 
       if (response.ok) {
         const data = await response.json();
+        if (data.warning) {
+          this.lastWarning = data.warning;
+        } else {
+          this.lastWarning = undefined;
+        }
         return data.messages || [];
       } else {
-        console.error('Failed to fetch messages:', await response.text());
+        const text = await response.text();
+        this.lastWarning = `Failed to fetch messages: ${text}`;
+        console.error('Failed to fetch messages:', text);
         return [];
       }
     } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      this.lastWarning = `Error fetching messages: ${msg}`;
       console.error('Error fetching messages:', error);
       return [];
     }
@@ -104,6 +133,10 @@ export class EmailFetchService {
   /**
    * Get default folders when real folders can't be fetched
    */
+  getLastWarning(): string | undefined {
+    return this.lastWarning;
+  }
+
   private getDefaultFolders(): EmailFolder[] {
     return [
       {

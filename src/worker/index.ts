@@ -12,6 +12,7 @@ import { createEmailRoutes } from './routes/emails';
 import { createEmailAccountRoutes } from './routes/emailAccounts';
 import { createRobustEmailRoutes } from './routes/robustEmails';
 import { createEmailEngineRoutes } from './routes/emailEngineRoutes';
+import { createOAuthRoutes } from './routes/oauth';
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -120,6 +121,12 @@ app.all('/api/*', async (c) => {
     const ultimateEmailRoutes = createEmailEngineRoutes(db, auth);
     const newReq = new Request(c.req.raw.url.replace('/api/ultimate-email', ''), c.req.raw);
     return ultimateEmailRoutes.fetch(newReq, c.env, c.executionCtx);
+  }
+
+  if (path.startsWith('/api/oauth')) {
+    const oauthRoutes = createOAuthRoutes(db, auth);
+    const newReq = new Request(c.req.raw.url.replace('/api/oauth', ''), c.req.raw);
+    return oauthRoutes.fetch(newReq, c.env, c.executionCtx);
   }
 
   if (path.startsWith('/api/files/')) {

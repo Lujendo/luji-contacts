@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { EmailAccount } from '../types/emailClient';
+
 import {
   Mail,
   Server,
@@ -15,7 +17,6 @@ import {
   Trash2,
   Settings
 } from 'lucide-react';
-import { EmailAccount } from '../types/emailClient';
 
 interface EmailAccountSettingsProps {
   accounts: EmailAccount[];
@@ -94,9 +95,9 @@ const EmailAccountSettings: React.FC<EmailAccountSettingsProps> = ({
     setFormData({
       name: account.name,
       email: account.email,
-      provider: account.provider,
-      incoming: { ...account.incoming },
-      outgoing: { ...account.outgoing },
+      provider: account.provider as any,
+      incoming: { ...account.incoming } as any,
+      outgoing: { ...account.outgoing } as any,
       syncInterval: account.syncInterval
     });
     setEditingAccount(account);
@@ -105,7 +106,7 @@ const EmailAccountSettings: React.FC<EmailAccountSettingsProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       const accountData = {
         ...formData,
@@ -120,7 +121,7 @@ const EmailAccountSettings: React.FC<EmailAccountSettingsProps> = ({
       } else {
         await onAddAccount(accountData);
       }
-      
+
       resetForm();
     } catch (error) {
       console.error('Error saving account:', error);
@@ -155,6 +156,11 @@ const EmailAccountSettings: React.FC<EmailAccountSettingsProps> = ({
 
   const getProviderDefaults = (provider: string) => {
     switch (provider) {
+      case 'custom_luji':
+        return {
+          incoming: { host: 'mail.lujiventrucci.com', port: 993, secure: true },
+          outgoing: { host: 'mail.lujiventrucci.com', port: 587, secure: true }
+        };
       case 'gmail':
         return {
           incoming: { host: 'imap.gmail.com', port: 993, secure: true },
@@ -265,7 +271,7 @@ const EmailAccountSettings: React.FC<EmailAccountSettingsProps> = ({
                 {/* Basic Information */}
                 <div className="space-y-4">
                   <h4 className="font-medium text-gray-900">Basic Information</h4>
-                  
+
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700">Account Name</label>
@@ -299,11 +305,76 @@ const EmailAccountSettings: React.FC<EmailAccountSettingsProps> = ({
                       className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                     >
                       <option value="imap">IMAP (Generic)</option>
+                      <option value="custom_luji">Custom: mail.lujiventrucci.com</option>
                       <option value="gmail">Gmail</option>
                       <option value="outlook">Outlook/Hotmail</option>
                       <option value="yahoo">Yahoo Mail</option>
                       <option value="pop3">POP3</option>
                     </select>
+                    {formData.provider === ('gmail' as any) && (
+                      <div className="mt-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Authentication</label>
+                        <div className="flex items-center space-x-2">
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              try {
+                                const token = localStorage.getItem('token');
+                                const params = new URLSearchParams();
+                                if (editingAccount) params.set('accountId', editingAccount.id);
+                                params.set('returnUrl', window.location.origin);
+                                // Ask API for authUrl to avoid redirecting from fetch
+                                const resp = await fetch(`/api/oauth/google/authorize?${params.toString()}&manual=1`, {
+                                  headers: { Authorization: `Bearer ${token}` }
+                                });
+                                const data = await resp.json();
+                                if (data.authUrl) {
+                                  window.location.href = data.authUrl;
+                                } else {
+                                  alert('Failed to start Google sign-in');
+                                }
+                              } catch (e) {
+                                alert('Failed to start Google sign-in');
+                              }
+                            }}
+                            className="px-3 py-2 rounded bg-red-600 text-white text-sm hover:bg-red-700"
+                          >
+                            Sign in with Google
+                          </button>
+                          <span className="text-xs text-gray-500">Uses OAuth2 (XOAUTH2) for IMAP access</span>
+                        </div>
+                        {editingAccount && editingAccount.incoming.authMethod === 'oauth2' && (
+                          <div className="mt-2">
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                try {
+                                  const token = localStorage.getItem('token');
+                                  const resp = await fetch(`/api/oauth/tokens/${editingAccount.id}/clear`, {
+                                    method: 'POST',
+                                    headers: { Authorization: `Bearer ${token}` }
+                                  });
+                                  if (resp.ok) {
+                                    alert('Disconnected Google OAuth for this account.');
+                                    setFormData(prev => ({
+                                      ...prev,
+                                      incoming: { ...prev.incoming, authMethod: 'plain' as const }
+                                    }));
+                                  } else {
+                                    alert('Failed to disconnect.');
+                                  }
+                                } catch (e) {
+                                  alert('Failed to disconnect.');
+                                }
+                              }}
+                              className="px-3 py-2 rounded border text-sm text-gray-700 hover:bg-gray-50"
+                            >
+                              Disconnect Google
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -313,7 +384,7 @@ const EmailAccountSettings: React.FC<EmailAccountSettingsProps> = ({
                     <Server className="h-4 w-4 mr-2" />
                     Incoming Server (IMAP/POP3)
                   </h4>
-                  
+
                   <div className="grid grid-cols-3 gap-4">
                     <div className="col-span-2">
                       <label className="block text-sm font-medium text-gray-700">Server</label>
@@ -344,44 +415,47 @@ const EmailAccountSettings: React.FC<EmailAccountSettingsProps> = ({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Username</label>
-                      <input
-                        type="text"
-                        value={formData.incoming.username}
-                        onChange={(e) => setFormData(prev => ({
-                          ...prev,
-                          incoming: { ...prev.incoming, username: e.target.value }
-                        }))}
-                        className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                        placeholder="Usually your email address"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Password</label>
-                      <div className="relative">
+                  {/* Hide credentials when Gmail + OAuth2 is active */}
+                  {!(formData.provider === ('gmail' as any) && (editingAccount?.incoming.authMethod === ('oauth2' as any) || formData.incoming.authMethod === ('oauth2' as any))) && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Username</label>
                         <input
-                          type={showPasswords.incoming ? 'text' : 'password'}
-                          value={formData.incoming.password}
+                          type="text"
+                          value={formData.incoming.username}
                           onChange={(e) => setFormData(prev => ({
                             ...prev,
-                            incoming: { ...prev.incoming, password: e.target.value }
+                            incoming: { ...prev.incoming, username: e.target.value }
                           }))}
-                          className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 pr-10"
+                          className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                          placeholder="Usually your email address"
                           required
                         />
-                        <button
-                          type="button"
-                          onClick={() => togglePasswordVisibility('incoming')}
-                          className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                        >
-                          {showPasswords.incoming ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </button>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Password</label>
+                        <div className="relative">
+                          <input
+                            type={showPasswords.incoming ? 'text' : 'password'}
+                            value={formData.incoming.password}
+                            onChange={(e) => setFormData(prev => ({
+                              ...prev,
+                              incoming: { ...prev.incoming, password: e.target.value }
+                            }))}
+                            className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 pr-10"
+                            required
+                          />
+                          <button
+                            type="button"
+                            onClick={() => togglePasswordVisibility('incoming')}
+                            className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                          >
+                            {showPasswords.incoming ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
 
                   <div className="flex items-center">
                     <input
@@ -394,11 +468,104 @@ const EmailAccountSettings: React.FC<EmailAccountSettingsProps> = ({
                       }))}
                       className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                     />
-                    <label htmlFor="incoming-secure" className="ml-2 block text-sm text-gray-900">
-                      Use SSL/TLS encryption
-                    </label>
-                  </div>
+                    </div>
+
                 </div>
+
+                {/* Outgoing Server Settings */}
+                    <div className="space-y-4 mt-6">
+                      <h4 className="font-medium text-gray-900 flex items-center">
+                        <Server className="h-4 w-4 mr-2" />
+                        Outgoing Server (SMTP)
+                      </h4>
+
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="col-span-2">
+                          <label className="block text-sm font-medium text-gray-700">Server</label>
+                          <input
+                            type="text"
+                            value={formData.outgoing.host}
+                            onChange={(e) => setFormData(prev => ({
+                              ...prev,
+                              outgoing: { ...prev.outgoing, host: e.target.value }
+                            }))}
+                            className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            placeholder="smtp.example.com"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">Port</label>
+                          <input
+                            type="number"
+                            value={formData.outgoing.port}
+                            onChange={(e) => setFormData(prev => ({
+                              ...prev,
+                              outgoing: { ...prev.outgoing, port: parseInt(e.target.value) }
+                            }))}
+                            className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">Username</label>
+                          <input
+                            type="text"
+                            value={formData.outgoing.username}
+                            onChange={(e) => setFormData(prev => ({
+                              ...prev,
+                              outgoing: { ...prev.outgoing, username: e.target.value }
+                            }))}
+                            className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            placeholder="Usually your email address"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">Password</label>
+                          <div className="relative">
+                            <input
+                              type={showPasswords.outgoing ? 'text' : 'password'}
+                              value={formData.outgoing.password}
+                              onChange={(e) => setFormData(prev => ({
+                                ...prev,
+                                outgoing: { ...prev.outgoing, password: e.target.value }
+                              }))}
+                              className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 pr-10"
+                              required
+                            />
+                            <button
+                              type="button"
+                              onClick={() => togglePasswordVisibility('outgoing')}
+                              className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                            >
+                              {showPasswords.outgoing ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          id="outgoing-secure"
+                          checked={formData.outgoing.secure}
+                          onChange={(e) => setFormData(prev => ({
+                            ...prev,
+                            outgoing: { ...prev.outgoing, secure: e.target.checked }
+                          }))}
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        />
+                        <label htmlFor="outgoing-secure" className="ml-2 block text-sm text-gray-900">
+                          Use STARTTLS (recommended on port 587)
+                        </label>
+                      </div>
+
+                      <p className="text-xs text-gray-500">If your server requires SSL/TLS on 465 instead of STARTTLS, set port to 465 and keep this checked.</p>
+                    </div>
 
                 {/* Test Connection Button */}
                 <div className="flex items-center space-x-4">

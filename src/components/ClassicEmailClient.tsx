@@ -124,7 +124,7 @@ const ClassicEmailClient: React.FC<ClassicEmailClientProps> = ({
 
         // Load messages for the inbox
         console.log('📧 Loading messages for folder:', inboxFolder.displayName);
-        const messages = await emailService.fetchMessages(account, inboxFolder.id);
+        const messages = await emailService.fetchMessages(account, inboxFolder.id, 1, 50, inboxFolder.name);
         console.log('📧 Messages received:', messages.length);
         setMessages(messages);
 
@@ -405,7 +405,7 @@ const ClassicEmailClient: React.FC<ClassicEmailClientProps> = ({
     try {
       const emailService = EmailFetchService.getInstance();
       console.log('📧 Loading messages for folder:', folder.displayName, 'Account:', currentAccount.email);
-      const messages = await emailService.fetchMessages(currentAccount, folder.id);
+      const messages = await emailService.fetchMessages(currentAccount, folder.id, 1, 50, folder.name);
       console.log('📧 Raw messages received:', messages.length, messages);
       setMessages(messages);
 
@@ -618,6 +618,12 @@ const ClassicEmailClient: React.FC<ClassicEmailClientProps> = ({
                     className="pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
+                {/* Connection warning banner */}
+                {!isLoading && (loadError || EmailFetchService.getInstance().getLastWarning()) && (
+                  <div className="ml-4 px-3 py-1 text-xs rounded bg-yellow-50 text-yellow-800 border border-yellow-200">
+                    {loadError || EmailFetchService.getInstance().getLastWarning()}
+                  </div>
+                )}
               </div>
             </div>
           </div>

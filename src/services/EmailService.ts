@@ -2,6 +2,7 @@ import { EmailData, EmailProvider, SendEmailOptions, BulkEmailOptions } from '..
 import { IEmailProvider, EmailSendResult } from './providers/IEmailProvider';
 import { SendGridProvider } from './providers/SendGridProvider';
 import { MailgunProvider } from './providers/MailgunProvider';
+import { MailChannelsProvider } from './providers/MailChannelsProvider';
 import { emailQueueService } from './EmailQueueService';
 
 /**
@@ -31,6 +32,28 @@ export class EmailService {
    * Load providers from environment variables
    */
   private loadProvidersFromEnvironment(): void {
+    // MailChannels provider (Worker-native)
+    try {
+      const mailChannels = new MailChannelsProvider();
+      this.providers.set('mailchannels', mailChannels);
+      this.providerConfigs.set('mailchannels', {
+        id: 'mailchannels',
+        name: 'MailChannels',
+        type: 'sendgrid',
+        isActive: true,
+        priority: 1,
+        config: {},
+        dailyLimit: 5000,
+        dailySent: 0,
+        lastResetDate: new Date(),
+        healthStatus: 'healthy',
+        lastHealthCheck: new Date()
+      });
+      console.log('✅ MailChannels provider loaded');
+    } catch (e) {
+      console.warn('⚠️ Failed to init MailChannels provider', e);
+    }
+
     // SendGrid provider
     if (process.env.SENDGRID_API_KEY) {
       try {
