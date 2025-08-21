@@ -132,13 +132,6 @@ app.all('/api/*', async (c) => {
   }
 
   if (path.startsWith('/api/email-worker')) {
-    // Add user context for email worker routes
-    const userId = await auth.getUserIdFromRequest(c.req);
-    if (!userId) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-    c.set('userId', userId);
-
     const newReq = new Request(c.req.raw.url.replace('/api/email-worker', ''), c.req.raw);
     return emailWorkerRoutes.fetch(newReq, c.env, c.executionCtx);
   }

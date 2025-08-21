@@ -237,6 +237,33 @@ export class DatabaseMigrations {
       await this.db.prepare(`INSERT INTO migrations (name) VALUES (?)`).bind('004_create_email_worker_tables').run();
       console.log('Migration 004_create_email_worker_tables completed');
     }
+
+    // Migration 005: Add color column to groups table
+    const groupsColorMigExists = await this.db.prepare(`
+      SELECT name FROM migrations WHERE name = ?
+    `).bind('005_add_groups_color_column').first();
+
+    if (!groupsColorMigExists) {
+      console.log('Adding color column to groups table...');
+
+      // Check if color column already exists
+      const tableInfo = await this.db.prepare(`
+        PRAGMA table_info(groups)
+      `).all();
+
+      const hasColor = tableInfo.results?.some((column: any) => column.name === 'color');
+
+      if (!hasColor) {
+        // Add color column
+        await this.db.prepare(`
+          ALTER TABLE groups ADD COLUMN color TEXT DEFAULT '#3B82F6'
+        `).run();
+        console.log('Color column added to groups table');
+      }
+
+      await this.db.prepare(`INSERT INTO migrations (name) VALUES (?)`).bind('005_add_groups_color_column').run();
+      console.log('Migration 005_add_groups_color_column completed');
+    }
   }
 
   async checkNicknameColumn(): Promise<boolean> {

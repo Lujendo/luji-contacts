@@ -5,8 +5,33 @@
 
 import { Hono } from 'hono';
 import { initializeDefaultFolders } from '../email-worker';
+import jwt from 'jsonwebtoken';
 
 const app = new Hono();
+
+// Helper function to get user ID from request
+async function getUserIdFromRequest(c: any): Promise<string | null> {
+  try {
+    const authHeader = c.req.header('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return null;
+    }
+
+    const token = authHeader.substring(7);
+    const jwtSecret = c.env.JWT_SECRET;
+
+    if (!jwtSecret) {
+      console.error('JWT_SECRET not configured');
+      return null;
+    }
+
+    const decoded = jwt.verify(token, jwtSecret) as any;
+    return decoded.userId || decoded.id || null;
+  } catch (error) {
+    console.error('Error verifying JWT:', error);
+    return null;
+  }
+}
 
 /**
  * GET /api/email-worker/folders/:accountId
@@ -15,14 +40,20 @@ const app = new Hono();
 app.get('/folders/:accountId', async (c) => {
   try {
     const accountId = c.req.param('accountId');
-    
+
+    // Get user ID from request
+    const userId = await getUserIdFromRequest(c);
+    if (!userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
     // Verify account exists and user has access
     const account = await c.env.DB.prepare(`
-      SELECT ea.id, ea.name, ea.email 
+      SELECT ea.id, ea.name, ea.email
       FROM email_accounts ea
       JOIN users u ON ea.user_id = u.id
       WHERE ea.id = ? AND u.id = ?
-    `).bind(accountId, c.get('userId')).first();
+    `).bind(accountId, userId).first();
 
     if (!account) {
       return c.json({ error: 'Account not found' }, 404);
@@ -107,12 +138,18 @@ app.get('/emails/:accountId/:folder', async (c) => {
     const limit = parseInt(c.req.query('limit') || '50');
     const offset = parseInt(c.req.query('offset') || '0');
 
+    // Get user ID from request
+    const userId = await getUserIdFromRequest(c);
+    if (!userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
     // Verify account access
     const account = await c.env.DB.prepare(`
       SELECT ea.id FROM email_accounts ea
       JOIN users u ON ea.user_id = u.id
       WHERE ea.id = ? AND u.id = ?
-    `).bind(accountId, c.get('userId')).first();
+    `).bind(accountId, userId).first();
 
     if (!account) {
       return c.json({ error: 'Account not found' }, 404);
@@ -163,12 +200,18 @@ app.get('/emails/:accountId/email/:emailId', async (c) => {
     const accountId = c.req.param('accountId');
     const emailId = c.req.param('emailId');
 
+    // Get user ID from request
+    const userId = await getUserIdFromRequest(c);
+    if (!userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
     // Verify account access
     const account = await c.env.DB.prepare(`
       SELECT ea.id FROM email_accounts ea
       JOIN users u ON ea.user_id = u.id
       WHERE ea.id = ? AND u.id = ?
-    `).bind(accountId, c.get('userId')).first();
+    `).bind(accountId, userId).first();
 
     if (!account) {
       return c.json({ error: 'Account not found' }, 404);
@@ -206,12 +249,18 @@ app.patch('/emails/:accountId/email/:emailId', async (c) => {
     const emailId = c.req.param('emailId');
     const updates = await c.req.json();
 
+    // Get user ID from request
+    const userId = await getUserIdFromRequest(c);
+    if (!userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
     // Verify account access
     const account = await c.env.DB.prepare(`
       SELECT ea.id FROM email_accounts ea
       JOIN users u ON ea.user_id = u.id
       WHERE ea.id = ? AND u.id = ?
-    `).bind(accountId, c.get('userId')).first();
+    `).bind(accountId, userId).first();
 
     if (!account) {
       return c.json({ error: 'Account not found' }, 404);
